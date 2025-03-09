@@ -168,7 +168,10 @@ sleep,tracker,monitor,pattern,health,automatic,diary,journal,log,usage
 
 Use the included build script:
 ```bash
-./build-deploy.sh
+
+
+
+
 # Select option 3 (Build production version)
 ```
 
