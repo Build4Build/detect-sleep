@@ -20,9 +20,6 @@
       "bundleIdentifier": "com.sleepdetector.app",
       "buildNumber": "1",
       "infoPlist": {
-        "NSUserActivityTypes": [
-          "WidgetKitIntentExtension"
-        ],
         "UIBackgroundModes": [
           "fetch"
         ],
@@ -48,27 +45,7 @@
     "web": {
       "favicon": "./assets/favicon.png"
     },
-    "widgets": [
-      {
-        "name": "SleepStatsWidget",
-        "dataFetcher": {
-          "url": "SleepStatsWidget" 
-        },
-        "description": "View your sleep status and today's sleep duration",
-        "size": "small",
-        "backgroundColor": "#ffffff",
-        "accessible": true
-      }
-    ],
     "plugins": [
-      [
-        "expo-widgets",
-        {
-          "ios": {
-            "devTeamId": "2V8LZ2444Y" 
-          }
-        }
-      ],
       "expo-task-manager"
     ],
     "extra": {

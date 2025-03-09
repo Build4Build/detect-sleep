@@ -9,7 +9,6 @@ A React Native Expo app that automatically tracks your sleep patterns based on p
 - **Sleep History**: Browse your sleep history with daily summaries
 - **Data Export**: Export your sleep data in JSON or CSV format
 - **Customizable Settings**: Adjust the inactivity threshold to match your habits
-- **Home Screen Widget**: View your sleep status and today's sleep duration at a glance
 
 ## How It Works
 
@@ -92,20 +91,6 @@ npm run android
 npx expo start
 ```
 
-### Testing the Widget
-
-1. Install a development build on your iOS device:
-```bash
-npx eas build --platform ios --profile development
-```
-
-2. Once installed:
-   - Long press on your home screen
-   - Tap the "+" button in the top corner
-   - Find "Sleep Detector" in the widget gallery
-   - Add the widget to your home screen
-   - Verify that it shows your current sleep status and today's sleep duration
-
 ### Generating App Icons
 
 You can use the included script to generate app icons:
@@ -121,6 +106,16 @@ Or manually create these required assets in the `assets` folder:
 - `adaptive-icon.png` (1024×1024 px) 
 - `favicon.png` (192×192 px)
 
+## Adding Home Screen Widget (Future Enhancement)
+
+To add a home screen widget, you'll need to:
+
+1. **Eject to a bare workflow** or use **EAS Build** with custom native code
+2. **Create a native iOS Widget Extension** using WidgetKit
+3. **Share data** between your app and widget using App Groups
+
+This requires iOS native development skills and is planned for a future version.
+
 ## Publishing to App Store
 
 ### 1. Prepare Your App
@@ -129,7 +124,6 @@ Make sure your app is ready for submission:
 - All features work correctly
 - App icons and splash screen are in place
 - The privacy policy is up to date
-- The widget displays correctly
 
 ### 2. Create Your App on App Store Connect
 
@@ -158,7 +152,6 @@ Sleep Detector automatically tracks your sleep patterns based on your phone usag
 FEATURES:
 • Automatic sleep detection based on phone inactivity
 • Beautiful sleep statistics and charts 
-• Home screen widget showing sleep status
 • Daily, weekly, and monthly history views
 • Export your sleep data in multiple formats
 • Customizable inactivity threshold
@@ -168,7 +161,7 @@ No login required. All data stays on your device.
 
 3. **Keywords**:
 ```
-sleep,tracker,monitor,pattern,health,widget,automatic,diary,journal,log,usage
+sleep,tracker,monitor,pattern,health,automatic,diary,journal,log,usage
 ```
 
 ### 4. Build for App Store
@@ -227,5 +220,4 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 - Built with React Native and Expo
 - Uses AsyncStorage for data persistence
-- Charts powered by react-native-chart-kit
-- Home screen widget powered by expo-widgets 
+- Charts powered by react-native-chart-kit 
