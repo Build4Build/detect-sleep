@@ -37,20 +37,32 @@ export const SleepStatsWidget = async () => {
     let currentStatus = SleepStatus.AWAKE;
     
     if (summariesJson) {
-      const summaries: DailySleepSummary[] = JSON.parse(summariesJson);
-      const todaySummary = summaries.find(summary => summary.date === today);
-      
-      if (todaySummary) {
-        sleepDuration = todaySummary.totalSleepMinutes;
+      try {
+        const summaries: DailySleepSummary[] = JSON.parse(summariesJson);
+        const todaySummary = summaries.find(summary => summary.date === today);
+        
+        if (todaySummary) {
+          sleepDuration = todaySummary.totalSleepMinutes;
+        }
+      } catch (parseError) {
+        console.error('Error parsing summaries:', parseError);
+        // Continue with default values
       }
     }
     
     if (activityRecordsJson) {
-      const records = JSON.parse(activityRecordsJson);
-      if (records.length > 0) {
-        // Get the most recent status
-        const latestRecord = records.sort((a, b) => b.timestamp - a.timestamp)[0];
-        currentStatus = latestRecord.status;
+      try {
+        const records = JSON.parse(activityRecordsJson);
+        if (records && records.length > 0) {
+          // Get the most recent status
+          const latestRecord = records.sort((a, b) => b.timestamp - a.timestamp)[0];
+          if (latestRecord && latestRecord.status) {
+            currentStatus = latestRecord.status;
+          }
+        }
+      } catch (parseError) {
+        console.error('Error parsing activity records:', parseError);
+        // Continue with default values
       }
     }
     
@@ -187,8 +199,12 @@ const styles = StyleSheet.create({
 
 // Register widget with Expo
 export const registerWidget = async () => {
-  await getWidgetAsync('SleepStatsWidget').then(widget => {
+  try {
+    const widget = await getWidgetAsync('SleepStatsWidget');
     widget.setUpdatePeriod(30 * 60); // Update every 30 minutes
-    widget.register(SleepStatsWidget);
-  });
+    await widget.register(SleepStatsWidget);
+    console.log('Widget registered successfully');
+  } catch (error) {
+    console.error('Failed to register widget:', error);
+  }
 }; 
