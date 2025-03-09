@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "detect-sleep",
+    "name": "Sleep Detector",
     "slug": "detect-sleep",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -8,21 +8,68 @@
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/splash-icon.png",
+      "image": "./assets/splash.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.yourcompany.sleepdetector",
+      "buildNumber": "1",
+      "infoPlist": {
+        "NSUserActivityTypes": [
+          "WidgetKitIntentExtension"
+        ],
+        "UIBackgroundModes": [
+          "fetch"
+        ]
+      },
+      "config": {
+        "usesNonExemptEncryption": false
+      },
+      "appStoreUrl": "https://apps.apple.com/app/your-app-id"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
-      }
+      },
+      "package": "com.yourcompany.sleepdetector",
+      "versionCode": 1
     },
     "web": {
       "favicon": "./assets/favicon.png"
+    },
+    "widgets": [
+      {
+        "name": "SleepStatsWidget",
+        "dataFetcher": {
+          "url": "SleepStatsWidget" 
+        },
+        "description": "View your sleep status and today's sleep duration",
+        "size": "small",
+        "backgroundColor": "#ffffff",
+        "accessible": true
+      }
+    ],
+    "plugins": [
+      [
+        "expo-widgets",
+        {
+          "ios": {
+            "devTeamId": "2V8LZ2444Y" 
+          }
+        }
+      ],
+      "expo-task-manager"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "your-project-id"
+      }
     }
   }
 }
