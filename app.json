@@ -50,8 +50,9 @@
     ],
     "extra": {
       "eas": {
-        "projectId": "sleep-detector-project"
+        "projectId": "c1f660d1-2639-4a53-9a69-0e3e3dd453fb"
       }
-    }
+    },
+    "owner": "retainr.io"
   }
 }
