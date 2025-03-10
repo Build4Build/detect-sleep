@@ -17,6 +17,8 @@ const THRESHOLD_OPTIONS = [
 const SettingsScreen = () => {
   const { settings, updateSettings } = useSleep();
   const [notificationsEnabled, setNotificationsEnabled] = useState(settings.notificationsEnabled);
+  const [useMachineLearning, setUseMachineLearning] = useState(settings.useMachineLearning);
+  const [considerTimeOfDay, setConsiderTimeOfDay] = useState(settings.considerTimeOfDay);
   const [showThresholdModal, setShowThresholdModal] = useState(false);
   
   // Find the current threshold option
@@ -34,6 +36,24 @@ const SettingsScreen = () => {
   const handleNotificationsToggle = (value: boolean) => {
     setNotificationsEnabled(value);
     updateSettings({ notificationsEnabled: value });
+  };
+  
+  // Handle machine learning toggle
+  const handleMachineLearningToggle = (value: boolean) => {
+    setUseMachineLearning(value);
+    updateSettings({ useMachineLearning: value });
+    if (value) {
+      Alert.alert(
+        'Enhanced Detection Enabled',
+        'Sleep Detector will now learn from your sleep patterns to improve accuracy. This may take a few days to build up enough data.'
+      );
+    }
+  };
+  
+  // Handle time of day consideration toggle
+  const handleTimeOfDayToggle = (value: boolean) => {
+    setConsiderTimeOfDay(value);
+    updateSettings({ considerTimeOfDay: value });
   };
   
   // Reset sleep data
@@ -54,7 +74,8 @@ const SettingsScreen = () => {
               // Only clear sleep-related data, not settings
               await AsyncStorage.multiRemove([
                 'sleep-tracker-activity-records',
-                'sleep-tracker-daily-summaries'
+                'sleep-tracker-daily-summaries',
+                'sleep-tracker-patterns'
               ]);
               Alert.alert('Success', 'All sleep data has been reset.');
             } catch (error) {
@@ -113,6 +134,39 @@ const SettingsScreen = () => {
             <Ionicons name="chevron-down" size={20} color="#6200ee" />
           </View>
         </TouchableOpacity>
+      </View>
+      
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Accuracy Settings</Text>
+        <View style={styles.settingItem}>
+          <View style={styles.switchContainer}>
+            <Text style={styles.settingLabel}>Enhanced Detection</Text>
+            <Switch
+              value={useMachineLearning}
+              onValueChange={handleMachineLearningToggle}
+              trackColor={{ false: '#e0e0e0', true: '#b39ddb' }}
+              thumbColor={useMachineLearning ? '#6200ee' : '#f4f3f4'}
+            />
+          </View>
+          <Text style={styles.settingDescription}>
+            Learn from your sleep patterns to improve accuracy
+          </Text>
+        </View>
+        
+        <View style={styles.settingItem}>
+          <View style={styles.switchContainer}>
+            <Text style={styles.settingLabel}>Consider Time of Day</Text>
+            <Switch
+              value={considerTimeOfDay}
+              onValueChange={handleTimeOfDayToggle}
+              trackColor={{ false: '#e0e0e0', true: '#b39ddb' }}
+              thumbColor={considerTimeOfDay ? '#6200ee' : '#f4f3f4'}
+            />
+          </View>
+          <Text style={styles.settingDescription}>
+            Factor in typical sleep hours for better detection
+          </Text>
+        </View>
       </View>
       
       <View style={styles.section}>
@@ -382,6 +436,6 @@ const styles = StyleSheet.create({
     marginTop: 16,
     fontStyle: 'italic',
   },
-})
+});
 
 export default SettingsScreen; 

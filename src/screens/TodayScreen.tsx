@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { RootStackParamList } from '../types';
+import { RootStackParamList, SleepStatus } from '../types';
 import { useSleep } from '../context/SleepContext';
 import { formatTime, formatDuration } from '../utils/dateUtils';
 
@@ -27,7 +27,13 @@ const SLEEP_TIPS = [
 
 const TodayScreen = () => {
   const navigation = useNavigation<TodayScreenNavigationProp>();
-  const { currentStatus, todayRecords, getTodaySleepDuration } = useSleep();
+  const { 
+    currentStatus, 
+    currentConfidence, 
+    todayRecords, 
+    getTodaySleepDuration,
+    manuallySetStatus
+  } = useSleep();
   const [dailyTip, setDailyTip] = useState('');
   const [greeting, setGreeting] = useState('');
   
@@ -80,7 +86,36 @@ const TodayScreen = () => {
     }
   };
   
+  // Handle manual status override
+  const handleStatusOverride = () => {
+    Alert.alert(
+      'Override Sleep Status',
+      'Would you like to manually set your current status?',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'I\'m Awake',
+          onPress: () => manuallySetStatus(SleepStatus.AWAKE),
+        },
+        {
+          text: 'I\'m Asleep',
+          onPress: () => manuallySetStatus(SleepStatus.ASLEEP),
+        },
+      ]
+    );
+  };
+  
   const sleepQuality = getSleepQualityText();
+  
+  // Get color for confidence level
+  const getConfidenceColor = (confidence: number) => {
+    if (confidence >= 80) return '#4CAF50'; // High confidence - green
+    if (confidence >= 60) return '#FFC107'; // Medium confidence - yellow
+    return '#F44336'; // Low confidence - red
+  };
   
   return (
     <ScrollView style={styles.container}>
@@ -94,8 +129,22 @@ const TodayScreen = () => {
         </TouchableOpacity>
       </View>
       
-      <View style={styles.statusCard}>
-        <Text style={styles.statusLabel}>Current Status</Text>
+      <TouchableOpacity 
+        style={styles.statusCard}
+        onPress={handleStatusOverride}
+        activeOpacity={0.8}
+      >
+        <View style={styles.statusHeader}>
+          <Text style={styles.statusLabel}>Current Status</Text>
+          <TouchableOpacity 
+            style={styles.editButton}
+            onPress={handleStatusOverride}
+          >
+            <Ionicons name="pencil-outline" size={16} color="#6200ee" />
+            <Text style={styles.editText}>Edit</Text>
+          </TouchableOpacity>
+        </View>
+        
         <View style={styles.statusContainer}>
           <View 
             style={[
@@ -107,7 +156,28 @@ const TodayScreen = () => {
             {currentStatus === 'awake' ? 'Awake' : 'Asleep'}
           </Text>
         </View>
-      </View>
+        
+        <View style={styles.confidenceContainer}>
+          <Text style={styles.confidenceLabel}>Detection Confidence:</Text>
+          <View style={styles.confidenceBar}>
+            <View 
+              style={[
+                styles.confidenceFill, 
+                { 
+                  width: `${currentConfidence}%`,
+                  backgroundColor: getConfidenceColor(currentConfidence)
+                }
+              ]} 
+            />
+          </View>
+          <Text style={[
+            styles.confidenceValue,
+            { color: getConfidenceColor(currentConfidence) }
+          ]}>
+            {currentConfidence}%
+          </Text>
+        </View>
+      </TouchableOpacity>
       
       <View style={styles.sleepCard}>
         <Text style={styles.cardTitle}>Today's Sleep</Text>
@@ -140,7 +210,15 @@ const TodayScreen = () => {
                   ]} 
                 />
                 <View style={styles.timelineContent}>
-                  <Text style={styles.timelineTime}>{formatTime(record.timestamp)}</Text>
+                  <View style={styles.timelineHeader}>
+                    <Text style={styles.timelineTime}>{formatTime(record.timestamp)}</Text>
+                    <Text style={[
+                      styles.timelineConfidence,
+                      { color: getConfidenceColor(record.confidence) }
+                    ]}>
+                      {record.confidence}% confident
+                    </Text>
+                  </View>
                   <Text style={styles.timelineStatus}>
                     {record.status === 'awake' ? 'Woke up' : 'Fell asleep'}
                   </Text>
@@ -215,14 +293,29 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 2,
   },
+  statusHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
   statusLabel: {
     fontSize: 16,
     color: '#666',
-    marginBottom: 8,
+  },
+  editButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  editText: {
+    fontSize: 14,
+    color: '#6200ee',
+    marginLeft: 4,
   },
   statusContainer: {
     flexDirection: 'row',
     alignItems: 'center',
+    marginBottom: 16,
   },
   statusIndicator: {
     width: 12,
@@ -234,6 +327,30 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: 'bold',
     color: '#333',
+  },
+  confidenceContainer: {
+    marginTop: 8,
+  },
+  confidenceLabel: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 4,
+  },
+  confidenceBar: {
+    height: 8,
+    backgroundColor: '#e0e0e0',
+    borderRadius: 4,
+    marginBottom: 4,
+    overflow: 'hidden',
+  },
+  confidenceFill: {
+    height: '100%',
+    borderRadius: 4,
+  },
+  confidenceValue: {
+    fontSize: 14,
+    fontWeight: '500',
+    textAlign: 'right',
   },
   sleepCard: {
     backgroundColor: '#fff',
@@ -314,10 +431,19 @@ const styles = StyleSheet.create({
   timelineContent: {
     flex: 1,
   },
+  timelineHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
   timelineTime: {
     fontSize: 16,
     fontWeight: '500',
     color: '#333',
+  },
+  timelineConfidence: {
+    fontSize: 12,
+    fontWeight: '500',
   },
   timelineStatus: {
     fontSize: 14,

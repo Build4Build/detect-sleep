@@ -11,6 +11,7 @@ export interface ActivityRecord {
   id: string;
   timestamp: number; // Unix timestamp
   status: SleepStatus;
+  confidence: number; // 0-100 confidence score in detection accuracy
 }
 
 // Daily sleep summary
@@ -20,6 +21,7 @@ export interface DailySleepSummary {
   sleepPeriods: {
     start: number; // Unix timestamp
     end: number; // Unix timestamp
+    confidence: number; // 0-100 confidence score
   }[];
 }
 
@@ -27,6 +29,8 @@ export interface DailySleepSummary {
 export interface AppSettings {
   inactivityThreshold: number; // Minutes of inactivity before considered asleep
   notificationsEnabled: boolean;
+  useMachineLearning: boolean; // Whether to use enhanced ML-based detection
+  considerTimeOfDay: boolean; // Consider typical sleep hours in detection
 }
 
 // Navigation types
