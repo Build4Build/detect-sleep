@@ -35,6 +35,7 @@ export type RootStackParamList = {
   Settings: undefined;
   SleepDetails: { date: string };
   Export: undefined;
+  History: undefined;
 };
 
 export type MainTabParamList = {

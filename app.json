@@ -6,7 +6,6 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
-    "newArchEnabled": true,
     "splash": {
       "image": "./assets/splash.png",
       "resizeMode": "contain",
@@ -17,30 +16,16 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.sleepdetector.app",
-      "buildNumber": "1",
+      "bundleIdentifier": "com.retainr.io.detectsleep",
       "infoPlist": {
-        "UIBackgroundModes": [
-          "fetch"
-        ],
-        "NSMotionUsageDescription": "We use motion data to more accurately detect when you're asleep or awake",
-        "NSHealthShareUsageDescription": "We use this data to compare our sleep detection with your health data if you choose to enable this feature",
-        "NSHealthUpdateUsageDescription": "We don't write any health data"
-      },
-      "config": {
-        "usesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
-      },
-      "package": "com.sleepdetector.app",
-      "versionCode": 1,
-      "permissions": [
-        "ACTIVITY_RECOGNITION"
-      ]
+      }
     },
     "web": {
       "favicon": "./assets/favicon.png"

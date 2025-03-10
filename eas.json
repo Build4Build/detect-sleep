@@ -1,7 +1,7 @@
 {
   "cli": {
     "version": ">= 5.5.0",
-    "requireCommit": true,
+    "requireCommit": false,
     "appVersionSource": "remote"
   },
   "build": {
@@ -33,10 +33,6 @@
     }
   },
   "submit": {
-    "production": {
-      "ios": {
-        "appleTeamId": "2V8LZ2444Y"
-      }
-    }
+    "production": {}
   }
 }

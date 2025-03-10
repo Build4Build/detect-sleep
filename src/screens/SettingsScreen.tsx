@@ -1,24 +1,33 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, Switch, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, StyleSheet, Switch, TouchableOpacity, Alert, ScrollView, Modal, FlatList } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import Slider from '@react-native-community/slider';
 import { useSleep } from '../context/SleepContext';
 import { formatDuration } from '../utils/dateUtils';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+// Define threshold options
+const THRESHOLD_OPTIONS = [
+  { label: '30 minutes', value: 30 },
+  { label: '45 minutes', value: 45 },
+  { label: '1 hour', value: 60 },
+  { label: '1.5 hours', value: 90 },
+  { label: '2 hours', value: 120 },
+];
+
 const SettingsScreen = () => {
   const { settings, updateSettings } = useSleep();
-  const [inactivityThreshold, setInactivityThreshold] = useState(settings.inactivityThreshold);
   const [notificationsEnabled, setNotificationsEnabled] = useState(settings.notificationsEnabled);
+  const [showThresholdModal, setShowThresholdModal] = useState(false);
   
-  // Handle inactivity threshold change
-  const handleThresholdChange = (value: number) => {
-    setInactivityThreshold(value);
-  };
+  // Find the current threshold option
+  const currentThresholdOption = THRESHOLD_OPTIONS.find(
+    option => option.value === settings.inactivityThreshold
+  ) || THRESHOLD_OPTIONS[1]; // Default to 45 min if not found
   
-  // Handle inactivity threshold change complete
-  const handleThresholdChangeComplete = (value: number) => {
+  // Handle threshold selection
+  const handleThresholdSelect = (value: number) => {
     updateSettings({ inactivityThreshold: value });
+    setShowThresholdModal(false);
   };
   
   // Handle notifications toggle
@@ -27,18 +36,49 @@ const SettingsScreen = () => {
     updateSettings({ notificationsEnabled: value });
   };
   
-  // Clear all data
-  const clearAllData = async () => {
+  // Reset sleep data
+  const resetSleepData = async () => {
     Alert.alert(
-      'Clear All Data',
-      'Are you sure you want to clear all sleep data? This action cannot be undone.',
+      'Reset Sleep Data',
+      'Are you sure you want to reset all sleep data? This will keep your settings but delete all sleep records.',
       [
         {
           text: 'Cancel',
           style: 'cancel',
         },
         {
-          text: 'Clear Data',
+          text: 'Reset Data',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              // Only clear sleep-related data, not settings
+              await AsyncStorage.multiRemove([
+                'sleep-tracker-activity-records',
+                'sleep-tracker-daily-summaries'
+              ]);
+              Alert.alert('Success', 'All sleep data has been reset.');
+            } catch (error) {
+              console.error('Error resetting data:', error);
+              Alert.alert('Error', 'Failed to reset data. Please try again.');
+            }
+          },
+        },
+      ],
+    );
+  };
+  
+  // Clear all data
+  const clearAllData = async () => {
+    Alert.alert(
+      'Clear All Data',
+      'Are you sure you want to clear all sleep data and settings? This action cannot be undone.',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Clear All Data',
           style: 'destructive',
           onPress: async () => {
             try {
@@ -55,36 +95,24 @@ const SettingsScreen = () => {
   };
   
   return (
-    <View style={styles.container}>
+    <ScrollView style={styles.container}>
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Sleep Detection</Text>
-        <View style={styles.settingItem}>
-          <View style={styles.settingLabelContainer}>
+        <TouchableOpacity 
+          style={styles.dropdownButton}
+          onPress={() => setShowThresholdModal(true)}
+        >
+          <View>
             <Text style={styles.settingLabel}>Inactivity Threshold</Text>
-            <Text style={styles.settingValue}>
-              {formatDuration(inactivityThreshold)}
+            <Text style={styles.settingDescription}>
+              Time of inactivity before considered asleep
             </Text>
           </View>
-          <Text style={styles.settingDescription}>
-            Time of inactivity before considered asleep
-          </Text>
-          <Slider
-            style={styles.slider}
-            minimumValue={15}
-            maximumValue={120}
-            step={5}
-            value={inactivityThreshold}
-            onValueChange={handleThresholdChange}
-            onSlidingComplete={handleThresholdChangeComplete}
-            minimumTrackTintColor="#6200ee"
-            maximumTrackTintColor="#e0e0e0"
-            thumbTintColor="#6200ee"
-          />
-          <View style={styles.sliderLabels}>
-            <Text style={styles.sliderLabel}>15 min</Text>
-            <Text style={styles.sliderLabel}>120 min</Text>
+          <View style={styles.dropdownValueContainer}>
+            <Text style={styles.dropdownValue}>{currentThresholdOption.label}</Text>
+            <Ionicons name="chevron-down" size={20} color="#6200ee" />
           </View>
-        </View>
+        </TouchableOpacity>
       </View>
       
       <View style={styles.section}>
@@ -106,8 +134,31 @@ const SettingsScreen = () => {
       </View>
       
       <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Display</Text>
+        <View style={styles.settingItem}>
+          <View style={styles.switchContainer}>
+            <Text style={styles.settingLabel}>Dark Mode</Text>
+            <Switch
+              value={false}
+              onValueChange={() => Alert.alert('Coming Soon', 'Dark mode will be available in the next update!')}
+              trackColor={{ false: '#e0e0e0', true: '#b39ddb' }}
+              thumbColor={'#f4f3f4'}
+            />
+          </View>
+          <Text style={styles.settingDescription}>
+            Switch between light and dark themes (coming soon)
+          </Text>
+        </View>
+      </View>
+      
+      <View style={styles.section}>
         <Text style={styles.sectionTitle}>Data Management</Text>
-        <TouchableOpacity style={styles.button} onPress={clearAllData}>
+        <TouchableOpacity style={styles.dataButton} onPress={resetSleepData}>
+          <Ionicons name="refresh-outline" size={20} color="#FF9800" />
+          <Text style={[styles.buttonText, { color: '#FF9800' }]}>Reset Sleep Data</Text>
+        </TouchableOpacity>
+        
+        <TouchableOpacity style={[styles.dataButton, styles.deleteButton]} onPress={clearAllData}>
           <Ionicons name="trash-outline" size={20} color="#fff" />
           <Text style={styles.buttonText}>Clear All Data</Text>
         </TouchableOpacity>
@@ -123,7 +174,57 @@ const SettingsScreen = () => {
           </Text>
         </View>
       </View>
-    </View>
+      
+      {/* Threshold Selection Modal */}
+      <Modal
+        visible={showThresholdModal}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setShowThresholdModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Select Inactivity Threshold</Text>
+              <TouchableOpacity onPress={() => setShowThresholdModal(false)}>
+                <Ionicons name="close" size={24} color="#333" />
+              </TouchableOpacity>
+            </View>
+            
+            <FlatList
+              data={THRESHOLD_OPTIONS}
+              keyExtractor={(item) => item.value.toString()}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  style={[
+                    styles.thresholdOption,
+                    item.value === settings.inactivityThreshold && styles.selectedOption
+                  ]}
+                  onPress={() => handleThresholdSelect(item.value)}
+                >
+                  <Text 
+                    style={[
+                      styles.thresholdOptionText,
+                      item.value === settings.inactivityThreshold && styles.selectedOptionText
+                    ]}
+                  >
+                    {item.label}
+                  </Text>
+                  {item.value === settings.inactivityThreshold && (
+                    <Ionicons name="checkmark" size={20} color="#6200ee" />
+                  )}
+                </TouchableOpacity>
+              )}
+              ItemSeparatorComponent={() => <View style={styles.separator} />}
+            />
+            
+            <Text style={styles.modalDescription}>
+              This is how long your phone needs to be inactive before Sleep Detector considers you asleep.
+            </Text>
+          </View>
+        </View>
+      </Modal>
+    </ScrollView>
   );
 };
 
@@ -153,11 +254,6 @@ const styles = StyleSheet.create({
   settingItem: {
     marginBottom: 8,
   },
-  settingLabelContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
   settingLabel: {
     fontSize: 16,
     fontWeight: '500',
@@ -174,38 +270,29 @@ const styles = StyleSheet.create({
     marginTop: 4,
     marginBottom: 12,
   },
-  slider: {
-    width: '100%',
-    height: 40,
-  },
-  sliderLabels: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: -8,
-  },
-  sliderLabel: {
-    fontSize: 12,
-    color: '#666',
-  },
   switchContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 8,
   },
-  button: {
-    backgroundColor: '#f44336',
-    borderRadius: 8,
+  dataButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     padding: 12,
+    borderRadius: 8,
+    marginBottom: 12,
+    backgroundColor: '#f0f0f0',
+  },
+  deleteButton: {
+    backgroundColor: '#f44336',
   },
   buttonText: {
-    color: '#fff',
     fontWeight: '600',
     fontSize: 16,
     marginLeft: 8,
+    color: '#fff',
   },
   aboutContainer: {
     alignItems: 'center',
@@ -227,6 +314,74 @@ const styles = StyleSheet.create({
     marginTop: 8,
     textAlign: 'center',
   },
-});
+  dropdownButton: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 12,
+  },
+  dropdownValueContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  dropdownValue: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#6200ee',
+    marginRight: 4,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+    padding: 20,
+    maxHeight: '70%',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  thresholdOption: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 16,
+  },
+  selectedOption: {
+    backgroundColor: '#f0e6ff',
+    borderRadius: 8,
+    paddingHorizontal: 8,
+  },
+  thresholdOptionText: {
+    fontSize: 16,
+    color: '#333',
+  },
+  selectedOptionText: {
+    fontWeight: '600',
+    color: '#6200ee',
+  },
+  separator: {
+    height: 1,
+    backgroundColor: '#e0e0e0',
+  },
+  modalDescription: {
+    fontSize: 14,
+    color: '#666',
+    marginTop: 16,
+    fontStyle: 'italic',
+  },
+})
 
 export default SettingsScreen; 
