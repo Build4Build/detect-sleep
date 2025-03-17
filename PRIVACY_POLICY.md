@@ -1,58 +1,46 @@
-# Privacy Policy for Sleep Detector
+# Sleep Detector Privacy Policy
 
-*Last updated: [Current Date]*
+Last updated: [Current Date]
 
 ## Introduction
 
-This Privacy Policy outlines how Sleep Detector ("we", "our", or "app") collects, uses, and protects your data when you use our mobile application.
+Sleep Detector ("we," "our," or "us") is committed to protecting your privacy. This Privacy Policy explains how your information is collected, used, and disclosed by Sleep Detector.
 
-## Data Collection and Usage
+## Information Collection
 
-### Data Collected Locally (On-Device Only)
+### Data Stored Locally
+- Sleep pattern data
+- App settings
+- Motion and sensor data
 
-Sleep Detector collects and stores the following information **locally on your device only**:
+All data collected by Sleep Detector is stored locally on your device. We do not collect, transmit, or store any of your personal data on external servers.
 
-- Phone usage patterns (active/inactive state)
-- Calculated sleep periods
-- App settings and preferences
+## Data Usage
+The app uses your device's sensors to:
+- Detect sleep patterns
+- Generate sleep analysis
+- Provide insights into your sleep habits
 
-**No data is transmitted to our servers or any third parties without your explicit consent.**
+## Data Sharing
+We do not share any of your data with third parties. All information remains strictly on your device.
 
-### Optional Data Sharing
+## Data Security
+Since all data is stored locally on your device, security is managed through your device's built-in security features.
 
-The app provides optional functionality to export your sleep data in CSV or JSON format. This process is:
-- Initiated only by you through the export feature
-- Controlled entirely by you regarding where the exported data is sent
+## Health Data Access
+The app requires access to:
+- Motion & Fitness Activity
+- Background App Refresh
+These permissions are used solely for sleep detection and pattern analysis.
 
-## Data Storage and Security
-
-All data is stored locally on your device using secure storage mechanisms provided by the operating system. We have implemented industry-standard measures to protect your data against unauthorized access.
-
-## User Controls
-
-You have full control over your data:
-- View all collected data in the app
-- Export your data in multiple formats
-- Delete all your data through the Settings screen
-- Adjust data collection settings including inactivity threshold
-
-## Third-Party Services
-
-Sleep Detector does not integrate with any third-party analytics services, advertising networks, or data processing services.
-
-## Children's Privacy
-
-Our app does not address anyone under the age of 13. We do not knowingly collect personally identifiable information from children under 13.
-
-## Changes to This Privacy Policy
-
-We may update our Privacy Policy from time to time. We will notify you of any changes by posting the new Privacy Policy on this page and updating the app.
+## Changes to This Policy
+We may update this Privacy Policy from time to time. We will notify you of any changes by posting the new Privacy Policy on this page.
 
 ## Contact Us
-
 If you have any questions about this Privacy Policy, please contact us at:
-- Email: [Your Contact Email]
+[Your Contact Email]
 
----
-
-By using Sleep Detector, you agree to the collection and use of information in accordance with this policy. 
+## Your Rights
+You can delete all your data at any time by:
+1. Clearing app data through the app settings
+2. Uninstalling the app 
