@@ -1,8 +1,5 @@
 # Sleep Detector Support
 
-## Contact Information
-Email: [Your Support Email]
-
 ## Frequently Asked Questions
 
 ### How does sleep detection work?
@@ -38,5 +35,4 @@ All your data stays on your device. We don't collect, transmit, or store any of 
 - Contact support if the issue persists
 
 ## Feature Requests and Bug Reports
-We're always looking to improve! Please send your feature requests and bug reports to:
-[Your Support Email] 
+We're always looking to improve! Please send your feature requests and bug reports by opening a new GitHub issue.
