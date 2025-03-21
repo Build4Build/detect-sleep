@@ -17,11 +17,15 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.sleepdetector.app",
-      "buildNumber": "1",
+      "buildNumber": "8",
       "infoPlist": {
         "UIBackgroundModes": [
           "fetch",
           "processing"
+        ],
+        "BGTaskSchedulerPermittedIdentifiers": [
+          "com.sleepdetector.app.sleeprefresh",
+          "com.sleepdetector.app.sleepprocessing"
         ],
         "NSMotionUsageDescription": "We use motion data to more accurately detect when you're asleep or awake",
         "NSHealthShareUsageDescription": "We use this data to compare our sleep detection with your health data if you choose to enable this feature",
