@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSleep } from '../context/SleepContext';
 import { formatDuration } from '../utils/dateUtils';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import HealthIntegrationSettings from '../components/HealthIntegrationSettings';
 
 // Define threshold options
 const THRESHOLD_OPTIONS = [
@@ -20,6 +21,7 @@ const SettingsScreen = () => {
   const [useMachineLearning, setUseMachineLearning] = useState(settings.useMachineLearning);
   const [considerTimeOfDay, setConsiderTimeOfDay] = useState(settings.considerTimeOfDay);
   const [showThresholdModal, setShowThresholdModal] = useState(false);
+  const [healthConnected, setHealthConnected] = useState(false);
   
   // Find the current threshold option
   const currentThresholdOption = THRESHOLD_OPTIONS.find(
@@ -54,6 +56,13 @@ const SettingsScreen = () => {
   const handleTimeOfDayToggle = (value: boolean) => {
     setConsiderTimeOfDay(value);
     updateSettings({ considerTimeOfDay: value });
+  };
+  
+  // Handle health connection status change
+  const handleHealthStatusChange = (connected: boolean) => {
+    setHealthConnected(connected);
+    console.log(`Health service connection status: ${connected}`);
+    // You might want to fetch health data here if connected
   };
   
   // Reset sleep data
@@ -203,6 +212,11 @@ const SettingsScreen = () => {
             Switch between light and dark themes (coming soon)
           </Text>
         </View>
+      </View>
+      
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Health Integration</Text>
+        <HealthIntegrationSettings onStatusChange={handleHealthStatusChange} />
       </View>
       
       <View style={styles.section}>

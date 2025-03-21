@@ -28,8 +28,8 @@
           "com.sleepdetector.app.sleepprocessing"
         ],
         "NSMotionUsageDescription": "We use motion data to more accurately detect when you're asleep or awake",
-        "NSHealthShareUsageDescription": "We use this data to compare our sleep detection with your health data if you choose to enable this feature",
-        "NSHealthUpdateUsageDescription": "We don't write any health data"
+        "NSHealthShareUsageDescription": "We use Health data to improve sleep detection accuracy and to compare with our detection algorithm",
+        "NSHealthUpdateUsageDescription": "We can write your detected sleep data to Apple Health to consolidate your health information"
       },
       "config": {
         "usesNonExemptEncryption": false
@@ -43,14 +43,25 @@
       "package": "com.sleepdetector.app",
       "versionCode": 1,
       "permissions": [
-        "ACTIVITY_RECOGNITION"
+        "ACTIVITY_RECOGNITION",
+        "android.permission.ACTIVITY_RECOGNITION",
+        "com.google.android.gms.permission.ACTIVITY_RECOGNITION"
       ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
-      "expo-task-manager"
+      "expo-task-manager",
+      [
+        "expo-health-connect", 
+        {
+          "healthConnectPermissions": [
+            "READ_SLEEP",
+            "WRITE_SLEEP"
+          ]
+        }
+      ]
     ],
     "extra": {
       "eas": {
