@@ -106,6 +106,81 @@ Or manually create these required assets in the `assets` folder:
 - `adaptive-icon.png` (1024×1024 px) 
 - `favicon.png` (192×192 px)
 
+## Screenshots Generator
+
+### Using the Screenshot Generator Script
+
+The app includes a helpful script for generating App Store and Google Play Store screenshots. This script uses ImageMagick to create professional-looking screenshots with frames, titles and descriptions.
+
+#### Prerequisites
+
+- ImageMagick must be installed on your system
+  ```bash
+  # For macOS:
+  brew install imagemagick
+  
+  # For Linux:
+  sudo apt-get install imagemagick
+  ```
+
+#### Running the Script
+
+1. Make the script executable if it's not already:
+   ```bash
+   chmod +x generate-screenshots.sh
+   ```
+
+2. Run the script:
+   ```bash
+   ./generate-screenshots.sh
+   ```
+
+3. The script will:
+   - Create an `assets/screenshots` directory if it doesn't exist
+   - Generate placeholder screenshots with professional layouts
+   - Add device frames, titles, and app mockups
+
+#### Customizing Screenshots
+
+The script generates template screenshots that you need to customize:
+
+1. Replace the placeholder images with actual app screenshots:
+   - Take screenshots of your app in different screens
+   - Replace the placeholder mockups in each generated screenshot
+   
+2. Customize text and colors:
+   - Open the script to edit titles, subtitles, and accent colors
+   - Modify the `create_screenshot` function calls at the bottom of the script
+
+3. Add device frames:
+   - For iOS: Use Apple's Marketing Resources (https://developer.apple.com/app-store/marketing/guidelines/#section-products)
+   - For Android: Use Google's Device Art Generator
+
+#### Output
+
+The script creates 5 screenshots in the `assets/screenshots` directory:
+1. Sleep Tracking screen
+2. Detailed Analytics screen
+3. Sleep History screen
+4. Export Data screen
+5. Settings screen
+
+These screenshots will need further customization with your actual app content before submission.
+
+### Preparing Store Assets
+
+After generating screenshots, make sure to prepare all required store assets:
+
+1. Resize screenshots for all required dimensions:
+   - iOS: 6.5", 5.5", and 12.9" iPad Pro dimensions
+   - Android: Phone, 7-inch tablet, and 10-inch tablet dimensions
+
+2. Create promotional images:
+   - App Store: 1024x1024 icon
+   - Google Play: 512x512 icon and 1024x500 feature graphic
+
+You can find the complete list of requirements in the STORE_LISTING_CONTENT.md file.
+
 ## Adding Home Screen Widget (Future Enhancement)
 
 To add a home screen widget, you'll need to:
@@ -116,97 +191,151 @@ To add a home screen widget, you'll need to:
 
 This requires iOS native development skills and is planned for a future version.
 
-## Publishing to App Store
+## Publishing Your App
 
-### 1. Prepare Your App
+### iOS App Store Submission
 
-Make sure your app is ready for submission:
-- All features work correctly
-- App icons and splash screen are in place
-- The privacy policy is up to date
+#### 1. Prepare Your App
+- Verify all features work correctly
+- App icons and splash screen are ready
+- Privacy policy is up-to-date
+- App.json is configured properly (see example below)
 
-### 2. Create Your App on App Store Connect
+```json
+{
+  "expo": {
+    "ios": {
+      "bundleIdentifier": "com.sleepdetector.app",
+      "buildNumber": "1",
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSMotionUsageDescription": "This app uses motion data to determine if you're sleeping",
+        "NSHealthShareUsageDescription": "This app uses health data to improve sleep detection",
+        "UIBackgroundModes": ["fetch", "processing"]
+      }
+    }
+  }
+}
+```
 
+#### 2. Create App in App Store Connect
 1. Log in to [App Store Connect](https://appstoreconnect.apple.com)
 2. Go to "My Apps" > "+" > "New App"
 3. Fill in required information:
    - Platform: iOS
    - Name: Sleep Detector
    - Primary language: English
-   - Bundle ID: com.sleepdetector.app (as specified in app.json)
+   - Bundle ID: com.sleepdetector.app (matching app.json)
    - SKU: sleepdetector
    - User Access: Full Access
 
-### 3. Prepare App Store Metadata
+#### 3. Generate Store Assets
+1. Run the screenshot generator script:
+   ```bash
+   ./generate-screenshots.sh
+   ```
+2. Customize screenshots for all required dimensions:
+   - iPhone 6.5" (1242×2688 px)
+   - iPhone 5.5" (1242×2208 px)
+   - iPad Pro 12.9" (2048×2732 px)
+3. Prepare app icon (1024×1024 px)
 
-Prepare your app's listing information:
-
-1. **Screenshots** (minimum required):
-   - iPhone 6.5" (1242×2688 px): 3 screenshots
-   - iPhone 5.5" (1242×2208 px): 3 screenshots
-
-2. **App Description**:
-```
-Sleep Detector automatically tracks your sleep patterns based on your phone usage.
-
-FEATURES:
-• Automatic sleep detection based on phone inactivity
-• Beautiful sleep statistics and charts 
-• Daily, weekly, and monthly history views
-• Export your sleep data in multiple formats
-• Customizable inactivity threshold
-
-No login required. All data stays on your device.
-```
-
-3. **Keywords**:
-```
-sleep,tracker,monitor,pattern,health,automatic,diary,journal,log,usage
-```
-
-### 4. Build for App Store
-
-Use the included build script:
+#### 4. Build for App Store
 ```bash
-./build-deploy.sh
-# Select option 3 (Build production version)
+eas build --platform ios --profile production
 ```
 
-Or manually build with EAS:
+#### 5. Submit to App Store
+Once your build is complete:
 ```bash
-npx eas build --platform ios --profile production
-```
-
-### 5. Submit to App Store
-
-Use the included submission script:
-```bash
-./build-deploy.sh
-# Select option 4 (Submit to App Store)
-```
-
-Or manually submit with EAS:
-```bash
-npx eas submit -p ios --latest
+eas submit -p ios --latest
 ```
 
 You'll need to provide:
 - Your Apple ID email
-- App Store Connect App ID (found in the URL when viewing your app)
-- Apple Team ID (2V8LZ2444Y)
+- App-specific password (if 2FA is enabled)
+- App Store Connect App ID
 
-### 6. Monitor Review Status
+#### 6. Complete App Store Information
+After submission, log in to App Store Connect to complete:
+- App metadata (using STORE_LISTING_CONTENT.md as reference)
+- Privacy policy URL
+- Support URL
+- App Store screenshots
+- Age ratings
+- App Review Information (test account if needed)
 
-After submission, your app will enter "Waiting for Review" status in App Store Connect. Apple's review process typically takes 1-3 days.
+#### 7. Submit for Review
+Click "Submit for Review" when all sections are complete. Apple typically takes 1-3 days to review your app.
 
-### 7. Handling Rejections
+### Google Play Store Submission
 
-If your app is rejected:
-1. Read the rejection reason carefully
-2. Make the necessary changes to your code
-3. Build a new version
-4. Submit the updated build
-5. Respond to the reviewer explaining the changes made
+#### 1. Prepare Your App
+- Verify all features work correctly
+- App icons and splash screen are ready
+- Privacy policy is up-to-date
+- App.json is configured properly (see example below)
+
+```json
+{
+  "expo": {
+    "android": {
+      "package": "com.sleepdetector.app",
+      "versionCode": 1,
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      },
+      "permissions": ["ACTIVITY_RECOGNITION"]
+    }
+  }
+}
+```
+
+#### 2. Create App in Google Play Console
+1. Log in to [Google Play Console](https://play.google.com/console)
+2. Click "Create app"
+3. Fill in required information:
+   - App name: Sleep Detector
+   - Default language: English
+   - App or Game: App
+   - Free or Paid: Free
+   - Confirm developer program policies
+
+#### 3. Generate Store Assets
+1. Run the screenshot generator script:
+   ```bash
+   ./generate-screenshots.sh
+   ```
+2. Customize screenshots for all required dimensions:
+   - Phone screenshots (1080×1920 px)
+   - 7-inch tablet (1200×1920 px)
+   - 10-inch tablet (1920×2560 px)
+3. Prepare:
+   - High-res icon (512×512 px)
+   - Feature graphic (1024×500 px)
+
+#### 4. Build for Google Play
+```bash
+eas build --platform android --profile production
+```
+
+#### 5. Complete Play Store Listing
+In Google Play Console:
+- Store listing (using STORE_LISTING_CONTENT.md)
+- Upload all graphics and screenshots
+- Content rating (complete questionnaire)
+- Pricing & distribution
+- App releases
+
+#### 6. Submit to Google Play
+1. Create a new release in the "Production" track
+2. Upload your AAB file (from EAS build)
+3. Add release notes
+4. Save and review release
+5. Start rollout to production
+
+Google typically reviews apps within 1-7 days.
 
 ## Privacy
 
