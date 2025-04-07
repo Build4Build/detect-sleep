@@ -50,7 +50,7 @@ export class AppleHealthService {
           reject(new Error(`HealthKit initialization failed: ${error}`));
           return;
         }
-        
+
         this.hasPermission = true;
         resolve();
       });
@@ -123,13 +123,11 @@ export class AppleHealthService {
       return Promise.resolve();
     }
 
-    // In a real implementation, we would write to HealthKit
-    // For now, we'll log the action and resolve the promise
-    console.log('Would save to Apple Health:', {
-      startDate: new Date(sleepEntry.startTime).toISOString(),
-      endDate: new Date(sleepEntry.endTime).toISOString(),
-      value: sleepEntry.isAwake ? 0 : 1, // 0 is awake, 1 is asleep in HealthKit
-    });
+    // TODO: Write to HealthKit
+    //  startDate: new Date(sleepEntry.startTime).toISOString(),
+    //endDate: new Date(sleepEntry.endTime).toISOString(),
+    //value: sleepEntry.isAwake ? 0 : 1, // 0 is awake, 1 is asleep in HealthKit
+
 
     // Mock successful write
     return Promise.resolve();

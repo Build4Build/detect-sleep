@@ -41,11 +41,17 @@
         "backgroundColor": "#ffffff"
       },
       "package": "com.sleepdetector.app",
-      "versionCode": 1,
+      "versionCode": 9,
       "permissions": [
-        "ACTIVITY_RECOGNITION",
         "android.permission.ACTIVITY_RECOGNITION",
-        "com.google.android.gms.permission.ACTIVITY_RECOGNITION"
+        "android.permission.WAKE_LOCK"
+      ],
+      "config": {
+        "googleMobileAdsAppId": "ca-app-pub-3940256099942544~3347511713"
+      },
+      "blockedPermissions": [
+        "android.permission.READ_PHONE_STATE",
+        "android.permission.READ_CONTACTS"
       ]
     },
     "web": {
