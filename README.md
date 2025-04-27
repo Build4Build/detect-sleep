@@ -23,7 +23,7 @@ The app monitors your phone usage to determine when you're awake or asleep:
 ### Prerequisites
 
 - Node.js (v14 or newer)
-- npm or yarn
+- npm
 - Expo CLI
 - iOS or Android device/emulator
 
