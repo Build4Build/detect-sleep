@@ -41,7 +41,7 @@
         "backgroundColor": "#ffffff"
       },
       "package": "com.sleepdetector.app",
-      "versionCode": 9,
+      "versionCode": 10,
       "permissions": [
         "android.permission.ACTIVITY_RECOGNITION",
         "android.permission.WAKE_LOCK"
