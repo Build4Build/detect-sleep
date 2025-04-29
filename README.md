@@ -193,149 +193,190 @@ This requires iOS native development skills and is planned for a future version.
 
 ## Publishing Your App
 
+### Prerequisites
+
+1. Install EAS CLI:
+```bash
+npm install -g eas-cli
+```
+
+2. Log in to your Expo account:
+```bash
+eas login
+```
+
+3. Configure EAS Build:
+```bash
+eas build:configure
+```
+
 ### iOS App Store Submission
 
-#### 1. Prepare Your App
-- Verify all features work correctly
-- App icons and splash screen are ready
-- Privacy policy is up-to-date
-- App.json is configured properly (see example below)
+#### 1. Configure EAS Build for iOS
 
+Create or update `eas.json`:
 ```json
 {
-  "expo": {
-    "ios": {
-      "bundleIdentifier": "com.sleepdetector.app",
-      "buildNumber": "1",
-      "supportsTablet": true,
-      "infoPlist": {
-        "NSMotionUsageDescription": "This app uses motion data to determine if you're sleeping",
-        "NSHealthShareUsageDescription": "This app uses health data to improve sleep detection",
-        "UIBackgroundModes": ["fetch", "processing"]
+  "cli": {
+    "version": ">= 5.9.1"
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal"
+    },
+    "preview": {
+      "distribution": "internal",
+      "ios": {
+        "simulator": true
+      }
+    },
+    "production": {
+      "ios": {
+        "resourceClass": "m-medium"
+      }
+    }
+  },
+  "submit": {
+    "production": {
+      "ios": {
+        "appleId": "your@email.com",
+        "ascAppId": "1234567890",
+        "appleTeamId": "ABCDEFGHIJ"
       }
     }
   }
 }
 ```
 
-#### 2. Create App in App Store Connect
-1. Log in to [App Store Connect](https://appstoreconnect.apple.com)
-2. Go to "My Apps" > "+" > "New App"
-3. Fill in required information:
-   - Platform: iOS
-   - Name: Sleep Detector
-   - Primary language: English
-   - Bundle ID: com.sleepdetector.app (matching app.json)
-   - SKU: sleepdetector
-   - User Access: Full Access
+#### 2. Build for App Store
 
-#### 3. Generate Store Assets
-1. Run the screenshot generator script:
-   ```bash
-   ./generate-screenshots.sh
-   ```
-2. Customize screenshots for all required dimensions:
-   - iPhone 6.5" (1242×2688 px)
-   - iPhone 5.5" (1242×2208 px)
-   - iPad Pro 12.9" (2048×2732 px)
-3. Prepare app icon (1024×1024 px)
-
-#### 4. Build for App Store
-```bash
-eas build --platform ios --profile production
-```
-
-#### 5. Submit to App Store
-Once your build is complete:
-```bash
-eas submit -p ios --latest
-```
-
-You'll need to provide:
-- Your Apple ID email
-- App-specific password (if 2FA is enabled)
-- App Store Connect App ID
-
-#### 6. Complete App Store Information
-After submission, log in to App Store Connect to complete:
-- App metadata (using STORE_LISTING_CONTENT.md as reference)
-- Privacy policy URL
-- Support URL
-- App Store screenshots
-- Age ratings
-- App Review Information (test account if needed)
-
-#### 7. Submit for Review
-Click "Submit for Review" when all sections are complete. Apple typically takes 1-3 days to review your app.
-
-### Google Play Store Submission
-
-#### 1. Prepare Your App
-- Verify all features work correctly
-- App icons and splash screen are ready
-- Privacy policy is up-to-date
-- App.json is configured properly (see example below)
-
+1. Update version in `app.json`:
 ```json
 {
   "expo": {
-    "android": {
-      "package": "com.sleepdetector.app",
-      "versionCode": 1,
-      "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
-      },
-      "permissions": ["ACTIVITY_RECOGNITION"]
+    "version": "1.0.0",
+    "ios": {
+      "buildNumber": "1",
+      "bundleIdentifier": "com.yourcompany.sleepdetector"
     }
   }
 }
 ```
 
-#### 2. Create App in Google Play Console
-1. Log in to [Google Play Console](https://play.google.com/console)
-2. Click "Create app"
-3. Fill in required information:
-   - App name: Sleep Detector
-   - Default language: English
-   - App or Game: App
-   - Free or Paid: Free
-   - Confirm developer program policies
+2. Create production build:
+```bash
+eas build --platform ios --profile production
+```
 
-#### 3. Generate Store Assets
-1. Run the screenshot generator script:
-   ```bash
-   ./generate-screenshots.sh
-   ```
-2. Customize screenshots for all required dimensions:
-   - Phone screenshots (1080×1920 px)
-   - 7-inch tablet (1200×1920 px)
-   - 10-inch tablet (1920×2560 px)
-3. Prepare:
-   - High-res icon (512×512 px)
-   - Feature graphic (1024×500 px)
+#### 3. Submit to App Store
 
-#### 4. Build for Google Play
+1. Submit the build:
+```bash
+eas submit --platform ios --profile production
+```
+
+2. Complete App Store Connect information:
+- App metadata
+- Privacy policy URL
+- Support URL
+- Screenshots
+- App Review Information
+
+### Google Play Store Submission
+
+#### 1. Configure EAS Build for Android
+
+Update `eas.json`:
+```json
+{
+  "build": {
+    "production": {
+      "android": {
+        "buildType": "app-bundle"
+      }
+    }
+  },
+  "submit": {
+    "production": {
+      "android": {
+        "serviceAccountKeyPath": "./path/to/service-account.json",
+        "track": "production"
+      }
+    }
+  }
+}
+```
+
+#### 2. Build for Google Play
+
+1. Update version in `app.json`:
+```json
+{
+  "expo": {
+    "version": "1.0.0",
+    "android": {
+      "versionCode": 1,
+      "package": "com.yourcompany.sleepdetector"
+    }
+  }
+}
+```
+
+2. Create production build:
 ```bash
 eas build --platform android --profile production
 ```
 
-#### 5. Complete Play Store Listing
-In Google Play Console:
-- Store listing (using STORE_LISTING_CONTENT.md)
-- Upload all graphics and screenshots
-- Content rating (complete questionnaire)
+#### 3. Submit to Google Play
+
+1. Submit the build:
+```bash
+eas submit --platform android --profile production
+```
+
+2. Complete Play Store listing:
+- Store listing
+- Content rating
 - Pricing & distribution
 - App releases
 
-#### 6. Submit to Google Play
-1. Create a new release in the "Production" track
-2. Upload your AAB file (from EAS build)
-3. Add release notes
-4. Save and review release
-5. Start rollout to production
+### Store Assets Requirements
 
-Google typically reviews apps within 1-7 days.
+#### iOS App Store
+- App Icon: 1024x1024px
+- Screenshots:
+  - iPhone 6.5" Display: 1242x2688px
+  - iPhone 5.5" Display: 1242x2208px
+  - iPad Pro 12.9": 2048x2732px
+
+#### Google Play Store
+- App Icon: 512x512px
+- Feature Graphic: 1024x500px
+- Screenshots:
+  - Phone: 1080x1920px
+  - 7-inch Tablet: 1200x1920px
+  - 10-inch Tablet: 1920x2560px
+
+### Troubleshooting
+
+1. Build Fails:
+```bash
+# Clear build cache
+eas build:clear
+
+# Try building again
+eas build --platform ios --profile production
+```
+
+2. Submission Fails:
+```bash
+# Check build status
+eas build:list
+
+# View submission logs
+eas submit --platform ios --profile production --verbose
+```
 
 ## Privacy
 
