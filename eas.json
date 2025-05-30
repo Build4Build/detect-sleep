@@ -1,6 +1,6 @@
 {
   "cli": {
-    "version": ">= 5.9.1",
+    "version": ">= 7.3.0",
     "requireCommit": false,
     "appVersionSource": "remote"
   },
@@ -21,11 +21,6 @@
     },
     "preview": {
       "distribution": "internal",
-      "ios": {
-        "simulator": false,
-        "resourceClass": "medium",
-        "credentialsSource": "remote"
-      },
       "android": {
         "buildType": "apk",
         "withoutCredentials": true
@@ -35,7 +30,8 @@
       "autoIncrement": true,
       "ios": {
         "resourceClass": "medium",
-        "credentialsSource": "remote"
+        "credentialsSource": "remote",
+        "image": "macos-sequoia-15.3-xcode-16.2"
       },
       "android": {
         "buildType": "app-bundle",

@@ -60,7 +60,7 @@
     "plugins": [
       "expo-task-manager",
       [
-        "expo-health-connect", 
+        "expo-health-connect",
         {
           "healthConnectPermissions": [
             "READ_SLEEP",
