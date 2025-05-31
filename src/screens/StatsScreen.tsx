@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, Dimensions, TouchableOpacity } from 'react-native';
-import { LineChart, BarChart } from 'react-native-chart-kit';
+import { LineChart } from 'react-native-chart-kit';
 import { useSleep } from '../context/SleepContext';
 import { formatDuration } from '../utils/dateUtils';
 import { getPastWeekDates, getPastMonthDates, getDayOfWeek } from '../utils/dateUtils';
-import { parseISO } from 'date-fns';
 
 const { width } = Dimensions.get('window');
 

@@ -1,4 +1,4 @@
-import { format, differenceInMinutes, parseISO, addDays, subDays } from 'date-fns';
+import { format, parseISO, subDays } from 'date-fns';
 
 // Format timestamp to readable time
 export const formatTime = (timestamp: number): string => {

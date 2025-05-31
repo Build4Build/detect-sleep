@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, Switch, StyleSheet, TouchableOpacity, Alert, Platform } from 'react-native';
+import { View, Text, Switch, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { HealthService } from '../services/HealthService';
 
 // Create a singleton instance of our health service

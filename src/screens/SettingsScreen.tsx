@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, Switch, TouchableOpacity, Alert, ScrollView, Modal, FlatList } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSleep } from '../context/SleepContext';
-import { formatDuration } from '../utils/dateUtils';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import HealthIntegrationSettings from '../components/HealthIntegrationSettings';
 
