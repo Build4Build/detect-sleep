@@ -390,12 +390,14 @@ const styles = StyleSheet.create({
   dropdownValueContainer: {
     flexDirection: 'row',
     alignItems: 'center',
+    maxWidth: '40%',
   },
   dropdownValue: {
     fontSize: 16,
     fontWeight: '500',
     color: '#6200ee',
     marginRight: 4,
+    flexShrink: 1,
   },
   modalOverlay: {
     flex: 1,
