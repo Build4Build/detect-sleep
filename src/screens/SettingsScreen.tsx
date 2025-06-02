@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, Switch, TouchableOpacity, Alert, ScrollView, Modal, FlatList } from 'react-native';
+import { View, Text, StyleSheet, Switch, TouchableOpacity, Alert, ScrollView, Modal, FlatList, Linking } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSleep } from '../context/SleepContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -122,7 +122,11 @@ const SettingsScreen = () => {
       ],
     );
   };
-  
+
+  const openMealSnapApp = (): void => {
+    Linking.openURL('https://apps.apple.com/app/mealsnap-ai-food-log-tracker/id6475162854');
+  };
+
   return (
     <ScrollView style={styles.container}>
       <View style={styles.section}>
@@ -134,7 +138,7 @@ const SettingsScreen = () => {
           <View>
             <Text style={styles.settingLabel}>Inactivity Threshold</Text>
             <Text style={styles.settingDescription}>
-              Time of inactivity before considered asleep
+              Inactivity time before considered asleep
             </Text>
           </View>
           <View style={styles.dropdownValueContainer}>
@@ -230,14 +234,17 @@ const SettingsScreen = () => {
           <Text style={styles.buttonText}>Clear All Data</Text>
         </TouchableOpacity>
       </View>
-      
+
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>About</Text>
         <View style={styles.aboutContainer}>
           <Text style={styles.appName}>Sleep Detector</Text>
           <Text style={styles.appVersion}>Version 1.0.0</Text>
-          <Text style={styles.appDescription}>
-            Track your sleep patterns based on phone usage
+          <Text style={styles.description}>
+            Track your sleep patterns based on phone usage.
+          </Text>
+          <Text style={styles.description} onPress={openMealSnapApp}>
+            MealSnap helps with your eating habits
           </Text>
         </View>
       </View>
@@ -284,7 +291,7 @@ const SettingsScreen = () => {
               )}
               ItemSeparatorComponent={() => <View style={styles.separator} />}
             />
-            
+
             <Text style={styles.modalDescription}>
               This is how long your phone needs to be inactive before Sleep Detector considers you asleep.
             </Text>
@@ -334,8 +341,7 @@ const styles = StyleSheet.create({
   settingDescription: {
     fontSize: 14,
     color: '#666',
-    marginTop: 4,
-    marginBottom: 12,
+    marginHorizontal: 4,
   },
   switchContainer: {
     flexDirection: 'row',
@@ -375,7 +381,7 @@ const styles = StyleSheet.create({
     color: '#666',
     marginTop: 4,
   },
-  appDescription: {
+  description: {
     fontSize: 14,
     color: '#666',
     marginTop: 8,
@@ -390,7 +396,7 @@ const styles = StyleSheet.create({
   dropdownValueContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    maxWidth: '40%',
+    maxWidth: '35%',
   },
   dropdownValue: {
     fontSize: 16,
