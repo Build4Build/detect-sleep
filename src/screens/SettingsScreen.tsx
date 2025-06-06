@@ -21,24 +21,24 @@ const SettingsScreen = () => {
   const [considerTimeOfDay, setConsiderTimeOfDay] = useState(settings.considerTimeOfDay);
   const [showThresholdModal, setShowThresholdModal] = useState(false);
   const [healthConnected, setHealthConnected] = useState(false);
-  
+
   // Find the current threshold option
   const currentThresholdOption = THRESHOLD_OPTIONS.find(
     option => option.value === settings.inactivityThreshold
   ) || THRESHOLD_OPTIONS[1]; // Default to 45 min if not found
-  
+
   // Handle threshold selection
   const handleThresholdSelect = (value: number) => {
     updateSettings({ inactivityThreshold: value });
     setShowThresholdModal(false);
   };
-  
+
   // Handle notifications toggle
   const handleNotificationsToggle = (value: boolean) => {
     setNotificationsEnabled(value);
     updateSettings({ notificationsEnabled: value });
   };
-  
+
   // Handle machine learning toggle
   const handleMachineLearningToggle = (value: boolean) => {
     setUseMachineLearning(value);
@@ -50,20 +50,20 @@ const SettingsScreen = () => {
       );
     }
   };
-  
+
   // Handle time of day consideration toggle
   const handleTimeOfDayToggle = (value: boolean) => {
     setConsiderTimeOfDay(value);
     updateSettings({ considerTimeOfDay: value });
   };
-  
+
   // Handle health connection status change
   const handleHealthStatusChange = (connected: boolean) => {
     setHealthConnected(connected);
     console.log(`Health service connection status: ${connected}`);
     // You might want to fetch health data here if connected
   };
-  
+
   // Reset sleep data
   const resetSleepData = async () => {
     Alert.alert(
@@ -95,7 +95,7 @@ const SettingsScreen = () => {
       ],
     );
   };
-  
+
   // Clear all data
   const clearAllData = async () => {
     Alert.alert(
@@ -131,7 +131,7 @@ const SettingsScreen = () => {
     <ScrollView style={styles.container}>
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Sleep Detection</Text>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.dropdownButton}
           onPress={() => setShowThresholdModal(true)}
         >
@@ -147,7 +147,7 @@ const SettingsScreen = () => {
           </View>
         </TouchableOpacity>
       </View>
-      
+
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Accuracy Settings</Text>
         <View style={styles.settingItem}>
@@ -164,7 +164,7 @@ const SettingsScreen = () => {
             Learn from your sleep patterns to improve accuracy
           </Text>
         </View>
-        
+
         <View style={styles.settingItem}>
           <View style={styles.switchContainer}>
             <Text style={styles.settingLabel}>Consider Time of Day</Text>
@@ -180,7 +180,7 @@ const SettingsScreen = () => {
           </Text>
         </View>
       </View>
-      
+
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Notifications</Text>
         <View style={styles.settingItem}>
@@ -198,7 +198,7 @@ const SettingsScreen = () => {
           </Text>
         </View>
       </View>
-      
+
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Display</Text>
         <View style={styles.settingItem}>
@@ -216,19 +216,19 @@ const SettingsScreen = () => {
           </Text>
         </View>
       </View>
-      
+
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Health Integration</Text>
         <HealthIntegrationSettings onStatusChange={handleHealthStatusChange} />
       </View>
-      
+
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Data Management</Text>
         <TouchableOpacity style={styles.dataButton} onPress={resetSleepData}>
           <Ionicons name="refresh-outline" size={20} color="#FF9800" />
           <Text style={[styles.buttonText, { color: '#FF9800' }]}>Reset Sleep Data</Text>
         </TouchableOpacity>
-        
+
         <TouchableOpacity style={[styles.dataButton, styles.deleteButton]} onPress={clearAllData}>
           <Ionicons name="trash-outline" size={20} color="#fff" />
           <Text style={styles.buttonText}>Clear All Data</Text>
@@ -243,12 +243,12 @@ const SettingsScreen = () => {
           <Text style={styles.description}>
             Track your sleep patterns based on phone usage.
           </Text>
-          <Text style={styles.description} onPress={openMealSnapApp}>
+          <Text style={[styles.description, styles.mealSnapLink]} onPress={openMealSnapApp}>
             MealSnap helps with your eating habits
           </Text>
         </View>
       </View>
-      
+
       {/* Threshold Selection Modal */}
       <Modal
         visible={showThresholdModal}
@@ -264,7 +264,7 @@ const SettingsScreen = () => {
                 <Ionicons name="close" size={24} color="#333" />
               </TouchableOpacity>
             </View>
-            
+
             <FlatList
               data={THRESHOLD_OPTIONS}
               keyExtractor={(item) => item.value.toString()}
@@ -276,7 +276,7 @@ const SettingsScreen = () => {
                   ]}
                   onPress={() => handleThresholdSelect(item.value)}
                 >
-                  <Text 
+                  <Text
                     style={[
                       styles.thresholdOptionText,
                       item.value === settings.inactivityThreshold && styles.selectedOptionText
@@ -456,6 +456,11 @@ const styles = StyleSheet.create({
     color: '#666',
     marginTop: 16,
     fontStyle: 'italic',
+  },
+  mealSnapLink: {
+    fontWeight: 'bold',
+    textDecorationLine: 'underline',
+    color: '#6200ee',
   },
 });
 
