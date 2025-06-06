@@ -128,7 +128,7 @@ const SettingsScreen = () => {
   };
 
   return (
-    <ScrollView style={styles.container}>
+    <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Sleep Detection</Text>
         <TouchableOpacity
@@ -307,6 +307,9 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#f5f5f5',
     padding: 16,
+  },
+  scrollContent: {
+    paddingBottom: 40,
   },
   section: {
     backgroundColor: '#fff',
