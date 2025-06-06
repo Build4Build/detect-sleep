@@ -79,36 +79,50 @@ const StatsScreen = () => {
 
   const metrics = calculateSleepMetrics();
 
-  // Chart configuration
+  // Get custom colors based on sleep quality
+  const getBarColor = (value: number, opacity = 1) => {
+    if (value >= 8) return `rgba(76, 175, 80, ${opacity})`; // Good sleep (green)
+    if (value >= 6) return `rgba(255, 193, 7, ${opacity})`; // Medium sleep (yellow)
+    return `rgba(244, 67, 54, ${opacity})`; // Poor sleep (red)
+  };
+
+  // Chart configuration with custom color function
   const chartConfig = {
     backgroundGradientFrom: '#fff',
     backgroundGradientTo: '#fff',
-    color: (opacity = 1) => `rgba(98, 0, 238, ${opacity})`,
+    color: (opacity = 1, dataPointIndex?: number) => {
+      // If we have a data point index, use custom colors based on sleep hours
+      if (dataPointIndex !== undefined && chartData.datasets[0]?.data[dataPointIndex] !== undefined) {
+        const sleepHours = chartData.datasets[0].data[dataPointIndex];
+        return getBarColor(sleepHours, opacity);
+      }
+      // Default color for other chart elements
+      return `rgba(98, 0, 238, ${opacity})`;
+    },
+    labelColor: () => '#333333',
     strokeWidth: 2,
-    barPercentage: 0.5,
+    barPercentage: 0.7,
     useShadowColorFromDataset: false,
     decimalPlaces: 1,
+    style: {
+      borderRadius: 8,
+    },
+    propsForLabels: {
+      fontSize: 12,
+    },
   };
 
-  // Ensure chartData has proper format for the chart library
-  useEffect(() => {
-    if (chartData.datasets[0].data.length > 0) {
-      // Add color information for bars
-      const colors = chartData.datasets[0].data.map((value: number) =>
-        value >= 8 ? '#4CAF50' : // Good sleep (8+ hours)
-          value >= 6 ? '#FFC107' : // Medium sleep (6-8 hours)
-            '#F44336'                // Poor sleep (<6 hours)
-      );
-
-      setChartData({
-        ...chartData,
-        datasets: [{
-          data: chartData.datasets[0].data,
-          colors: colors
-        }]
-      });
-    }
-  }, [chartData.datasets[0].data]);
+  // Enhanced chart data with proper structure
+  const enhancedChartData = {
+    labels: chartData.labels,
+    datasets: [{
+      data: chartData.datasets[0].data,
+      // Add colors array for fallback support
+      colors: chartData.datasets[0].data.map((value: number, index: number) =>
+        (opacity = 1) => getBarColor(value, opacity)
+      )
+    }]
+  };
 
   return (
     <ScrollView style={styles.container}>
@@ -142,29 +156,15 @@ const StatsScreen = () => {
 
       <View style={styles.card}>
         <Text style={styles.cardTitle}>Sleep Duration</Text>
-        {dailySummaries.length > 0 ? (
+        {enhancedChartData.datasets[0].data.length > 0 ? (
           <View>
             <BarChart
-              data={chartData}
+              data={enhancedChartData}
               width={width - 64}
               height={220}
               yAxisSuffix="h"
               yAxisLabel=""
-              chartConfig={{
-                backgroundColor: '#ffffff',
-                backgroundGradientFrom: '#ffffff',
-                backgroundGradientTo: '#ffffff',
-                decimalPlaces: 1,
-                color: (opacity = 1) => `rgba(98, 0, 238, ${opacity})`,
-                labelColor: () => '#333333',
-                style: {
-                  borderRadius: 8,
-                },
-                barPercentage: 0.7,
-                propsForLabels: {
-                  fontSize: 12,
-                },
-              }}
+              chartConfig={chartConfig}
               style={styles.chart}
               showBarTops={true}
               fromZero={true}
@@ -173,6 +173,22 @@ const StatsScreen = () => {
             <Text style={styles.chartDescription}>
               Average sleep: {formatDuration(averageSleep)}
             </Text>
+
+            {/* Color legend */}
+            <View style={styles.legendContainer}>
+              <View style={styles.legendItem}>
+                <View style={[styles.legendColor, { backgroundColor: '#4CAF50' }]} />
+                <Text style={styles.legendText}>Good (8+ hours)</Text>
+              </View>
+              <View style={styles.legendItem}>
+                <View style={[styles.legendColor, { backgroundColor: '#FFC107' }]} />
+                <Text style={styles.legendText}>Fair (6-8 hours)</Text>
+              </View>
+              <View style={styles.legendItem}>
+                <View style={[styles.legendColor, { backgroundColor: '#F44336' }]} />
+                <Text style={styles.legendText}>Poor (under 6h)</Text>
+              </View>
+            </View>
           </View>
         ) : (
           <Text style={styles.noDataText}>No sleep data available</Text>
@@ -327,6 +343,28 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#333',
     marginBottom: 12,
+  },
+  legendContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#e0e0e0',
+  },
+  legendItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  legendColor: {
+    width: 12,
+    height: 12,
+    borderRadius: 2,
+    marginRight: 6,
+  },
+  legendText: {
+    fontSize: 12,
+    color: '#666',
   },
   chartNote: {
     fontSize: 12,
