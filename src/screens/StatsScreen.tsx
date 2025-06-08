@@ -36,9 +36,21 @@ const StatsScreen = () => {
     setAverageSleep(avg * 60); // Store in minutes for formatting
 
     // Format labels based on time range
-    const labels = dateRange.map(date =>
-      timeRange === 'week' ? getDayOfWeek(date) : date.slice(5) // MM-DD format for month
-    );
+    const labels = dateRange.map((date, index) => {
+      if (timeRange === 'week') {
+        return getDayOfWeek(date);
+      } else {
+        // For month view, show labels more strategically to avoid overcrowding
+        // Show labels for first day, last day, and every 5th day
+        if (index === 0 || index === dateRange.length - 1 || index % 5 === 0) {
+          // Show only day number for better readability
+          const dayNum = date.slice(-2); // Get DD from YYYY-MM-DD
+          return dayNum.startsWith('0') ? dayNum.slice(1) : dayNum; // Remove leading zero
+        } else {
+          return ''; // Empty label for intermediate days
+        }
+      }
+    });
 
     // Update chart data
     setChartData({
@@ -101,14 +113,21 @@ const StatsScreen = () => {
     },
     labelColor: () => '#333333',
     strokeWidth: 2,
-    barPercentage: 0.7,
+    barPercentage: timeRange === 'week' ? 0.7 : 0.5, // Thinner bars for month view
     useShadowColorFromDataset: false,
     decimalPlaces: 1,
     style: {
       borderRadius: 8,
     },
     propsForLabels: {
-      fontSize: 12,
+      fontSize: timeRange === 'week' ? 12 : 10, // Smaller font for month view
+    },
+    formatXLabel: (value: string) => {
+      // For month view, ensure we don't show overlapping labels
+      if (timeRange === 'month' && value === '') {
+        return '';
+      }
+      return value;
     },
   };
 
@@ -172,6 +191,11 @@ const StatsScreen = () => {
             />
             <Text style={styles.chartDescription}>
               Average sleep: {formatDuration(averageSleep)}
+              {timeRange === 'month' && (
+                <Text style={styles.chartNote}>
+                  {'\n'}Numbers shown represent key days of the month
+                </Text>
+              )}
             </Text>
 
             {/* Color legend */}
