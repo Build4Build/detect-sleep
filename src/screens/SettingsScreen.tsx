@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Switch, TouchableOpacity, Alert, ScrollView, Modal, FlatList, Linking } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSleep } from '../context/SleepContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import HealthIntegrationSettings from '../components/HealthIntegrationSettings';
+import BackgroundMonitorDebug from '../components/BackgroundMonitorDebug';
 
 // Define threshold options
 const THRESHOLD_OPTIONS = [
@@ -21,6 +22,14 @@ const SettingsScreen = () => {
   const [considerTimeOfDay, setConsiderTimeOfDay] = useState(settings.considerTimeOfDay);
   const [showThresholdModal, setShowThresholdModal] = useState(false);
   const [healthConnected, setHealthConnected] = useState(false);
+  const [showDebugMonitor, setShowDebugMonitor] = useState(false);
+
+  // Sync local state with context settings when they change
+  useEffect(() => {
+    setNotificationsEnabled(settings.notificationsEnabled);
+    setUseMachineLearning(settings.useMachineLearning);
+    setConsiderTimeOfDay(settings.considerTimeOfDay);
+  }, [settings.notificationsEnabled, settings.useMachineLearning, settings.considerTimeOfDay]);
 
   // Find the current threshold option
   const currentThresholdOption = THRESHOLD_OPTIONS.find(
@@ -233,6 +242,29 @@ const SettingsScreen = () => {
           <Ionicons name="trash-outline" size={20} color="#fff" />
           <Text style={styles.buttonText}>Clear All Data</Text>
         </TouchableOpacity>
+      </View>
+
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Debug & Monitoring</Text>
+        <TouchableOpacity
+          style={styles.dataButton}
+          onPress={() => setShowDebugMonitor(!showDebugMonitor)}
+        >
+          <Ionicons
+            name={showDebugMonitor ? "eye-off-outline" : "eye-outline"}
+            size={20}
+            color="#2196F3"
+          />
+          <Text style={[styles.buttonText, { color: '#2196F3' }]}>
+            {showDebugMonitor ? 'Hide' : 'Show'} Background Monitor
+          </Text>
+        </TouchableOpacity>
+
+        {showDebugMonitor && (
+          <View style={styles.debugContainer}>
+            <BackgroundMonitorDebug />
+          </View>
+        )}
       </View>
 
       <View style={styles.section}>
@@ -464,6 +496,12 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     textDecorationLine: 'underline',
     color: '#6200ee',
+  },
+  debugContainer: {
+    marginTop: 16,
+    borderRadius: 8,
+    overflow: 'hidden',
+    height: 400,
   },
 });
 
