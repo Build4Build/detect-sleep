@@ -3,6 +3,7 @@ import { AppState, AppStateStatus } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { format } from 'date-fns';
 import { ActivityRecord, SleepStatus, DailySleepSummary, AppSettings } from '../types';
+import { BackgroundActivityService } from '../services/BackgroundActivityService';
 
 // Default settings
 const DEFAULT_SETTINGS: AppSettings = {
@@ -46,6 +47,7 @@ export const SleepProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [dailySummaries, setDailySummaries] = useState<DailySleepSummary[]>([]);
   const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS);
   const [lastActiveTimestamp, setLastActiveTimestamp] = useState<number>(Date.now());
+  const [backgroundService] = useState(() => BackgroundActivityService.getInstance());
   const [sleepPatterns, setSleepPatterns] = useState<{
     typicalSleepStart: number; // hour 0-23
     typicalSleepEnd: number; // hour 0-23
@@ -56,7 +58,7 @@ export const SleepProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     averageSleepDuration: 480, // 8 hours default
   });
 
-  // Load data from storage on mount
+  // Load data from storage on mount and initialize background service
   useEffect(() => {
     const loadData = async () => {
       try {
@@ -83,12 +85,21 @@ export const SleepProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         if (patternsJson) {
           setSleepPatterns(JSON.parse(patternsJson));
         }
+
+        // Initialize background activity monitoring
+        await backgroundService.startMonitoring();
+        console.log('Background activity monitoring started');
       } catch (error) {
         console.error('Failed to load data from storage:', error);
       }
     };
 
     loadData();
+
+    // Cleanup function
+    return () => {
+      backgroundService.stopMonitoring();
+    };
   }, []);
 
   // Save activity records when they change
@@ -238,34 +249,67 @@ export const SleepProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     return [status, Math.round(confidence)];
   };
 
-  // Handle app state changes
+  // Periodic sleep detection check using background service
   useEffect(() => {
-    const handleAppStateChange = (nextAppState: AppStateStatus) => {
+    const checkSleepStatus = async () => {
+      try {
+        const inactiveMinutes = await backgroundService.getInactivityDuration();
+        const currentHour = new Date().getHours();
+
+        // Calculate sleep status and confidence based on inactivity
+        const [detectedStatus, confidence] = calculateSleepConfidence(inactiveMinutes, currentHour);
+
+        // Only update if status changed or confidence changed significantly
+        if (detectedStatus !== currentStatus || Math.abs(confidence - currentConfidence) > 20) {
+          if (detectedStatus === SleepStatus.ASLEEP && currentStatus === SleepStatus.AWAKE) {
+            // Transitioning to sleep
+            const fallAsleepTime = Date.now() - (settings.inactivityThreshold * 60 * 1000);
+            addActivityRecord(SleepStatus.ASLEEP, fallAsleepTime, confidence);
+          } else if (detectedStatus === SleepStatus.AWAKE && currentStatus === SleepStatus.ASLEEP) {
+            // Waking up
+            addActivityRecord(SleepStatus.AWAKE, Date.now(), confidence);
+          }
+        }
+      } catch (error) {
+        console.error('Error checking sleep status:', error);
+      }
+    };
+
+    // Check every 2 minutes when app is active
+    const interval = setInterval(checkSleepStatus, 2 * 60 * 1000);
+
+    // Initial check
+    checkSleepStatus();
+
+    return () => clearInterval(interval);
+  }, [currentStatus, currentConfidence, settings.inactivityThreshold]);
+  // Handle app state changes (enhanced with background service integration)
+  useEffect(() => {
+    const handleAppStateChange = async (nextAppState: AppStateStatus) => {
       const now = Date.now();
       const currentHour = new Date().getHours();
 
       if (nextAppState === 'active') {
-        // App became active
-        const inactiveTime = (now - lastActiveTimestamp) / (1000 * 60); // Convert to minutes
+        // App became active - get actual inactivity time from background service
+        const inactiveTime = await backgroundService.getInactivityDuration();
 
         if (currentStatus === SleepStatus.ASLEEP) {
           // If we were asleep, record waking up
           addActivityRecord(SleepStatus.AWAKE, now, 95); // High confidence when actively using phone
         } else if (inactiveTime >= settings.inactivityThreshold) {
           // If we were inactive for longer than the threshold, we were asleep
-          // Calculate when we fell asleep with confidence
           const [detectedStatus, confidence] = calculateSleepConfidence(inactiveTime, currentHour);
 
           if (detectedStatus === SleepStatus.ASLEEP) {
             // First record that we fell asleep after the threshold was reached
-            const fellAsleepAt = lastActiveTimestamp + settings.inactivityThreshold * 60 * 1000;
+            const fellAsleepAt = now - (inactiveTime * 60 * 1000) + (settings.inactivityThreshold * 60 * 1000);
             addActivityRecord(SleepStatus.ASLEEP, fellAsleepAt, confidence);
             // Then record that we're now awake
             addActivityRecord(SleepStatus.AWAKE, now, 95);
           }
         }
       } else if (nextAppState === 'background' || nextAppState === 'inactive') {
-        // App went to background, update last active timestamp
+        // App went to background, but background service will continue monitoring
         setLastActiveTimestamp(now);
       }
     };
