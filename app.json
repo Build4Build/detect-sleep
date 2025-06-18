@@ -21,13 +21,15 @@
       "infoPlist": {
         "UIBackgroundModes": [
           "fetch",
-          "processing"
+          "processing",
+          "background-app-refresh"
         ],
         "BGTaskSchedulerPermittedIdentifiers": [
           "com.sleepdetector.app.sleeprefresh",
-          "com.sleepdetector.app.sleepprocessing"
+          "com.sleepdetector.app.sleepprocessing",
+          "background-activity-monitor"
         ],
-        "NSMotionUsageDescription": "We use motion data to more accurately detect when you're asleep or awake",
+        "NSMotionUsageDescription": "We use motion data to more accurately detect when you're asleep or awake by monitoring device movement patterns",
         "NSHealthShareUsageDescription": "We use Health data to improve sleep detection accuracy and to compare with our detection algorithm",
         "NSHealthUpdateUsageDescription": "We can write your detected sleep data to Apple Health to consolidate your health information"
       },
@@ -44,7 +46,9 @@
       "versionCode": 12,
       "permissions": [
         "android.permission.ACTIVITY_RECOGNITION",
-        "android.permission.WAKE_LOCK"
+        "android.permission.WAKE_LOCK",
+        "android.permission.RECEIVE_BOOT_COMPLETED",
+        "android.permission.FOREGROUND_SERVICE"
       ],
       "config": {
         "googleMobileAdsAppId": "ca-app-pub-3940256099942544~3347511713"
@@ -59,6 +63,7 @@
     },
     "plugins": [
       "expo-task-manager",
+      "expo-background-fetch",
       [
         "expo-health-connect",
         {
