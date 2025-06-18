@@ -6,6 +6,7 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
+    "platforms": ["ios", "android"],
     "splash": {
       "image": "./assets/splash.png",
       "resizeMode": "contain",
@@ -15,7 +16,7 @@
       "**/*"
     ],
     "ios": {
-      "supportsTablet": true,
+      "supportsTablet": false,
       "bundleIdentifier": "com.sleepdetector.app",
       "buildNumber": "10",
       "infoPlist": {
@@ -31,7 +32,11 @@
         ],
         "NSMotionUsageDescription": "We use motion data to more accurately detect when you're asleep or awake by monitoring device movement patterns",
         "NSHealthShareUsageDescription": "We use Health data to improve sleep detection accuracy and to compare with our detection algorithm",
-        "NSHealthUpdateUsageDescription": "We can write your detected sleep data to Apple Health to consolidate your health information"
+        "NSHealthUpdateUsageDescription": "We can write your detected sleep data to Apple Health to consolidate your health information",
+        "UISupportedInterfaceOrientations": [
+          "UIInterfaceOrientationPortrait"
+        ],
+        "UISupportedInterfaceOrientations~ipad": null
       },
       "config": {
         "usesNonExemptEncryption": false
@@ -57,9 +62,6 @@
         "android.permission.READ_PHONE_STATE",
         "android.permission.READ_CONTACTS"
       ]
-    },
-    "web": {
-      "favicon": "./assets/favicon.png"
     },
     "plugins": [
       "expo-task-manager",
