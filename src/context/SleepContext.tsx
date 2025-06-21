@@ -46,6 +46,7 @@ export const SleepProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [activityRecords, setActivityRecords] = useState<ActivityRecord[]>([]);
   const [dailySummaries, setDailySummaries] = useState<DailySleepSummary[]>([]);
   const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS);
+  const [settingsLoaded, setSettingsLoaded] = useState<boolean>(false); // Track if settings are loaded
   const [lastActiveTimestamp, setLastActiveTimestamp] = useState<number>(Date.now());
   const [backgroundService] = useState(() => BackgroundActivityService.getInstance());
   const [sleepPatterns, setSleepPatterns] = useState<{
@@ -65,25 +66,65 @@ export const SleepProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         // Load activity records
         const recordsJson = await AsyncStorage.getItem(ACTIVITY_RECORDS_KEY);
         if (recordsJson) {
-          setActivityRecords(JSON.parse(recordsJson));
+          try {
+            setActivityRecords(JSON.parse(recordsJson));
+          } catch (parseError) {
+            console.error('Failed to parse activity records:', parseError);
+            // Reset to empty array if corrupted
+            setActivityRecords([]);
+          }
         }
 
         // Load daily summaries
         const summariesJson = await AsyncStorage.getItem(DAILY_SUMMARIES_KEY);
         if (summariesJson) {
-          setDailySummaries(JSON.parse(summariesJson));
+          try {
+            setDailySummaries(JSON.parse(summariesJson));
+          } catch (parseError) {
+            console.error('Failed to parse daily summaries:', parseError);
+            setDailySummaries([]);
+          }
         }
 
-        // Load settings
+        // Load settings with better error handling
         const settingsJson = await AsyncStorage.getItem(SETTINGS_KEY);
         if (settingsJson) {
-          setSettings(JSON.parse(settingsJson));
+          try {
+            const loadedSettings = JSON.parse(settingsJson);
+            // Merge with defaults to ensure all properties exist
+            const mergedSettings = { ...DEFAULT_SETTINGS, ...loadedSettings };
+            setSettings(mergedSettings);
+            console.log('Settings loaded successfully:', mergedSettings);
+          } catch (parseError) {
+            console.error('Failed to parse settings, using defaults:', parseError);
+            setSettings(DEFAULT_SETTINGS);
+            // Save the default settings
+            await AsyncStorage.setItem(SETTINGS_KEY, JSON.stringify(DEFAULT_SETTINGS));
+          }
+        } else {
+          console.log('No saved settings found, using defaults');
+          setSettings(DEFAULT_SETTINGS);
+          // Save the default settings for next time
+          await AsyncStorage.setItem(SETTINGS_KEY, JSON.stringify(DEFAULT_SETTINGS));
         }
+
+        // Mark settings as loaded
+        setSettingsLoaded(true);
 
         // Load sleep patterns
         const patternsJson = await AsyncStorage.getItem(SLEEP_PATTERNS_KEY);
         if (patternsJson) {
-          setSleepPatterns(JSON.parse(patternsJson));
+          try {
+            setSleepPatterns(JSON.parse(patternsJson));
+          } catch (parseError) {
+            console.error('Failed to parse sleep patterns:', parseError);
+            // Reset to default patterns if corrupted
+            setSleepPatterns({
+              typicalSleepStart: TYPICAL_SLEEP_START_HOUR,
+              typicalSleepEnd: TYPICAL_SLEEP_END_HOUR,
+              averageSleepDuration: 480,
+            });
+          }
         }
 
         // Initialize background activity monitoring
@@ -91,6 +132,10 @@ export const SleepProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         console.log('Background activity monitoring started');
       } catch (error) {
         console.error('Failed to load data from storage:', error);
+        // Ensure we have default settings even if storage fails
+        setSettings(DEFAULT_SETTINGS);
+        // Mark settings as loaded even in error case
+        setSettingsLoaded(true);
       }
     };
 
@@ -121,10 +166,20 @@ export const SleepProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   }, [dailySummaries]);
 
-  // Save settings when they change
+  // Save settings when they change (but only after initial load)
   useEffect(() => {
-    AsyncStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
-  }, [settings]);
+    if (settingsLoaded) {
+      const saveSettings = async () => {
+        try {
+          await AsyncStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+          console.log('Settings saved successfully:', settings);
+        } catch (error) {
+          console.error('Failed to save settings:', error);
+        }
+      };
+      saveSettings();
+    }
+  }, [settings, settingsLoaded]);
 
   // Save sleep patterns when they change
   useEffect(() => {
@@ -210,68 +265,88 @@ export const SleepProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     let confidence = 0;
     let status = SleepStatus.AWAKE;
 
-    // If already past inactivity threshold
+    // Determine status based on inactivity threshold
     if (inactiveTime >= settings.inactivityThreshold) {
       status = SleepStatus.ASLEEP;
-      // Start with 70% confidence from inactivity alone
-      confidence = 70 + Math.min(30, (inactiveTime - settings.inactivityThreshold) / 2);
+      // Calculate confidence based on how long past threshold
+      const excessTime = inactiveTime - settings.inactivityThreshold;
+      confidence = 75 + Math.min(25, excessTime / 30 * 25); // Scale from 75% to 100% over 30 minutes
     } else {
       status = SleepStatus.AWAKE;
-      // If active, high confidence we're awake
-      confidence = 100 - (inactiveTime / settings.inactivityThreshold) * 30;
+      // Higher confidence the more recent the activity
+      const proximityToThreshold = inactiveTime / settings.inactivityThreshold;
+      confidence = 100 - (proximityToThreshold * 40); // Scale from 100% to 60%
     }
 
     // Consider time of day if enabled
     if (settings.considerTimeOfDay) {
       const { typicalSleepStart, typicalSleepEnd } = sleepPatterns;
 
-      // Is it during typical sleep hours?
-      const isNighttime =
-        (currentHour >= typicalSleepStart) ||
-        (currentHour < typicalSleepEnd);
+      // Determine if it's typical sleep hours
+      const isNighttime = (currentHour >= typicalSleepStart) || (currentHour < typicalSleepEnd);
 
-      // Adjust confidence based on time of day
-      if (status === SleepStatus.ASLEEP && isNighttime) {
-        // Higher confidence if asleep during night
-        confidence = Math.min(100, confidence + 15);
-      } else if (status === SleepStatus.ASLEEP && !isNighttime) {
-        // Lower confidence if asleep during day
-        confidence = Math.max(0, confidence - 15);
-      } else if (status === SleepStatus.AWAKE && isNighttime) {
-        // Lower confidence if awake during night
-        confidence = Math.max(0, confidence - 10);
-      } else if (status === SleepStatus.AWAKE && !isNighttime) {
-        // Higher confidence if awake during day
-        confidence = Math.min(100, confidence + 10);
+      // Adjust confidence based on time appropriateness
+      if (status === SleepStatus.ASLEEP) {
+        if (isNighttime) {
+          // Sleeping at night is expected - boost confidence
+          confidence = Math.min(100, confidence + 20);
+        } else {
+          // Sleeping during day is less typical - reduce confidence
+          confidence = Math.max(30, confidence - 25);
+        }
+      } else {
+        if (isNighttime && inactiveTime > settings.inactivityThreshold * 0.5) {
+          // Being awake late at night when inactive is suspicious
+          confidence = Math.max(40, confidence - 20);
+        } else if (!isNighttime) {
+          // Being awake during day is expected
+          confidence = Math.min(100, confidence + 10);
+        }
       }
     }
 
-    return [status, Math.round(confidence)];
+    // Additional confidence boost for very long inactivity periods
+    if (status === SleepStatus.ASLEEP && inactiveTime > settings.inactivityThreshold * 2) {
+      confidence = Math.min(100, confidence + 10);
+    }
+
+    return [status, Math.round(Math.max(0, Math.min(100, confidence)))];
   };
 
   // Periodic sleep detection check using background service
   useEffect(() => {
     const checkSleepStatus = async () => {
       try {
-        const inactiveMinutes = await backgroundService.getInactivityDuration();
+        // Get inactivity duration, excluding the current app check session
+        const inactiveMinutes = await backgroundService.getInactivityDuration(false);
         const currentHour = new Date().getHours();
+
+        console.log(`🔍 Sleep status check: ${Math.round(inactiveMinutes)} minutes genuine inactivity`);
 
         // Calculate sleep status and confidence based on inactivity
         const [detectedStatus, confidence] = calculateSleepConfidence(inactiveMinutes, currentHour);
 
         // Only update if status changed or confidence changed significantly
-        if (detectedStatus !== currentStatus || Math.abs(confidence - currentConfidence) > 20) {
+        if (detectedStatus !== currentStatus || Math.abs(confidence - currentConfidence) > 15) {
+          console.log(`🔄 Status change detected: ${detectedStatus} (${confidence}% confidence)`);
+
           if (detectedStatus === SleepStatus.ASLEEP && currentStatus === SleepStatus.AWAKE) {
-            // Transitioning to sleep
-            const fallAsleepTime = Date.now() - (settings.inactivityThreshold * 60 * 1000);
-            addActivityRecord(SleepStatus.ASLEEP, fallAsleepTime, confidence);
+            // Transitioning to sleep - use the actual time when we believe sleep started
+            const estimatedSleepStart = Date.now() - (inactiveMinutes * 60 * 1000);
+            addActivityRecord(SleepStatus.ASLEEP, estimatedSleepStart, confidence);
+            console.log(`😴 Sleep detected - estimated sleep start: ${new Date(estimatedSleepStart).toLocaleTimeString()}`);
           } else if (detectedStatus === SleepStatus.AWAKE && currentStatus === SleepStatus.ASLEEP) {
             // Waking up
             addActivityRecord(SleepStatus.AWAKE, Date.now(), confidence);
+            console.log(`☀️ Wake detected at ${new Date().toLocaleTimeString()}`);
           }
+
+          // Update current status even if no transition (for confidence changes)
+          setCurrentStatus(detectedStatus);
+          setCurrentConfidence(confidence);
         }
       } catch (error) {
-        console.error('Error checking sleep status:', error);
+        console.error('❌ Error checking sleep status:', error);
       }
     };
 
@@ -282,20 +357,25 @@ export const SleepProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     checkSleepStatus();
 
     return () => clearInterval(interval);
-  }, [currentStatus, currentConfidence, settings.inactivityThreshold]);
+  }, [currentStatus, currentConfidence, settings.inactivityThreshold, settings.considerTimeOfDay]);
   // Handle app state changes (enhanced with background service integration)
   useEffect(() => {
     const handleAppStateChange = async (nextAppState: AppStateStatus) => {
       const now = Date.now();
       const currentHour = new Date().getHours();
 
+      console.log(`App state changed to: ${nextAppState}`);
+
       if (nextAppState === 'active') {
         // App became active - get actual inactivity time from background service
-        const inactiveTime = await backgroundService.getInactivityDuration();
+        const inactiveTime = await backgroundService.getInactivityDuration(false);
+
+        console.log(`App became active after ${Math.round(inactiveTime)} minutes of inactivity`);
 
         if (currentStatus === SleepStatus.ASLEEP) {
-          // If we were asleep, record waking up
-          addActivityRecord(SleepStatus.AWAKE, now, 95); // High confidence when actively using phone
+          // If we were asleep, record waking up only if we interact beyond just checking
+          // For now, record as awake but with lower confidence until we get real interaction
+          addActivityRecord(SleepStatus.AWAKE, now, 85); // Slightly lower confidence for just opening app
         } else if (inactiveTime >= settings.inactivityThreshold) {
           // If we were inactive for longer than the threshold, we were asleep
           const [detectedStatus, confidence] = calculateSleepConfidence(inactiveTime, currentHour);
@@ -311,6 +391,7 @@ export const SleepProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       } else if (nextAppState === 'background' || nextAppState === 'inactive') {
         // App went to background, but background service will continue monitoring
         setLastActiveTimestamp(now);
+        console.log('App went to background - background monitoring will continue');
       }
     };
 
@@ -349,6 +430,9 @@ export const SleepProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const manuallySetStatus = (status: SleepStatus) => {
     // Add record with high confidence since user manually set it
     addActivityRecord(status, Date.now(), 100);
+
+    // Also record this as genuine user activity in the background service
+    backgroundService.recordUserActivity();
   };
 
   // Update daily summaries based on activity records

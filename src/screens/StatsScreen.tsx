@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, ScrollView, Dimensions, TouchableOpacity } from
 import { BarChart } from 'react-native-chart-kit';
 
 import { useSleep } from '../context/SleepContext';
+import { useTheme } from '../context/ThemeContext';
 import { formatDuration } from '../utils/dateUtils';
 import { getPastWeekDates, getPastMonthDates, getDayOfWeek } from '../utils/dateUtils';
 
@@ -10,12 +11,16 @@ const { width } = Dimensions.get('window');
 
 const StatsScreen = () => {
   const { dailySummaries } = useSleep();
+  const { colors, isDarkMode } = useTheme();
   const [timeRange, setTimeRange] = useState<'week' | 'month'>('week');
   const [averageSleep, setAverageSleep] = useState<number>(0);
   const [chartData, setChartData] = useState<any>({
     labels: [],
     datasets: [{ data: [] }],
   });
+
+  // Create themed styles
+  const themedStyles = createThemedStyles(colors);
 
   // Update chart data when time range or daily summaries change
   useEffect(() => {
@@ -100,8 +105,8 @@ const StatsScreen = () => {
 
   // Chart configuration with custom color function
   const chartConfig = {
-    backgroundGradientFrom: '#fff',
-    backgroundGradientTo: '#fff',
+    backgroundGradientFrom: colors.chartBackground,
+    backgroundGradientTo: colors.chartBackground,
     color: (opacity = 1, dataPointIndex?: number) => {
       // If we have a data point index, use custom colors based on sleep hours
       if (dataPointIndex !== undefined && chartData.datasets[0]?.data[dataPointIndex] !== undefined) {
@@ -109,9 +114,9 @@ const StatsScreen = () => {
         return getBarColor(sleepHours, opacity);
       }
       // Default color for other chart elements
-      return `rgba(98, 0, 238, ${opacity})`;
+      return colors.primary;
     },
-    labelColor: () => '#333333',
+    labelColor: () => colors.text,
     strokeWidth: 2,
     barPercentage: timeRange === 'week' ? 0.7 : 0.5, // Thinner bars for month view
     useShadowColorFromDataset: false,
@@ -144,37 +149,37 @@ const StatsScreen = () => {
   };
 
   return (
-    <ScrollView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Sleep Statistics</Text>
-        <View style={styles.filterContainer}>
+    <ScrollView style={themedStyles.container}>
+      <View style={themedStyles.header}>
+        <Text style={themedStyles.title}>Sleep Statistics</Text>
+        <View style={themedStyles.filterContainer}>
           <TouchableOpacity
-            style={[styles.filterButton, timeRange === 'week' && styles.activeFilter]}
+            style={[themedStyles.filterButton, timeRange === 'week' && themedStyles.activeFilter]}
             onPress={() => setTimeRange('week')}
           >
-            <Text style={[styles.filterText, timeRange === 'week' && styles.activeFilterText]}>
+            <Text style={[themedStyles.filterText, timeRange === 'week' && themedStyles.activeFilterText]}>
               Week
             </Text>
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.filterButton, timeRange === 'month' && styles.activeFilter]}
+            style={[themedStyles.filterButton, timeRange === 'month' && themedStyles.activeFilter]}
             onPress={() => setTimeRange('month')}
           >
-            <Text style={[styles.filterText, timeRange === 'month' && styles.activeFilterText]}>
+            <Text style={[themedStyles.filterText, timeRange === 'month' && themedStyles.activeFilterText]}>
               Month
             </Text>
           </TouchableOpacity>
         </View>
       </View>
 
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Average Sleep</Text>
-        <Text style={styles.averageSleep}>{formatDuration(averageSleep)}</Text>
+      <View style={themedStyles.card}>
+        <Text style={themedStyles.cardTitle}>Average Sleep</Text>
+        <Text style={themedStyles.averageSleep}>{formatDuration(averageSleep)}</Text>
       </View>
 
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Sleep Duration</Text>
+      <View style={themedStyles.card}>
+        <Text style={themedStyles.cardTitle}>Sleep Duration</Text>
         {enhancedChartData.datasets[0].data.length > 0 ? (
           <View>
             <BarChart
@@ -184,90 +189,90 @@ const StatsScreen = () => {
               yAxisSuffix="h"
               yAxisLabel=""
               chartConfig={chartConfig}
-              style={styles.chart}
+              style={themedStyles.chart}
               showBarTops={true}
               fromZero={true}
               withInnerLines={true}
             />
-            <Text style={styles.chartDescription}>
+            <Text style={themedStyles.chartDescription}>
               Average sleep: {formatDuration(averageSleep)}
               {timeRange === 'month' && (
-                <Text style={styles.chartNote}>
+                <Text style={themedStyles.chartNote}>
                   {'\n'}Numbers shown represent key days of the month
                 </Text>
               )}
             </Text>
 
             {/* Color legend */}
-            <View style={styles.legendContainer}>
-              <View style={styles.legendItem}>
-                <View style={[styles.legendColor, { backgroundColor: '#4CAF50' }]} />
-                <Text style={styles.legendText}>Good (8+ hours)</Text>
+            <View style={themedStyles.legendContainer}>
+              <View style={themedStyles.legendItem}>
+                <View style={[themedStyles.legendColor, { backgroundColor: '#4CAF50' }]} />
+                <Text style={themedStyles.legendText}>Good (8+ hours)</Text>
               </View>
-              <View style={styles.legendItem}>
-                <View style={[styles.legendColor, { backgroundColor: '#FFC107' }]} />
-                <Text style={styles.legendText}>Fair (6-8 hours)</Text>
+              <View style={themedStyles.legendItem}>
+                <View style={[themedStyles.legendColor, { backgroundColor: '#FFC107' }]} />
+                <Text style={themedStyles.legendText}>Fair (6-8 hours)</Text>
               </View>
-              <View style={styles.legendItem}>
-                <View style={[styles.legendColor, { backgroundColor: '#F44336' }]} />
-                <Text style={styles.legendText}>Poor (under 6h)</Text>
+              <View style={themedStyles.legendItem}>
+                <View style={[themedStyles.legendColor, { backgroundColor: '#F44336' }]} />
+                <Text style={themedStyles.legendText}>Poor (under 6h)</Text>
               </View>
             </View>
           </View>
         ) : (
-          <Text style={styles.noDataText}>No sleep data available</Text>
+          <Text style={themedStyles.noDataText}>No sleep data available</Text>
         )}
       </View>
 
-      <View style={styles.metricsContainer}>
-        <View style={[styles.metricCard, { marginRight: 8 }]}>
-          <Text style={styles.metricTitle}>Consistency</Text>
-          <View style={styles.progressContainer}>
+      <View style={themedStyles.metricsContainer}>
+        <View style={[themedStyles.metricCard, { marginRight: 8 }]}>
+          <Text style={themedStyles.metricTitle}>Consistency</Text>
+          <View style={themedStyles.progressContainer}>
             <View
               style={[
-                styles.progressBar,
+                themedStyles.progressBar,
                 { width: `${metrics.consistency}%` },
                 getProgressColor(metrics.consistency),
               ]}
             />
           </View>
-          <Text style={styles.metricValue}>{Math.round(metrics.consistency)}%</Text>
+          <Text style={themedStyles.metricValue}>{Math.round(metrics.consistency)}%</Text>
         </View>
 
-        <View style={styles.metricCard}>
-          <Text style={styles.metricTitle}>Efficiency</Text>
-          <View style={styles.progressContainer}>
+        <View style={themedStyles.metricCard}>
+          <Text style={themedStyles.metricTitle}>Efficiency</Text>
+          <View style={themedStyles.progressContainer}>
             <View
               style={[
-                styles.progressBar,
+                themedStyles.progressBar,
                 { width: `${metrics.efficiency}%` },
                 getProgressColor(metrics.efficiency),
               ]}
             />
           </View>
-          <Text style={styles.metricValue}>{Math.round(metrics.efficiency)}%</Text>
+          <Text style={themedStyles.metricValue}>{Math.round(metrics.efficiency)}%</Text>
         </View>
       </View>
 
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Sleep Pattern</Text>
-        <Text style={styles.patternDescription}>
+      <View style={themedStyles.card}>
+        <Text style={themedStyles.cardTitle}>Sleep Pattern</Text>
+        <Text style={themedStyles.patternDescription}>
           Based on your sleep data, you typically:
         </Text>
         {dailySummaries.length > 0 ? (
-          <View style={styles.patternInfo}>
-            <Text style={styles.patternText}>
+          <View style={themedStyles.patternInfo}>
+            <Text style={themedStyles.patternText}>
               • Sleep an average of {formatDuration(averageSleep)} per night
             </Text>
-            <Text style={styles.patternText}>
+            <Text style={themedStyles.patternText}>
               • Have a sleep consistency of {Math.round(metrics.consistency)}%
             </Text>
-            <Text style={styles.patternText}>
+            <Text style={themedStyles.patternText}>
               • Achieve good sleep {Math.round(metrics.efficiency)}% of the time
             </Text>
           </View>
         ) : (
-          <Text style={styles.noDataText}>No sleep data available</Text>
+          <Text style={themedStyles.noDataText}>No sleep data available</Text>
         )}
       </View>
     </ScrollView>
@@ -285,174 +290,177 @@ const getProgressColor = (value: number) => {
   }
 };
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f5f5f5',
-  },
-  header: {
-    padding: 16,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 16,
-  },
-  filterContainer: {
-    flexDirection: 'row',
-  },
-  filterButton: {
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 20,
-    marginRight: 8,
-  },
-  activeFilter: {
-    backgroundColor: '#6200ee',
-  },
-  filterText: {
-    color: '#666',
-    fontWeight: '500',
-  },
-  activeFilterText: {
-    color: '#fff',
-  },
-  card: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 16,
-    margin: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  cardTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 16,
-  },
-  averageSleep: {
-    fontSize: 36,
-    fontWeight: 'bold',
-    color: '#6200ee',
-    textAlign: 'center',
-    marginVertical: 16,
-  },
-  chart: {
-    marginVertical: 8,
-    borderRadius: 8,
-  },
-  chartPlaceholder: {
-    height: 220,
-    backgroundColor: '#f8f9fa',
-    borderRadius: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginVertical: 8,
-    borderWidth: 1,
-    borderColor: '#e0e0e0',
-    borderStyle: 'dashed',
-  },
-  chartPlaceholderText: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#6200ee',
-    marginBottom: 8,
-  },
-  chartDescription: {
-    fontSize: 16,
-    color: '#333',
-    marginBottom: 12,
-  },
-  legendContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    marginTop: 12,
-    paddingTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: '#e0e0e0',
-  },
-  legendItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  legendColor: {
-    width: 12,
-    height: 12,
-    borderRadius: 2,
-    marginRight: 6,
-  },
-  legendText: {
-    fontSize: 12,
-    color: '#666',
-  },
-  chartNote: {
-    fontSize: 12,
-    color: '#666',
-    textAlign: 'center',
-    fontStyle: 'italic',
-  },
-  noDataText: {
-    textAlign: 'center',
-    color: '#666',
-    padding: 16,
-  },
-  metricsContainer: {
-    flexDirection: 'row',
-    marginHorizontal: 16,
-    marginTop: 0,
-  },
-  metricCard: {
-    flex: 1,
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  metricTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 12,
-  },
-  progressContainer: {
-    height: 8,
-    backgroundColor: '#e0e0e0',
-    borderRadius: 4,
-    marginBottom: 8,
-  },
-  progressBar: {
-    height: 8,
-    borderRadius: 4,
-  },
-  metricValue: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#333',
-    textAlign: 'center',
-    marginTop: 8,
-  },
-  patternDescription: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 12,
-  },
-  patternInfo: {
-    marginTop: 8,
-  },
-  patternText: {
-    fontSize: 14,
-    color: '#333',
-    marginBottom: 8,
-  },
-});
+// Themed styles
+const createThemedStyles = (colors: any) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    header: {
+      padding: 16,
+    },
+    title: {
+      fontSize: 24,
+      fontWeight: 'bold',
+      color: colors.text,
+      marginBottom: 16,
+    },
+    filterContainer: {
+      flexDirection: 'row',
+    },
+    filterButton: {
+      paddingVertical: 8,
+      paddingHorizontal: 16,
+      borderRadius: 20,
+      marginRight: 8,
+      backgroundColor: colors.card,
+    },
+    activeFilter: {
+      backgroundColor: colors.primary,
+    },
+    filterText: {
+      color: colors.textSecondary,
+      fontWeight: '500',
+    },
+    activeFilterText: {
+      color: colors.card,
+    },
+    card: {
+      backgroundColor: colors.card,
+      borderRadius: 12,
+      padding: 16,
+      margin: 16,
+      shadowColor: colors.shadow,
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.1,
+      shadowRadius: 4,
+      elevation: 2,
+    },
+    cardTitle: {
+      fontSize: 18,
+      fontWeight: '600',
+      color: colors.text,
+      marginBottom: 16,
+    },
+    averageSleep: {
+      fontSize: 36,
+      fontWeight: 'bold',
+      color: colors.primary,
+      textAlign: 'center',
+      marginVertical: 16,
+    },
+    chart: {
+      marginVertical: 8,
+      borderRadius: 8,
+    },
+    chartPlaceholder: {
+      height: 220,
+      backgroundColor: colors.card,
+      borderRadius: 8,
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginVertical: 8,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderStyle: 'dashed',
+    },
+    chartPlaceholderText: {
+      fontSize: 18,
+      fontWeight: '600',
+      color: colors.primary,
+      marginBottom: 8,
+    },
+    chartDescription: {
+      fontSize: 16,
+      color: colors.text,
+      marginBottom: 12,
+    },
+    legendContainer: {
+      flexDirection: 'row',
+      justifyContent: 'space-around',
+      marginTop: 12,
+      paddingTop: 12,
+      borderTopWidth: 1,
+      borderTopColor: colors.border,
+    },
+    legendItem: {
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
+    legendColor: {
+      width: 12,
+      height: 12,
+      borderRadius: 2,
+      marginRight: 6,
+    },
+    legendText: {
+      fontSize: 12,
+      color: colors.textSecondary,
+    },
+    chartNote: {
+      fontSize: 12,
+      color: colors.textSecondary,
+      textAlign: 'center',
+      fontStyle: 'italic',
+    },
+    noDataText: {
+      textAlign: 'center',
+      color: colors.textSecondary,
+      padding: 16,
+    },
+    metricsContainer: {
+      flexDirection: 'row',
+      marginHorizontal: 16,
+      marginTop: 0,
+    },
+    metricCard: {
+      flex: 1,
+      backgroundColor: colors.card,
+      borderRadius: 12,
+      padding: 16,
+      shadowColor: colors.shadow,
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.1,
+      shadowRadius: 4,
+      elevation: 2,
+    },
+    metricTitle: {
+      fontSize: 16,
+      fontWeight: '600',
+      color: colors.text,
+      marginBottom: 12,
+    },
+    progressContainer: {
+      height: 8,
+      backgroundColor: colors.border,
+      borderRadius: 4,
+      marginBottom: 8,
+    },
+    progressBar: {
+      height: 8,
+      borderRadius: 4,
+    },
+    metricValue: {
+      fontSize: 20,
+      fontWeight: 'bold',
+      color: colors.text,
+      textAlign: 'center',
+      marginTop: 8,
+    },
+    patternDescription: {
+      fontSize: 14,
+      color: colors.textSecondary,
+      marginBottom: 12,
+    },
+    patternInfo: {
+      marginTop: 8,
+    },
+    patternText: {
+      fontSize: 14,
+      color: colors.text,
+      marginBottom: 8,
+    },
+  });
 
-export default StatsScreen; 
+export default StatsScreen;

@@ -4,6 +4,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
 import { RootStackParamList, MainTabParamList } from '../types';
+import { useTheme } from '../context/ThemeContext';
 
 // Import screens
 import TodayScreen from '../screens/TodayScreen';
@@ -19,6 +20,8 @@ const Tab = createBottomTabNavigator<MainTabParamList>();
 
 // Main tab navigator
 const MainTabNavigator = () => {
+  const { colors, isDarkMode } = useTheme();
+  
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
@@ -37,9 +40,20 @@ const MainTabNavigator = () => {
 
           return <Ionicons name={iconName as any} size={size} color={color} />;
         },
-        tabBarActiveTintColor: '#6200ee',
-        tabBarInactiveTintColor: 'gray',
+        tabBarActiveTintColor: colors.primary,
+        tabBarInactiveTintColor: colors.textSecondary,
+        tabBarStyle: {
+          backgroundColor: colors.card,
+          borderTopColor: colors.border,
+        },
         headerShown: true,
+        headerStyle: {
+          backgroundColor: colors.card,
+        },
+        headerTintColor: colors.text,
+        headerTitleStyle: {
+          fontWeight: 'bold',
+        },
       })}
     >
       <Tab.Screen 
@@ -63,13 +77,45 @@ const MainTabNavigator = () => {
 
 // Root stack navigator
 const AppNavigator = () => {
+  const { colors, isDarkMode } = useTheme();
+  
   return (
-    <NavigationContainer>
+    <NavigationContainer
+      theme={{
+        dark: isDarkMode,
+        colors: {
+          primary: colors.primary,
+          background: colors.background,
+          card: colors.card,
+          text: colors.text,
+          border: colors.border,
+          notification: colors.primary,
+        },
+        fonts: {
+          regular: {
+            fontFamily: 'System',
+            fontWeight: 'normal',
+          },
+          medium: {
+            fontFamily: 'System',
+            fontWeight: '500',
+          },
+          bold: {
+            fontFamily: 'System',
+            fontWeight: 'bold',
+          },
+          heavy: {
+            fontFamily: 'System',
+            fontWeight: '900',
+          },
+        },
+      }}
+    >
       <Stack.Navigator
         initialRouteName="Main"
         screenOptions={{
           headerStyle: {
-            backgroundColor: '#6200ee',
+            backgroundColor: colors.primary,
           },
           headerTintColor: '#fff',
           headerTitleStyle: {

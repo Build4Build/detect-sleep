@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Switch, TouchableOpacity, Alert, ScrollView, Modal, FlatList, Linking } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSleep } from '../context/SleepContext';
+import { useTheme, ThemeMode } from '../context/ThemeContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import HealthIntegrationSettings from '../components/HealthIntegrationSettings';
 import BackgroundMonitorDebug from '../components/BackgroundMonitorDebug';
@@ -15,31 +16,64 @@ const THRESHOLD_OPTIONS = [
   { label: '2 hours', value: 120 },
 ];
 
+// Define theme options
+const THEME_OPTIONS = [
+  { label: 'Auto (System)', value: 'auto' as ThemeMode },
+  { label: 'Light', value: 'light' as ThemeMode },
+  { label: 'Dark', value: 'dark' as ThemeMode },
+];
+
 const SettingsScreen = () => {
   const { settings, updateSettings } = useSleep();
+  const { themeMode, setThemeMode, colors, isDarkMode } = useTheme();
   const [notificationsEnabled, setNotificationsEnabled] = useState(settings.notificationsEnabled);
   const [useMachineLearning, setUseMachineLearning] = useState(settings.useMachineLearning);
   const [considerTimeOfDay, setConsiderTimeOfDay] = useState(settings.considerTimeOfDay);
   const [showThresholdModal, setShowThresholdModal] = useState(false);
+  const [showThemeModal, setShowThemeModal] = useState(false);
   const [healthConnected, setHealthConnected] = useState(false);
   const [showDebugMonitor, setShowDebugMonitor] = useState(false);
+  const [settingsInitialized, setSettingsInitialized] = useState(false);
+
+  // Create themed styles
+  const themedStyles = createThemedStyles(colors);
 
   // Sync local state with context settings when they change
   useEffect(() => {
-    setNotificationsEnabled(settings.notificationsEnabled);
-    setUseMachineLearning(settings.useMachineLearning);
-    setConsiderTimeOfDay(settings.considerTimeOfDay);
-  }, [settings.notificationsEnabled, settings.useMachineLearning, settings.considerTimeOfDay]);
+    // Only update local state if we haven't initialized yet or if settings have actually changed
+    if (!settingsInitialized || 
+        notificationsEnabled !== settings.notificationsEnabled ||
+        useMachineLearning !== settings.useMachineLearning ||
+        considerTimeOfDay !== settings.considerTimeOfDay) {
+      
+      setNotificationsEnabled(settings.notificationsEnabled);
+      setUseMachineLearning(settings.useMachineLearning);
+      setConsiderTimeOfDay(settings.considerTimeOfDay);
+      setSettingsInitialized(true);
+      console.log('Settings Screen synchronized with context:', settings);
+    }
+  }, [settings.notificationsEnabled, settings.useMachineLearning, settings.considerTimeOfDay, settingsInitialized]);
 
   // Find the current threshold option
   const currentThresholdOption = THRESHOLD_OPTIONS.find(
     option => option.value === settings.inactivityThreshold
   ) || THRESHOLD_OPTIONS[1]; // Default to 45 min if not found
 
+  // Find the current theme option
+  const currentThemeOption = THEME_OPTIONS.find(
+    option => option.value === themeMode
+  ) || THEME_OPTIONS[0]; // Default to auto if not found
+
   // Handle threshold selection
   const handleThresholdSelect = (value: number) => {
     updateSettings({ inactivityThreshold: value });
     setShowThresholdModal(false);
+  };
+
+  // Handle theme selection
+  const handleThemeSelect = (mode: ThemeMode) => {
+    setThemeMode(mode);
+    setShowThemeModal(false);
   };
 
   // Handle notifications toggle
@@ -137,117 +171,118 @@ const SettingsScreen = () => {
   };
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Sleep Detection</Text>
+    <ScrollView style={themedStyles.container} contentContainerStyle={themedStyles.scrollContent}>
+      <View style={themedStyles.section}>
+        <Text style={themedStyles.sectionTitle}>Sleep Detection</Text>
         <TouchableOpacity
-          style={styles.dropdownButton}
+          style={themedStyles.dropdownButton}
           onPress={() => setShowThresholdModal(true)}
         >
           <View>
-            <Text style={styles.settingLabel}>Inactivity Threshold</Text>
-            <Text style={styles.settingDescription}>
+            <Text style={themedStyles.settingLabel}>Inactivity Threshold</Text>
+            <Text style={themedStyles.settingDescription}>
               Inactivity time before considered asleep
             </Text>
           </View>
-          <View style={styles.dropdownValueContainer}>
-            <Text style={styles.dropdownValue}>{currentThresholdOption.label}</Text>
-            <Ionicons name="chevron-down" size={20} color="#6200ee" />
+          <View style={themedStyles.dropdownValueContainer}>
+            <Text style={themedStyles.dropdownValue}>{currentThresholdOption.label}</Text>
+            <Ionicons name="chevron-down" size={20} color={colors.primary} />
           </View>
         </TouchableOpacity>
       </View>
 
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Accuracy Settings</Text>
-        <View style={styles.settingItem}>
-          <View style={styles.switchContainer}>
-            <Text style={styles.settingLabel}>Enhanced Detection</Text>
+      <View style={themedStyles.section}>
+        <Text style={themedStyles.sectionTitle}>Accuracy Settings</Text>
+        <View style={themedStyles.settingItem}>
+          <View style={themedStyles.switchContainer}>
+            <Text style={themedStyles.settingLabel}>Enhanced Detection</Text>
             <Switch
               value={useMachineLearning}
               onValueChange={handleMachineLearningToggle}
-              trackColor={{ false: '#e0e0e0', true: '#b39ddb' }}
-              thumbColor={useMachineLearning ? '#6200ee' : '#f4f3f4'}
+              trackColor={{ false: colors.border, true: colors.primary + '80' }}
+              thumbColor={useMachineLearning ? colors.primary : colors.surface}
             />
           </View>
-          <Text style={styles.settingDescription}>
+          <Text style={themedStyles.settingDescription}>
             Learn from your sleep patterns to improve accuracy
           </Text>
         </View>
 
-        <View style={styles.settingItem}>
-          <View style={styles.switchContainer}>
-            <Text style={styles.settingLabel}>Consider Time of Day</Text>
+        <View style={themedStyles.settingItem}>
+          <View style={themedStyles.switchContainer}>
+            <Text style={themedStyles.settingLabel}>Consider Time of Day</Text>
             <Switch
               value={considerTimeOfDay}
               onValueChange={handleTimeOfDayToggle}
-              trackColor={{ false: '#e0e0e0', true: '#b39ddb' }}
-              thumbColor={considerTimeOfDay ? '#6200ee' : '#f4f3f4'}
+              trackColor={{ false: colors.border, true: colors.primary + '80' }}
+              thumbColor={considerTimeOfDay ? colors.primary : colors.surface}
             />
           </View>
-          <Text style={styles.settingDescription}>
+          <Text style={themedStyles.settingDescription}>
             Factor in typical sleep hours for better detection
           </Text>
         </View>
       </View>
 
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Notifications</Text>
-        <View style={styles.settingItem}>
-          <View style={styles.switchContainer}>
-            <Text style={styles.settingLabel}>Enable Notifications</Text>
+      <View style={themedStyles.section}>
+        <Text style={themedStyles.sectionTitle}>Notifications</Text>
+        <View style={themedStyles.settingItem}>
+          <View style={themedStyles.switchContainer}>
+            <Text style={themedStyles.settingLabel}>Enable Notifications</Text>
             <Switch
               value={notificationsEnabled}
               onValueChange={handleNotificationsToggle}
-              trackColor={{ false: '#e0e0e0', true: '#b39ddb' }}
-              thumbColor={notificationsEnabled ? '#6200ee' : '#f4f3f4'}
+              trackColor={{ false: colors.border, true: colors.primary + '80' }}
+              thumbColor={notificationsEnabled ? colors.primary : colors.surface}
             />
           </View>
-          <Text style={styles.settingDescription}>
+          <Text style={themedStyles.settingDescription}>
             Receive notifications about your sleep patterns
           </Text>
         </View>
       </View>
 
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Display</Text>
-        <View style={styles.settingItem}>
-          <View style={styles.switchContainer}>
-            <Text style={styles.settingLabel}>Dark Mode</Text>
-            <Switch
-              value={false}
-              onValueChange={() => Alert.alert('Coming Soon', 'Dark mode will be available in the next update!')}
-              trackColor={{ false: '#e0e0e0', true: '#b39ddb' }}
-              thumbColor={'#f4f3f4'}
-            />
+      <View style={themedStyles.section}>
+        <Text style={themedStyles.sectionTitle}>Appearance</Text>
+        <TouchableOpacity
+          style={themedStyles.dropdownButton}
+          onPress={() => setShowThemeModal(true)}
+        >
+          <View>
+            <Text style={themedStyles.settingLabel}>Theme</Text>
+            <Text style={themedStyles.settingDescription}>
+              Choose your preferred color scheme
+            </Text>
           </View>
-          <Text style={styles.settingDescription}>
-            Switch between light and dark themes (coming soon)
-          </Text>
-        </View>
+          <View style={themedStyles.dropdownValueContainer}>
+            <Text style={themedStyles.dropdownValue}>{currentThemeOption.label}</Text>
+            <Ionicons name="chevron-down" size={20} color={colors.primary} />
+          </View>
+        </TouchableOpacity>
       </View>
 
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Health Integration</Text>
+      <View style={themedStyles.section}>
+        <Text style={themedStyles.sectionTitle}>Health Integration</Text>
         <HealthIntegrationSettings onStatusChange={handleHealthStatusChange} />
       </View>
 
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Data Management</Text>
-        <TouchableOpacity style={styles.dataButton} onPress={resetSleepData}>
-          <Ionicons name="refresh-outline" size={20} color="#FF9800" />
-          <Text style={[styles.buttonText, { color: '#FF9800' }]}>Reset Sleep Data</Text>
+      <View style={themedStyles.section}>
+        <Text style={themedStyles.sectionTitle}>Data Management</Text>
+        <TouchableOpacity style={themedStyles.dataButton} onPress={resetSleepData}>
+          <Ionicons name="refresh-outline" size={20} color={colors.warning} />
+          <Text style={[themedStyles.buttonText, { color: colors.warning }]}>Reset Sleep Data</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={[styles.dataButton, styles.deleteButton]} onPress={clearAllData}>
+        <TouchableOpacity style={[themedStyles.dataButton, themedStyles.deleteButton]} onPress={clearAllData}>
           <Ionicons name="trash-outline" size={20} color="#fff" />
-          <Text style={styles.buttonText}>Clear All Data</Text>
+          <Text style={themedStyles.buttonText}>Clear All Data</Text>
         </TouchableOpacity>
       </View>
 
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Debug & Monitoring</Text>
+      <View style={themedStyles.section}>
+        <Text style={themedStyles.sectionTitle}>Debug & Monitoring</Text>
         <TouchableOpacity
-          style={styles.dataButton}
+          style={themedStyles.dataButton}
           onPress={() => setShowDebugMonitor(!showDebugMonitor)}
         >
           <Ionicons
@@ -255,27 +290,27 @@ const SettingsScreen = () => {
             size={20}
             color="#2196F3"
           />
-          <Text style={[styles.buttonText, { color: '#2196F3' }]}>
+          <Text style={[themedStyles.buttonText, { color: '#2196F3' }]}>
             {showDebugMonitor ? 'Hide' : 'Show'} Background Monitor
           </Text>
         </TouchableOpacity>
 
         {showDebugMonitor && (
-          <View style={styles.debugContainer}>
+          <View style={themedStyles.debugContainer}>
             <BackgroundMonitorDebug />
           </View>
         )}
       </View>
 
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>About</Text>
-        <View style={styles.aboutContainer}>
-          <Text style={styles.appName}>Sleep Detector</Text>
-          <Text style={styles.appVersion}>Version 1.0.0</Text>
-          <Text style={styles.description}>
+      <View style={themedStyles.section}>
+        <Text style={themedStyles.sectionTitle}>About</Text>
+        <View style={themedStyles.aboutContainer}>
+          <Text style={themedStyles.appName}>Sleep Detector</Text>
+          <Text style={themedStyles.appVersion}>Version 1.0.0</Text>
+          <Text style={themedStyles.description}>
             Track your sleep patterns based on phone usage.
           </Text>
-          <Text style={[styles.description, styles.mealSnapLink]} onPress={openMealSnapApp}>
+          <Text style={[themedStyles.description, themedStyles.mealSnapLink]} onPress={openMealSnapApp}>
             MealSnap helps with your eating habits
           </Text>
         </View>
@@ -288,12 +323,12 @@ const SettingsScreen = () => {
         animationType="slide"
         onRequestClose={() => setShowThresholdModal(false)}
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Select Inactivity Threshold</Text>
+        <View style={themedStyles.modalOverlay}>
+          <View style={themedStyles.modalContent}>
+            <View style={themedStyles.modalHeader}>
+              <Text style={themedStyles.modalTitle}>Select Inactivity Threshold</Text>
               <TouchableOpacity onPress={() => setShowThresholdModal(false)}>
-                <Ionicons name="close" size={24} color="#333" />
+                <Ionicons name="close" size={24} color={colors.text} />
               </TouchableOpacity>
             </View>
 
@@ -303,29 +338,90 @@ const SettingsScreen = () => {
               renderItem={({ item }) => (
                 <TouchableOpacity
                   style={[
-                    styles.thresholdOption,
-                    item.value === settings.inactivityThreshold && styles.selectedOption
+                    themedStyles.thresholdOption,
+                    item.value === settings.inactivityThreshold && themedStyles.selectedOption
                   ]}
                   onPress={() => handleThresholdSelect(item.value)}
                 >
                   <Text
                     style={[
-                      styles.thresholdOptionText,
-                      item.value === settings.inactivityThreshold && styles.selectedOptionText
+                      themedStyles.thresholdOptionText,
+                      item.value === settings.inactivityThreshold && themedStyles.selectedOptionText
                     ]}
                   >
                     {item.label}
                   </Text>
                   {item.value === settings.inactivityThreshold && (
-                    <Ionicons name="checkmark" size={20} color="#6200ee" />
+                    <Ionicons name="checkmark" size={20} color={colors.primary} />
                   )}
                 </TouchableOpacity>
               )}
-              ItemSeparatorComponent={() => <View style={styles.separator} />}
+              ItemSeparatorComponent={() => <View style={themedStyles.separator} />}
             />
 
-            <Text style={styles.modalDescription}>
+            <Text style={themedStyles.modalDescription}>
               This is how long your phone needs to be inactive before Sleep Detector considers you asleep.
+            </Text>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Theme Selection Modal */}
+      <Modal
+        visible={showThemeModal}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setShowThemeModal(false)}
+      >
+        <View style={themedStyles.modalOverlay}>
+          <View style={themedStyles.modalContent}>
+            <View style={themedStyles.modalHeader}>
+              <Text style={themedStyles.modalTitle}>Select Theme</Text>
+              <TouchableOpacity onPress={() => setShowThemeModal(false)}>
+                <Ionicons name="close" size={24} color={colors.text} />
+              </TouchableOpacity>
+            </View>
+
+            <FlatList
+              data={THEME_OPTIONS}
+              keyExtractor={(item) => item.value}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  style={[
+                    themedStyles.thresholdOption,
+                    item.value === themeMode && themedStyles.selectedOption
+                  ]}
+                  onPress={() => handleThemeSelect(item.value)}
+                >
+                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    <Ionicons 
+                      name={
+                        item.value === 'auto' ? 'phone-portrait-outline' :
+                        item.value === 'light' ? 'sunny-outline' : 'moon-outline'
+                      } 
+                      size={20} 
+                      color={colors.textSecondary} 
+                      style={{ marginRight: 12 }}
+                    />
+                    <Text
+                      style={[
+                        themedStyles.thresholdOptionText,
+                        item.value === themeMode && themedStyles.selectedOptionText
+                      ]}
+                    >
+                      {item.label}
+                    </Text>
+                  </View>
+                  {item.value === themeMode && (
+                    <Ionicons name="checkmark" size={20} color={colors.primary} />
+                  )}
+                </TouchableOpacity>
+              )}
+              ItemSeparatorComponent={() => <View style={themedStyles.separator} />}
+            />
+
+            <Text style={themedStyles.modalDescription}>
+              Auto follows your system theme. Perfect for checking your sleep before bed in dark mode! 🌙
             </Text>
           </View>
         </View>
@@ -333,6 +429,178 @@ const SettingsScreen = () => {
     </ScrollView>
   );
 };
+
+// Create themed styles function
+const createThemedStyles = (colors: any) => StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: colors.background,
+    padding: 16,
+  },
+  scrollContent: {
+    paddingBottom: 40,
+  },
+  section: {
+    backgroundColor: colors.card,
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+    shadowColor: colors.text,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: colors.text,
+    marginBottom: 16,
+  },
+  settingItem: {
+    marginBottom: 8,
+  },
+  settingLabel: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: colors.text,
+  },
+  settingValue: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: colors.primary,
+  },
+  settingDescription: {
+    fontSize: 14,
+    color: colors.textSecondary,
+    marginHorizontal: 4,
+  },
+  switchContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  dataButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 12,
+    backgroundColor: colors.surface,
+  },
+  deleteButton: {
+    backgroundColor: colors.error,
+  },
+  buttonText: {
+    fontWeight: '600',
+    fontSize: 16,
+    marginLeft: 8,
+    color: colors.text,
+  },
+  aboutContainer: {
+    alignItems: 'center',
+    padding: 8,
+  },
+  appName: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: colors.text,
+  },
+  appVersion: {
+    fontSize: 14,
+    color: colors.textSecondary,
+    marginTop: 4,
+  },
+  description: {
+    fontSize: 14,
+    color: colors.textSecondary,
+    marginTop: 8,
+    textAlign: 'center',
+  },
+  dropdownButton: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 12,
+  },
+  dropdownValueContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    maxWidth: '35%',
+  },
+  dropdownValue: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: colors.primary,
+    marginRight: 4,
+    flexShrink: 1,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: colors.modalOverlay,
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: colors.modalBackground,
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+    padding: 20,
+    maxHeight: '70%',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: colors.text,
+  },
+  thresholdOption: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 16,
+  },
+  selectedOption: {
+    backgroundColor: colors.primary + '20',
+    borderRadius: 8,
+    paddingHorizontal: 8,
+  },
+  thresholdOptionText: {
+    fontSize: 16,
+    color: colors.text,
+  },
+  selectedOptionText: {
+    fontWeight: '600',
+    color: colors.primary,
+  },
+  separator: {
+    height: 1,
+    backgroundColor: colors.border,
+  },
+  modalDescription: {
+    fontSize: 14,
+    color: colors.textSecondary,
+    marginTop: 16,
+    fontStyle: 'italic',
+  },
+  mealSnapLink: {
+    fontWeight: 'bold',
+    textDecorationLine: 'underline',
+    color: colors.primary,
+  },
+  debugContainer: {
+    marginTop: 16,
+    borderRadius: 8,
+    overflow: 'hidden',
+    height: 400,
+  },
+});
 
 const styles = StyleSheet.create({
   container: {

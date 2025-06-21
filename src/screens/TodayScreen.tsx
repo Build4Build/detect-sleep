@@ -5,6 +5,7 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList, SleepStatus } from '../types';
 import { useSleep } from '../context/SleepContext';
+import { useTheme } from '../context/ThemeContext';
 import { formatTime, formatDuration } from '../utils/dateUtils';
 
 type TodayScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
@@ -20,6 +21,9 @@ const SLEEP_TIPS = [
   "Avoid large meals and beverages late at night",
   "Try relaxation techniques like deep breathing",
   "Limit daytime naps to 30 minutes or less",
+  "Try mouth taping to promote nasal breathing during sleep",
+  "Consider using blackout curtains to block light",
+  "Use eye masks or earplugs if needed",
   "If you can't sleep, get up and do something relaxing",
   "Consider using a white noise machine to block disturbances",
   "Keep your sleep environment free from electronic devices",
@@ -34,8 +38,12 @@ const TodayScreen = () => {
     getTodaySleepDuration,
     manuallySetStatus
   } = useSleep();
+  const { colors, isDarkMode } = useTheme();
   const [dailyTip, setDailyTip] = useState('');
   const [greeting, setGreeting] = useState('');
+  
+  // Create themed styles
+  const themedStyles = createThemedStyles(colors);
   
   // Calculate sleep duration for today
   const sleepDuration = getTodaySleepDuration();
@@ -118,51 +126,51 @@ const TodayScreen = () => {
   };
   
   return (
-    <ScrollView style={styles.container}>
-      <View style={styles.header}>
+    <ScrollView style={themedStyles.container}>
+      <View style={themedStyles.header}>
         <View>
-          <Text style={styles.greeting}>{greeting}</Text>
-          <Text style={styles.date}>{formattedDate}</Text>
+          <Text style={themedStyles.greeting}>{greeting}</Text>
+          <Text style={themedStyles.date}>{formattedDate}</Text>
         </View>
-        <TouchableOpacity onPress={goToSettings} style={styles.settingsButton}>
-          <Ionicons name="settings-outline" size={24} color="#6200ee" />
+        <TouchableOpacity onPress={goToSettings} style={themedStyles.settingsButton}>
+          <Ionicons name="settings-outline" size={24} color={colors.primary} />
         </TouchableOpacity>
       </View>
       
       <TouchableOpacity 
-        style={styles.statusCard}
+        style={themedStyles.statusCard}
         onPress={handleStatusOverride}
         activeOpacity={0.8}
       >
-        <View style={styles.statusHeader}>
-          <Text style={styles.statusLabel}>Current Status</Text>
+        <View style={themedStyles.statusHeader}>
+          <Text style={themedStyles.statusLabel}>Current Status</Text>
           <TouchableOpacity 
-            style={styles.editButton}
+            style={themedStyles.editButton}
             onPress={handleStatusOverride}
           >
-            <Ionicons name="pencil-outline" size={16} color="#6200ee" />
-            <Text style={styles.editText}>Edit</Text>
+            <Ionicons name="pencil-outline" size={16} color={colors.primary} />
+            <Text style={themedStyles.editText}>Edit</Text>
           </TouchableOpacity>
         </View>
         
-        <View style={styles.statusContainer}>
+        <View style={themedStyles.statusContainer}>
           <View 
             style={[
-              styles.statusIndicator, 
+              themedStyles.statusIndicator, 
               { backgroundColor: currentStatus === 'awake' ? '#4CAF50' : '#2196F3' }
             ]} 
           />
-          <Text style={styles.statusText}>
+          <Text style={themedStyles.statusText}>
             {currentStatus === 'awake' ? 'Awake' : 'Asleep'}
           </Text>
         </View>
         
-        <View style={styles.confidenceContainer}>
-          <Text style={styles.confidenceLabel}>Detection Confidence:</Text>
-          <View style={styles.confidenceBar}>
+        <View style={themedStyles.confidenceContainer}>
+          <Text style={themedStyles.confidenceLabel}>Detection Confidence:</Text>
+          <View style={themedStyles.confidenceBar}>
             <View 
               style={[
-                styles.confidenceFill, 
+                themedStyles.confidenceFill, 
                 { 
                   width: `${currentConfidence}%`,
                   backgroundColor: getConfidenceColor(currentConfidence)
@@ -171,7 +179,7 @@ const TodayScreen = () => {
             />
           </View>
           <Text style={[
-            styles.confidenceValue,
+            themedStyles.confidenceValue,
             { color: getConfidenceColor(currentConfidence) }
           ]}>
             {currentConfidence}%
@@ -179,15 +187,15 @@ const TodayScreen = () => {
         </View>
       </TouchableOpacity>
       
-      <View style={styles.sleepCard}>
-        <Text style={styles.cardTitle}>Today's Sleep</Text>
-        <View style={styles.sleepInfo}>
-          <Ionicons name="bed-outline" size={40} color="#6200ee" />
-          <View style={styles.sleepDataContainer}>
-            <Text style={styles.sleepDuration}>{formatDuration(sleepDuration)}</Text>
-            <View style={styles.qualityContainer}>
-              <Text style={styles.qualityLabel}>Quality:</Text>
-              <Text style={[styles.qualityValue, { color: sleepQuality.color }]}>
+      <View style={themedStyles.sleepCard}>
+        <Text style={themedStyles.cardTitle}>Today's Sleep</Text>
+        <View style={themedStyles.sleepInfo}>
+          <Ionicons name="bed-outline" size={40} color={colors.primary} />
+          <View style={themedStyles.sleepDataContainer}>
+            <Text style={themedStyles.sleepDuration}>{formatDuration(sleepDuration)}</Text>
+            <View style={themedStyles.qualityContainer}>
+              <Text style={themedStyles.qualityLabel}>Quality:</Text>
+              <Text style={[themedStyles.qualityValue, { color: sleepQuality.color }]}>
                 {sleepQuality.text}
               </Text>
             </View>
@@ -195,31 +203,31 @@ const TodayScreen = () => {
         </View>
       </View>
       
-      <View style={styles.activityCard}>
-        <Text style={styles.cardTitle}>Activity Timeline</Text>
+      <View style={themedStyles.activityCard}>
+        <Text style={themedStyles.cardTitle}>Activity Timeline</Text>
         {todayRecords.length === 0 ? (
-          <Text style={styles.noActivity}>No activity recorded yet today</Text>
+          <Text style={themedStyles.noActivity}>No activity recorded yet today</Text>
         ) : (
-          <View style={styles.timeline}>
+          <View style={themedStyles.timeline}>
             {todayRecords.map((record, index) => (
-              <View key={record.id} style={styles.timelineItem}>
+              <View key={record.id} style={themedStyles.timelineItem}>
                 <View 
                   style={[
-                    styles.timelineDot, 
+                    themedStyles.timelineDot, 
                     { backgroundColor: record.status === 'awake' ? '#4CAF50' : '#2196F3' }
                   ]} 
                 />
-                <View style={styles.timelineContent}>
-                  <View style={styles.timelineHeader}>
-                    <Text style={styles.timelineTime}>{formatTime(record.timestamp)}</Text>
+                <View style={themedStyles.timelineContent}>
+                  <View style={themedStyles.timelineHeader}>
+                    <Text style={themedStyles.timelineTime}>{formatTime(record.timestamp)}</Text>
                     <Text style={[
-                      styles.timelineConfidence,
+                      themedStyles.timelineConfidence,
                       { color: getConfidenceColor(record.confidence) }
                     ]}>
                       {record.confidence}% confident
                     </Text>
                   </View>
-                  <Text style={styles.timelineStatus}>
+                  <Text style={themedStyles.timelineStatus}>
                     {record.status === 'awake' ? 'Woke up' : 'Fell asleep'}
                   </Text>
                 </View>
@@ -229,39 +237,40 @@ const TodayScreen = () => {
         )}
       </View>
       
-      <View style={styles.tipCard}>
-        <View style={styles.tipHeader}>
+      <View style={themedStyles.tipCard}>
+        <View style={themedStyles.tipHeader}>
           <Ionicons name="bulb-outline" size={24} color="#FFC107" />
-          <Text style={styles.tipTitle}>Daily Sleep Tip</Text>
+          <Text style={themedStyles.tipTitle}>Daily Sleep Tip</Text>
         </View>
-        <Text style={styles.tipText}>{dailyTip}</Text>
+        <Text style={themedStyles.tipText}>{dailyTip}</Text>
       </View>
       
-      <View style={styles.buttonContainer}>
+      <View style={themedStyles.buttonContainer}>
         <TouchableOpacity 
-          style={styles.exportButton}
+          style={themedStyles.exportButton}
           onPress={() => navigation.navigate('Export')}
         >
           <Ionicons name="share-outline" size={20} color="#fff" />
-          <Text style={styles.exportButtonText}>Export Data</Text>
+          <Text style={themedStyles.exportButtonText}>Export Data</Text>
         </TouchableOpacity>
         
         <TouchableOpacity 
-          style={styles.historyButton}
+          style={themedStyles.historyButton}
           onPress={() => navigation.navigate('History')}
         >
           <Ionicons name="calendar-outline" size={20} color="#fff" />
-          <Text style={styles.exportButtonText}>Sleep History</Text>
+          <Text style={themedStyles.exportButtonText}>Sleep History</Text>
         </TouchableOpacity>
       </View>
     </ScrollView>
   );
 };
 
-const styles = StyleSheet.create({
+// Create themed styles function
+const createThemedStyles = (colors: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: colors.background,
   },
   header: {
     flexDirection: 'row',
@@ -272,22 +281,22 @@ const styles = StyleSheet.create({
   greeting: {
     fontSize: 22,
     fontWeight: 'bold',
-    color: '#333',
+    color: colors.text,
     marginBottom: 4,
   },
   date: {
     fontSize: 16,
-    color: '#666',
+    color: colors.textSecondary,
   },
   settingsButton: {
     padding: 8,
   },
   statusCard: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.card,
     borderRadius: 12,
     margin: 16,
     padding: 16,
-    shadowColor: '#000',
+    shadowColor: colors.text,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
@@ -301,7 +310,7 @@ const styles = StyleSheet.create({
   },
   statusLabel: {
     fontSize: 16,
-    color: '#666',
+    color: colors.textSecondary,
   },
   editButton: {
     flexDirection: 'row',
@@ -309,7 +318,7 @@ const styles = StyleSheet.create({
   },
   editText: {
     fontSize: 14,
-    color: '#6200ee',
+    color: colors.primary,
     marginLeft: 4,
   },
   statusContainer: {
@@ -326,19 +335,19 @@ const styles = StyleSheet.create({
   statusText: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#333',
+    color: colors.text,
   },
   confidenceContainer: {
     marginTop: 8,
   },
   confidenceLabel: {
     fontSize: 14,
-    color: '#666',
+    color: colors.textSecondary,
     marginBottom: 4,
   },
   confidenceBar: {
     height: 8,
-    backgroundColor: '#e0e0e0',
+    backgroundColor: colors.border,
     borderRadius: 4,
     marginBottom: 4,
     overflow: 'hidden',
@@ -353,12 +362,12 @@ const styles = StyleSheet.create({
     textAlign: 'right',
   },
   sleepCard: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.card,
     borderRadius: 12,
     margin: 16,
     marginTop: 0,
     padding: 16,
-    shadowColor: '#000',
+    shadowColor: colors.text,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
@@ -367,7 +376,7 @@ const styles = StyleSheet.create({
   cardTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#333',
+    color: colors.text,
     marginBottom: 16,
   },
   sleepInfo: {
@@ -381,7 +390,7 @@ const styles = StyleSheet.create({
   sleepDuration: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: '#6200ee',
+    color: colors.primary,
   },
   qualityContainer: {
     flexDirection: 'row',
@@ -390,7 +399,7 @@ const styles = StyleSheet.create({
   },
   qualityLabel: {
     fontSize: 16,
-    color: '#666',
+    color: colors.textSecondary,
     marginRight: 8,
   },
   qualityValue: {
@@ -398,12 +407,12 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   activityCard: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.card,
     borderRadius: 12,
     margin: 16,
     marginTop: 0,
     padding: 16,
-    shadowColor: '#000',
+    shadowColor: colors.text,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
@@ -411,7 +420,7 @@ const styles = StyleSheet.create({
   },
   noActivity: {
     textAlign: 'center',
-    color: '#666',
+    color: colors.textSecondary,
     padding: 16,
   },
   timeline: {
@@ -439,7 +448,7 @@ const styles = StyleSheet.create({
   timelineTime: {
     fontSize: 16,
     fontWeight: '500',
-    color: '#333',
+    color: colors.text,
   },
   timelineConfidence: {
     fontSize: 12,
@@ -447,16 +456,16 @@ const styles = StyleSheet.create({
   },
   timelineStatus: {
     fontSize: 14,
-    color: '#666',
+    color: colors.textSecondary,
     marginTop: 2,
   },
   tipCard: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.card,
     borderRadius: 12,
     margin: 16,
     marginTop: 0,
     padding: 16,
-    shadowColor: '#000',
+    shadowColor: colors.text,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
@@ -470,12 +479,12 @@ const styles = StyleSheet.create({
   tipTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#333',
+    color: colors.text,
     marginLeft: 8,
   },
   tipText: {
     fontSize: 16,
-    color: '#333',
+    color: colors.text,
     lineHeight: 24,
     fontStyle: 'italic',
   },
@@ -486,7 +495,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   exportButton: {
-    backgroundColor: '#6200ee',
+    backgroundColor: colors.primary,
     borderRadius: 24,
     flexDirection: 'row',
     alignItems: 'center',

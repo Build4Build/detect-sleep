@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, Switch, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { HealthService } from '../services/HealthService';
+import { useTheme } from '../context/ThemeContext';
 
 // Create a singleton instance of our health service
 const healthService = new HealthService();
@@ -17,7 +18,11 @@ const HealthIntegrationSettings: React.FC<HealthIntegrationSettingsProps> = ({ o
   const [isConnected, setIsConnected] = useState<boolean>(false);
   const [syncEnabled, setSyncEnabled] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(true);
+  const { colors } = useTheme();
   const serviceName = healthService.getServiceName();
+
+  // Create themed styles
+  const themedStyles = createThemedStyles(colors);
 
   // Initialize on component mount
   useEffect(() => {
@@ -94,7 +99,7 @@ const HealthIntegrationSettings: React.FC<HealthIntegrationSettingsProps> = ({ o
   const renderConnectionStatus = () => {
     if (!isAvailable) {
       return (
-        <Text style={styles.notAvailableText}>
+        <Text style={themedStyles.notAvailableText}>
           {serviceName} integration is not available on this device.
         </Text>
       );
@@ -102,24 +107,28 @@ const HealthIntegrationSettings: React.FC<HealthIntegrationSettingsProps> = ({ o
 
     if (isConnected) {
       return (
-        <View style={styles.connectedContainer}>
-          <Text style={styles.connectedText}>
+        <View style={themedStyles.connectedContainer}>
+          <Text style={themedStyles.connectedText}>
             {`Connected to ${serviceName}`}
           </Text>
-          <View style={styles.settingRow}>
-            <Text style={styles.settingText}>Import sleep data</Text>
+          <View style={themedStyles.settingRow}>
+            <Text style={themedStyles.settingText}>Import sleep data</Text>
             <Switch
               value={syncEnabled}
               onValueChange={handleSyncToggle}
               disabled={loading}
+              trackColor={{ false: colors.border, true: colors.primary + '80' }}
+              thumbColor={syncEnabled ? colors.primary : colors.surface}
             />
           </View>
-          <View style={styles.settingRow}>
-            <Text style={styles.settingText}>Export sleep data</Text>
+          <View style={themedStyles.settingRow}>
+            <Text style={themedStyles.settingText}>Export sleep data</Text>
             <Switch
               value={syncEnabled}
               onValueChange={handleSyncToggle}
               disabled={loading}
+              trackColor={{ false: colors.border, true: colors.primary + '80' }}
+              thumbColor={syncEnabled ? colors.primary : colors.surface}
             />
           </View>
         </View>
@@ -128,11 +137,11 @@ const HealthIntegrationSettings: React.FC<HealthIntegrationSettingsProps> = ({ o
 
     return (
       <TouchableOpacity
-        style={styles.connectButton}
+        style={themedStyles.connectButton}
         onPress={handleConnect}
         disabled={loading}
       >
-        <Text style={styles.connectButtonText}>
+        <Text style={themedStyles.connectButtonText}>
           {loading ? 'Connecting...' : `Connect to ${serviceName}`}
         </Text>
       </TouchableOpacity>
@@ -140,17 +149,18 @@ const HealthIntegrationSettings: React.FC<HealthIntegrationSettingsProps> = ({ o
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>{serviceName} Integration</Text>
+    <View style={themedStyles.container}>
+      <Text style={themedStyles.title}>{serviceName} Integration</Text>
       {renderConnectionStatus()}
     </View>
   );
 };
 
-const styles = StyleSheet.create({
+// Create themed styles function
+const createThemedStyles = (colors: any) => StyleSheet.create({
   container: {
     padding: 16,
-    backgroundColor: '#fff',
+    backgroundColor: colors.card,
     borderRadius: 8,
     marginBottom: 16,
   },
@@ -158,10 +168,10 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
     marginBottom: 12,
-    color: '#333',
+    color: colors.text,
   },
   connectButton: {
-    backgroundColor: '#007AFF',
+    backgroundColor: colors.primary,
     padding: 12,
     borderRadius: 8,
     alignItems: 'center',
@@ -172,7 +182,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   notAvailableText: {
-    color: '#999',
+    color: colors.textSecondary,
     fontStyle: 'italic',
     textAlign: 'center',
   },
@@ -180,7 +190,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   connectedText: {
-    color: '#4CAF50',
+    color: colors.success,
     fontWeight: '600',
     marginBottom: 16,
   },
@@ -190,11 +200,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 8,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#eee',
+    borderBottomColor: colors.border,
   },
   settingText: {
     fontSize: 16,
-    color: '#333',
+    color: colors.text,
   },
 });
 

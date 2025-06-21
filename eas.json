@@ -14,6 +14,9 @@
       },
       "android": {
         "gradleCommand": ":app:assembleDebug",
+        "env": {
+          "EXPO_NDK_VERSION": "26.1.10909125"
+        },
         "buildType": "apk",
         "resourceClass": "medium",
         "withoutCredentials": true
