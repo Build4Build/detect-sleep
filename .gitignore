@@ -3,6 +3,7 @@
 # dependencies
 node_modules/
 package-lock.json
+yarn.lock
 
 # Expo
 .expo/
@@ -46,26 +47,40 @@ ios/.xcode.env.local
 ios/SleepDetector.xcworkspace/xcuserdata/
 ios/SleepDetector.xcodeproj/xcuserdata/
 ios/SleepDetector.xcodeproj/project.xcworkspace/xcuserdata/
+ios/DerivedData/
 
-# Generated screenshot files
-*.png
-!assets/icon.png
-!assets/adaptive-icon.png
-!assets/splash.png
-!assets/splash-icon.png
-!assets/favicon.png
+# Android build files (if ever added)
+android/build/
+android/app/build/
 
-# Temporary and generated files
+# Generated and temporary development files
 validate-dark-mode.js
 DARK_MODE_COMPLETE.md
 *COMPLETE.md
 *IMPLEMENTATION_REPORT.md
 *TESTING_GUIDE.md
 test-*.sh
+*test*.sh
+*.test.js
+*.test.ts
+
+# Generated screenshot files (keep only the main assets)
+*.png
+!assets/icon.png
+!assets/adaptive-icon.png
+!assets/splash.png
+!assets/splash-icon.png
+!assets/favicon.png
+# Keep app store screenshots but not generated ones
+!assets/app-store-screenshots/*.png
+screenshots/
+generated-screenshots/
+manual-test.png
 
 # Logs
 *.log
 logs/
+.expo/*.log
 
 # Editor files
 .vscode/
@@ -78,3 +93,25 @@ logs/
 Thumbs.db
 ehthumbs.db
 Desktop.ini
+
+# Development and testing files
+coverage/
+.nyc_output/
+junit.xml
+test-results/
+
+# Cache directories
+.cache/
+.parcel-cache/
+.next/
+.nuxt/
+
+# Build and deployment files
+build/
+dist-build/
+*.ipa
+*.apk
+*.aab
+
+# EAS Build
+.easignore

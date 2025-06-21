@@ -23,7 +23,7 @@ const SLEEP_TIPS = [
   "Limit daytime naps to 30 minutes or less",
   "Try mouth taping to promote nasal breathing during sleep",
   "Consider using blackout curtains to block light",
-  "Use eye masks or earplugs if needed",
+  "Use sleep masks or earplugs to reduce light and noise",
   "If you can't sleep, get up and do something relaxing",
   "Consider using a white noise machine to block disturbances",
   "Keep your sleep environment free from electronic devices",
