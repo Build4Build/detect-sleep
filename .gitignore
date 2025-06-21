@@ -64,6 +64,11 @@ test-*.sh
 *.test.js
 *.test.ts
 
+# Build scripts and temporary files
+build-deploy.sh
+*.tmp
+*.temp
+
 # Generated screenshot files (keep only the main assets)
 *.png
 !assets/icon.png
