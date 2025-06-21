@@ -2,6 +2,7 @@
 
 # dependencies
 node_modules/
+package-lock.json
 
 # Expo
 .expo/
@@ -31,6 +32,49 @@ yarn-error.*
 
 # local env files
 .env*.local
+.env
+.env.production
+.env.development
 
 # typescript
 *.tsbuildinfo
+
+# iOS build files
+ios/build/
+ios/Pods/
+ios/.xcode.env.local
+ios/SleepDetector.xcworkspace/xcuserdata/
+ios/SleepDetector.xcodeproj/xcuserdata/
+ios/SleepDetector.xcodeproj/project.xcworkspace/xcuserdata/
+
+# Generated screenshot files
+*.png
+!assets/icon.png
+!assets/adaptive-icon.png
+!assets/splash.png
+!assets/splash-icon.png
+!assets/favicon.png
+
+# Temporary and generated files
+validate-dark-mode.js
+DARK_MODE_COMPLETE.md
+*COMPLETE.md
+*IMPLEMENTATION_REPORT.md
+*TESTING_GUIDE.md
+test-*.sh
+
+# Logs
+*.log
+logs/
+
+# Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS generated files
+Thumbs.db
+ehthumbs.db
+Desktop.ini
