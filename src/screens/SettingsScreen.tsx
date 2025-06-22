@@ -26,7 +26,6 @@ const THEME_OPTIONS = [
 const SettingsScreen = () => {
   const { settings, updateSettings } = useSleep();
   const { themeMode, setThemeMode, colors, isDarkMode } = useTheme();
-  const [notificationsEnabled, setNotificationsEnabled] = useState(settings.notificationsEnabled);
   const [useMachineLearning, setUseMachineLearning] = useState(settings.useMachineLearning);
   const [considerTimeOfDay, setConsiderTimeOfDay] = useState(settings.considerTimeOfDay);
   const [showThresholdModal, setShowThresholdModal] = useState(false);

@@ -22,7 +22,6 @@ const INACTIVITY_UPDATE_INTERVAL = 300000; // Update inactivity every 5 minutes
 // Default settings (should match SleepContext)
 const DEFAULT_SETTINGS = {
   inactivityThreshold: 45, // 45 minutes of inactivity before considered asleep
-  notificationsEnabled: true,
   useMachineLearning: true,
   considerTimeOfDay: true,
 };

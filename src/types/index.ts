@@ -28,7 +28,6 @@ export interface DailySleepSummary {
 // App settings
 export interface AppSettings {
   inactivityThreshold: number; // Minutes of inactivity before considered asleep
-  notificationsEnabled: boolean;
   useMachineLearning: boolean; // Whether to use enhanced ML-based detection
   considerTimeOfDay: boolean; // Consider typical sleep hours in detection
 }

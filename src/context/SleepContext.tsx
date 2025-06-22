@@ -8,7 +8,6 @@ import { BackgroundActivityService } from '../services/BackgroundActivityService
 // Default settings
 const DEFAULT_SETTINGS: AppSettings = {
   inactivityThreshold: 45, // 45 minutes of inactivity before considered asleep
-  notificationsEnabled: true,
   useMachineLearning: true, // New setting for enhanced detection
   considerTimeOfDay: true, // New setting to consider typical sleep hours
 };
