@@ -6,6 +6,7 @@
     <array>
       <string>com.sleepdetector.app.sleeprefresh</string>
       <string>com.sleepdetector.app.sleepprocessing</string>
+      <string>background-activity-monitor</string>
     </array>
     <key>CADisableMinimumFrameDurationOnPhone</key>
     <true/>
@@ -55,12 +56,19 @@
     <string>We use Health data to improve sleep detection accuracy and to compare with our detection algorithm</string>
     <key>NSHealthUpdateUsageDescription</key>
     <string>We can write your detected sleep data to Apple Health to consolidate your health information</string>
+    <key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+    <string>Allow $(PRODUCT_NAME) to access your location</string>
+    <key>NSLocationAlwaysUsageDescription</key>
+    <string>Allow $(PRODUCT_NAME) to access your location</string>
+    <key>NSLocationWhenInUseUsageDescription</key>
+    <string>Allow $(PRODUCT_NAME) to access your location</string>
     <key>NSMotionUsageDescription</key>
-    <string>We use motion data to more accurately detect when you're asleep or awake</string>
+    <string>We use motion data to more accurately detect when you're asleep or awake by monitoring device movement patterns</string>
     <key>UIBackgroundModes</key>
     <array>
       <string>fetch</string>
       <string>processing</string>
+      <string>background-app-refresh</string>
     </array>
     <key>UILaunchStoryboardName</key>
     <string>SplashScreen</string>
