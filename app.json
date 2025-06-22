@@ -2,11 +2,14 @@
   "expo": {
     "name": "Sleep Detector",
     "slug": "detect-sleep",
-    "version": "1.0.4",
+    "version": "1.0.6",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
-    "platforms": ["ios", "android"],
+    "platforms": [
+      "ios",
+      "android"
+    ],
     "splash": {
       "image": "./assets/splash.png",
       "resizeMode": "contain",
@@ -18,7 +21,7 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.sleepdetector.app",
-      "buildNumber": "13",
+      "buildNumber": "15",
       "infoPlist": {
         "UIBackgroundModes": [
           "fetch",
@@ -48,7 +51,7 @@
         "backgroundColor": "#ffffff"
       },
       "package": "com.sleepdetector.app",
-      "versionCode": 16,
+      "versionCode": 18,
       "permissions": [
         "android.permission.ACTIVITY_RECOGNITION",
         "android.permission.WAKE_LOCK",
@@ -74,7 +77,8 @@
             "WRITE_SLEEP"
           ]
         }
-      ]
+      ],
+      "expo-notifications"
     ],
     "extra": {
       "eas": {
