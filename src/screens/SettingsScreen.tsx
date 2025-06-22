@@ -41,17 +41,15 @@ const SettingsScreen = () => {
   useEffect(() => {
     // Only update local state if we haven't initialized yet or if settings have actually changed
     if (!settingsInitialized || 
-        notificationsEnabled !== settings.notificationsEnabled ||
         useMachineLearning !== settings.useMachineLearning ||
         considerTimeOfDay !== settings.considerTimeOfDay) {
       
-      setNotificationsEnabled(settings.notificationsEnabled);
       setUseMachineLearning(settings.useMachineLearning);
       setConsiderTimeOfDay(settings.considerTimeOfDay);
       setSettingsInitialized(true);
       console.log('Settings Screen synchronized with context:', settings);
     }
-  }, [settings.notificationsEnabled, settings.useMachineLearning, settings.considerTimeOfDay, settingsInitialized]);
+  }, [settings.useMachineLearning, settings.considerTimeOfDay, settingsInitialized]);
 
   // Find the current threshold option
   const currentThresholdOption = THRESHOLD_OPTIONS.find(
@@ -73,12 +71,6 @@ const SettingsScreen = () => {
   const handleThemeSelect = (mode: ThemeMode) => {
     setThemeMode(mode);
     setShowThemeModal(false);
-  };
-
-  // Handle notifications toggle
-  const handleNotificationsToggle = (value: boolean) => {
-    setNotificationsEnabled(value);
-    updateSettings({ notificationsEnabled: value });
   };
 
   // Handle machine learning toggle
@@ -219,24 +211,6 @@ const SettingsScreen = () => {
           </View>
           <Text style={themedStyles.settingDescription}>
             Factor in typical sleep hours for better detection
-          </Text>
-        </View>
-      </View>
-
-      <View style={themedStyles.section}>
-        <Text style={themedStyles.sectionTitle}>Notifications</Text>
-        <View style={themedStyles.settingItem}>
-          <View style={themedStyles.switchContainer}>
-            <Text style={themedStyles.settingLabel}>Enable Notifications</Text>
-            <Switch
-              value={notificationsEnabled}
-              onValueChange={handleNotificationsToggle}
-              trackColor={{ false: colors.border, true: colors.primary + '80' }}
-              thumbColor={notificationsEnabled ? colors.primary : colors.surface}
-            />
-          </View>
-          <Text style={themedStyles.settingDescription}>
-            Receive notifications about your sleep patterns
           </Text>
         </View>
       </View>
