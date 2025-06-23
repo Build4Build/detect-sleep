@@ -44,7 +44,7 @@ export class HealthService {
       console.warn('Health integration not supported on this platform');
       return false;
     } catch (error) {
-      console.error('Failed to initialize health service:', error);
+      console.warn('Failed to initialize health service:', error, '- continuing without health integration');
       return false;
     }
   }

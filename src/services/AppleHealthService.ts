@@ -1,20 +1,24 @@
-import AppleHealthKit, {
-  HealthKitPermissions,
-} from 'react-native-health';
 import { Platform } from 'react-native';
 import { SleepEntry } from '../types/SleepEntry';
+
+let AppleHealthKit: any = null;
+try {
+  AppleHealthKit = require('react-native-health').default;
+} catch (error) {
+  console.warn('react-native-health not available:', error);
+}
 
 // Define permission options for HealthKit
 const permissions = {
   permissions: {
     read: [
-      AppleHealthKit.Constants.Permissions.SleepAnalysis,
+      'SleepAnalysis',
     ],
     write: [
-      AppleHealthKit.Constants.Permissions.SleepAnalysis,
+      'SleepAnalysis',
     ],
   },
-} as HealthKitPermissions;
+};
 
 // Define the sleep sample interface
 interface SleepSample {
@@ -39,21 +43,37 @@ export class AppleHealthService {
    */
   public initialize(): Promise<void> {
     // Only proceed on iOS
-    if (Platform.OS !== 'ios') {
+    if (Platform.OS !== 'ios' || !AppleHealthKit) {
       return Promise.resolve();
     }
 
     return new Promise((resolve, reject) => {
-      AppleHealthKit.initHealthKit(permissions, (error: string) => {
-        if (error) {
+      try {
+        // Check if initHealthKit method exists
+        if (typeof AppleHealthKit.initHealthKit !== 'function') {
+          console.warn('AppleHealthKit.initHealthKit is not available - health integration disabled');
           this.hasPermission = false;
-          reject(new Error(`HealthKit initialization failed: ${error}`));
+          resolve(); // Don't reject - just disable health integration
           return;
         }
 
-        this.hasPermission = true;
-        resolve();
-      });
+        AppleHealthKit.initHealthKit(permissions, (error: string) => {
+          if (error) {
+            console.warn(`HealthKit initialization failed: ${error} - health integration disabled`);
+            this.hasPermission = false;
+            resolve(); // Don't reject - just disable health integration
+            return;
+          }
+
+          this.hasPermission = true;
+          console.log('HealthKit initialized successfully');
+          resolve();
+        });
+      } catch (error) {
+        console.warn('Failed to initialize health service:', error, '- health integration disabled');
+        this.hasPermission = false;
+        resolve(); // Don't reject - just disable health integration
+      }
     });
   }
 
@@ -62,7 +82,7 @@ export class AppleHealthService {
    * @returns Boolean indicating if HealthKit is available
    */
   public isAvailable(): boolean {
-    return Platform.OS === 'ios';
+    return Platform.OS === 'ios' && AppleHealthKit !== null;
   }
 
   /**
@@ -80,7 +100,7 @@ export class AppleHealthService {
    * @returns Promise with array of sleep entries
    */
   public async getSleepData(startDate: Date, endDate: Date): Promise<SleepEntry[]> {
-    if (!this.isAvailable() || !this.hasPermission) {
+    if (!this.isAvailable() || !this.hasPermission || !AppleHealthKit) {
       return Promise.resolve([]);
     }
 
@@ -90,24 +110,29 @@ export class AppleHealthService {
     };
 
     return new Promise((resolve, reject) => {
-      AppleHealthKit.getSleepSamples(options, (error: string, results: SleepSample[]) => {
-        if (error) {
-          reject(new Error(`Error getting sleep samples: ${error}`));
-          return;
-        }
+      try {
+        AppleHealthKit.getSleepSamples(options, (error: string, results: SleepSample[]) => {
+          if (error) {
+            reject(new Error(`Error getting sleep samples: ${error}`));
+            return;
+          }
 
-        // Convert HealthKit samples to our SleepEntry format
-        const sleepEntries: SleepEntry[] = results.map(sample => ({
-          id: `health-${sample.id || sample.startDate}`,
-          startTime: new Date(sample.startDate).getTime(),
-          endTime: new Date(sample.endDate).getTime(),
-          source: sample.sourceName || 'Apple Health',
-          confidence: 95, // High confidence for HealthKit data
-          isAwake: sample.value === 0, // Convert HealthKit's sleep values to our format
-        }));
+          // Convert HealthKit samples to our SleepEntry format
+          const sleepEntries: SleepEntry[] = results.map(sample => ({
+            id: `health-${sample.id || sample.startDate}`,
+            startTime: new Date(sample.startDate).getTime(),
+            endTime: new Date(sample.endDate).getTime(),
+            source: sample.sourceName || 'Apple Health',
+            confidence: 95, // High confidence for HealthKit data
+            isAwake: sample.value === 0, // Convert HealthKit's sleep values to our format
+          }));
 
-        resolve(sleepEntries);
-      });
+          resolve(sleepEntries);
+        });
+      } catch (error) {
+        console.error('Failed to get sleep data:', error);
+        resolve([]);
+      }
     });
   }
 

@@ -30,7 +30,6 @@ const SettingsScreen = () => {
   const [considerTimeOfDay, setConsiderTimeOfDay] = useState(settings.considerTimeOfDay);
   const [showThresholdModal, setShowThresholdModal] = useState(false);
   const [showThemeModal, setShowThemeModal] = useState(false);
-  const [healthConnected, setHealthConnected] = useState(false);
   const [showDebugMonitor, setShowDebugMonitor] = useState(false);
   const [settingsInitialized, setSettingsInitialized] = useState(false);
 
@@ -89,13 +88,6 @@ const SettingsScreen = () => {
   const handleTimeOfDayToggle = (value: boolean) => {
     setConsiderTimeOfDay(value);
     updateSettings({ considerTimeOfDay: value });
-  };
-
-  // Handle health connection status change
-  const handleHealthStatusChange = (connected: boolean) => {
-    setHealthConnected(connected);
-    console.log(`Health service connection status: ${connected}`);
-    // You might want to fetch health data here if connected
   };
 
   // Reset sleep data
@@ -236,7 +228,7 @@ const SettingsScreen = () => {
 
       <View style={themedStyles.section}>
         <Text style={themedStyles.sectionTitle}>Health Integration</Text>
-        <HealthIntegrationSettings onStatusChange={handleHealthStatusChange} />
+        <HealthIntegrationSettings />
       </View>
 
       <View style={themedStyles.section}>
