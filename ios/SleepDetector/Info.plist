@@ -18,6 +18,8 @@
     <string>$(EXECUTABLE_NAME)</string>
     <key>CFBundleIdentifier</key>
     <string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+    <key>CFBundleIconName</key>
+    <string>AppIcon</string>
     <key>CFBundleInfoDictionaryVersion</key>
     <string>6.0</string>
     <key>CFBundleName</key>
@@ -66,9 +68,8 @@
     <string>We use motion data to more accurately detect when you're asleep or awake by monitoring device movement patterns</string>
     <key>UIBackgroundModes</key>
     <array>
-      <string>fetch</string>
-      <string>processing</string>
-      <string>background-app-refresh</string>
+      <string>background-fetch</string>
+      <string>background-processing</string>
     </array>
     <key>UILaunchStoryboardName</key>
     <string>SplashScreen</string>

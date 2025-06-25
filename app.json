@@ -24,9 +24,8 @@
       "buildNumber": "18",
       "infoPlist": {
         "UIBackgroundModes": [
-          "fetch",
-          "processing",
-          "background-app-refresh"
+          "background-fetch",
+          "background-processing"
         ],
         "BGTaskSchedulerPermittedIdentifiers": [
           "com.sleepdetector.app.sleeprefresh",
