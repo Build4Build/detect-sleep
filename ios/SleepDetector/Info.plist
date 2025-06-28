@@ -27,7 +27,7 @@
     <key>CFBundlePackageType</key>
     <string>$(PRODUCT_BUNDLE_PACKAGE_TYPE)</string>
     <key>CFBundleShortVersionString</key>
-    <string>1.0.7</string>
+    <string>1.1.0</string>
     <key>CFBundleSignature</key>
     <string>????</string>
     <key>CFBundleURLTypes</key>
@@ -40,7 +40,7 @@
       </dict>
     </array>
     <key>CFBundleVersion</key>
-    <string>16</string>
+    <string>50</string>
     <key>ITSAppUsesNonExemptEncryption</key>
     <false/>
     <key>LSMinimumSystemVersion</key>
@@ -68,8 +68,8 @@
     <string>We use motion data to more accurately detect when you're asleep or awake by monitoring device movement patterns</string>
     <key>UIBackgroundModes</key>
     <array>
-      <string>background-fetch</string>
-      <string>background-processing</string>
+      <string>fetch</string>
+      <string>processing</string>
     </array>
     <key>UILaunchStoryboardName</key>
     <string>SplashScreen</string>
