@@ -1,6 +1,6 @@
 # Sleep Detector 😴
 
-A React Native Expo app that automatically tracks your sleep patterns based on phone usage.
+**Sleep Detector** is a React Native Expo app that automatically tracks your sleep patterns based on phone usage.
 
 ## Features
 
@@ -398,7 +398,8 @@ Your sleep data is stored locally on your device. The app does not send your dat
 
 ## License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+**Sleep Detector** is generously distributed under the [MIT License](license.md).
+
 
 ## Acknowledgments
 
