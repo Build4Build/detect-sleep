@@ -2,7 +2,7 @@
   "expo": {
     "name": "Sleep Detector",
     "slug": "detect-sleep",
-    "version": "1.1.0",
+    "version": "1.1.1",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -21,11 +21,12 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.sleepdetector.app",
-      "buildNumber": "18",
+      "buildNumber": "21",
+      "jsEngine": "jsc",
       "infoPlist": {
         "UIBackgroundModes": [
-          "fetch",
-          "processing"
+          "background-fetch",
+          "background-processing"
         ],
         "BGTaskSchedulerPermittedIdentifiers": [
           "com.sleepdetector.app.sleeprefresh",
