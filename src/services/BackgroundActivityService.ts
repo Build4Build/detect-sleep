@@ -3,6 +3,7 @@ import * as TaskManager from 'expo-task-manager';
 import { Accelerometer, Gyroscope } from 'expo-sensors';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AppState, AppStateStatus } from 'react-native';
+import { NotificationService } from './NotificationService';
 
 // Background task name
 const BACKGROUND_ACTIVITY_TASK = 'background-activity-monitor';
@@ -115,6 +116,9 @@ export class BackgroundActivityService {
         // If inactive for more than user's threshold, user is likely asleep
         if (inactiveTime >= userSettings.inactivityThreshold) {
           await this.notifyPotentialSleep(inactiveTime);
+          console.log(`🛌 Sleep threshold reached: ${Math.round(inactiveTime)} minutes inactive`);
+        } else {
+          console.log(`⏰ Background check: ${Math.round(inactiveTime)} minutes inactive (threshold: ${userSettings.inactivityThreshold})`);
         }
 
         return BackgroundFetch.BackgroundFetchResult.NewData;
@@ -385,6 +389,14 @@ export class BackgroundActivityService {
   private async notifyPotentialSleep(inactiveMinutes: number): Promise<void> {
     // This will be called by the sleep context to update sleep status
     console.log(`Potential sleep detected: ${inactiveMinutes} minutes of inactivity`);
+    
+    // Send notification if user has been inactive long enough
+    try {
+      const notificationService = NotificationService.getInstance();
+      await notificationService.notifySleepDetected(inactiveMinutes);
+    } catch (error) {
+      console.error('Failed to send sleep detection notification from background:', error);
+    }
   }
 
   /**

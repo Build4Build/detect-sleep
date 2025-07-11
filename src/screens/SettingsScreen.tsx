@@ -1,11 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Switch, TouchableOpacity, Alert, ScrollView, Modal, FlatList, Linking } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { RootStackParamList } from '../types';
 import { useSleep } from '../context/SleepContext';
 import { useTheme, ThemeMode } from '../context/ThemeContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import HealthIntegrationSettings from '../components/HealthIntegrationSettings';
 import BackgroundMonitorDebug from '../components/BackgroundMonitorDebug';
+
+type SettingsScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
 // Define threshold options
 const THRESHOLD_OPTIONS = [
@@ -24,6 +29,7 @@ const THEME_OPTIONS = [
 ];
 
 const SettingsScreen = () => {
+  const navigation = useNavigation<SettingsScreenNavigationProp>();
   const { settings, updateSettings } = useSleep();
   const { themeMode, setThemeMode, colors, isDarkMode } = useTheme();
   const [useMachineLearning, setUseMachineLearning] = useState(settings.useMachineLearning);
@@ -229,6 +235,17 @@ const SettingsScreen = () => {
       <View style={themedStyles.section}>
         <Text style={themedStyles.sectionTitle}>Health Integration</Text>
         <HealthIntegrationSettings />
+      </View>
+
+      <View style={themedStyles.section}>
+        <Text style={themedStyles.sectionTitle}>Notifications</Text>
+        <TouchableOpacity
+          style={themedStyles.dataButton}
+          onPress={() => navigation.navigate('NotificationSettings')}
+        >
+          <Ionicons name="notifications-outline" size={20} color={colors.primary} />
+          <Text style={[themedStyles.buttonText, { color: colors.primary }]}>Notification Settings</Text>
+        </TouchableOpacity>
       </View>
 
       <View style={themedStyles.section}>

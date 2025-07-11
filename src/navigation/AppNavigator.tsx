@@ -13,6 +13,7 @@ import StatsScreen from '../screens/StatsScreen';
 import SettingsScreen from '../screens/SettingsScreen';
 import SleepDetailsScreen from '../screens/SleepDetailsScreen';
 import ExportScreen from '../screens/ExportScreen';
+import NotificationSettingsScreen from '../screens/NotificationSettingsScreen';
 
 // Create navigators
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -142,6 +143,11 @@ const AppNavigator = () => {
           name="Export" 
           component={ExportScreen} 
           options={{ title: 'Export Data' }}
+        />
+        <Stack.Screen 
+          name="NotificationSettings" 
+          component={NotificationSettingsScreen}
+          options={{ title: 'Notification Settings' }}
         />
       </Stack.Navigator>
     </NavigationContainer>

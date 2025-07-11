@@ -4,6 +4,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { format } from 'date-fns';
 import { ActivityRecord, SleepStatus, DailySleepSummary, AppSettings } from '../types';
 import { BackgroundActivityService } from '../services/BackgroundActivityService';
+import { NotificationService } from '../services/NotificationService';
 
 // Default settings
 const DEFAULT_SETTINGS: AppSettings = {
@@ -48,6 +49,7 @@ export const SleepProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [settingsLoaded, setSettingsLoaded] = useState<boolean>(false); // Track if settings are loaded
   const [lastActiveTimestamp, setLastActiveTimestamp] = useState<number>(Date.now());
   const [backgroundService] = useState(() => BackgroundActivityService.getInstance());
+  const [notificationService] = useState(() => NotificationService.getInstance());
   const [sleepPatterns, setSleepPatterns] = useState<{
     typicalSleepStart: number; // hour 0-23
     typicalSleepEnd: number; // hour 0-23
@@ -129,6 +131,10 @@ export const SleepProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         // Initialize background activity monitoring
         await backgroundService.startMonitoring();
         console.log('Background activity monitoring started');
+
+        // Initialize notification service
+        await notificationService.initialize();
+        console.log('Notification service initialized');
       } catch (error) {
         console.error('Failed to load data from storage:', error);
         // Ensure we have default settings even if storage fails
@@ -312,6 +318,21 @@ export const SleepProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     return [status, Math.round(Math.max(0, Math.min(100, confidence)))];
   };
 
+  // Calculate sleep quality based on duration
+  const calculateSleepQuality = (sleepDuration: number): string => {
+    if (sleepDuration >= 480) { // 8+ hours
+      return 'Excellent';
+    } else if (sleepDuration >= 420) { // 7+ hours
+      return 'Good';
+    } else if (sleepDuration >= 360) { // 6+ hours
+      return 'Adequate';
+    } else if (sleepDuration >= 300) { // 5+ hours
+      return 'Poor';
+    } else {
+      return 'Insufficient';
+    }
+  };
+
   // Periodic sleep detection check using background service
   useEffect(() => {
     const checkSleepStatus = async () => {
@@ -334,10 +355,18 @@ export const SleepProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             const estimatedSleepStart = Date.now() - (inactiveMinutes * 60 * 1000);
             addActivityRecord(SleepStatus.ASLEEP, estimatedSleepStart, confidence);
             console.log(`😴 Sleep detected - estimated sleep start: ${new Date(estimatedSleepStart).toLocaleTimeString()}`);
+            
+            // Send sleep detection notification
+            await notificationService.notifySleepDetected(inactiveMinutes);
           } else if (detectedStatus === SleepStatus.AWAKE && currentStatus === SleepStatus.ASLEEP) {
             // Waking up
             addActivityRecord(SleepStatus.AWAKE, Date.now(), confidence);
             console.log(`☀️ Wake detected at ${new Date().toLocaleTimeString()}`);
+            
+            // Calculate sleep duration and quality for wake notification
+            const sleepDuration = getTodaySleepDuration();
+            const sleepQuality = calculateSleepQuality(sleepDuration);
+            await notificationService.notifyWakeDetected(sleepDuration, sleepQuality);
           }
 
           // Update current status even if no transition (for confidence changes)
@@ -375,6 +404,11 @@ export const SleepProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           // If we were asleep, record waking up only if we interact beyond just checking
           // For now, record as awake but with lower confidence until we get real interaction
           addActivityRecord(SleepStatus.AWAKE, now, 85); // Slightly lower confidence for just opening app
+          
+          // Send wake detection notification with sleep summary
+          const sleepDuration = getTodaySleepDuration();
+          const sleepQuality = calculateSleepQuality(sleepDuration);
+          await notificationService.notifyWakeDetected(sleepDuration, sleepQuality);
         } else if (inactiveTime >= settings.inactivityThreshold) {
           // If we were inactive for longer than the threshold, we were asleep
           const [detectedStatus, confidence] = calculateSleepConfidence(inactiveTime, currentHour);
@@ -426,12 +460,29 @@ export const SleepProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   // Allow manual setting of sleep status
-  const manuallySetStatus = (status: SleepStatus) => {
+  const manuallySetStatus = async (status: SleepStatus) => {
+    const previousStatus = currentStatus;
+    
     // Add record with high confidence since user manually set it
     addActivityRecord(status, Date.now(), 100);
 
     // Also record this as genuine user activity in the background service
     backgroundService.recordUserActivity();
+
+    // Handle notifications for manual status changes
+    try {
+      if (status === SleepStatus.AWAKE && previousStatus === SleepStatus.ASLEEP) {
+        // User manually marked as awake - send wake notification
+        const sleepDuration = getTodaySleepDuration();
+        const sleepQuality = calculateSleepQuality(sleepDuration);
+        await notificationService.notifyWakeDetected(sleepDuration, sleepQuality);
+        console.log('Wake notification sent for manual status change');
+      }
+      // Note: We don't send sleep detection notification for manual sleep setting
+      // since the user is actively using the phone to set the status
+    } catch (error) {
+      console.error('Failed to send notification for manual status change:', error);
+    }
   };
 
   // Update daily summaries based on activity records

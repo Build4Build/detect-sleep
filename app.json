@@ -21,13 +21,9 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.sleepdetector.app",
-      "buildNumber": "21",
+      "buildNumber": "22",
       "jsEngine": "jsc",
       "infoPlist": {
-        "UIBackgroundModes": [
-          "background-fetch",
-          "background-processing"
-        ],
         "BGTaskSchedulerPermittedIdentifiers": [
           "com.sleepdetector.app.sleeprefresh",
           "com.sleepdetector.app.sleepprocessing",
@@ -36,6 +32,7 @@
         "NSMotionUsageDescription": "We use motion data to more accurately detect when you're asleep or awake by monitoring device movement patterns",
         "NSHealthShareUsageDescription": "We use Health data to improve sleep detection accuracy and to compare with our detection algorithm",
         "NSHealthUpdateUsageDescription": "We can write your detected sleep data to Apple Health to consolidate your health information",
+        "NSUserNotificationsUsageDescription": "We send you notifications when sleep is detected and when you wake up with sleep summaries",
         "UISupportedInterfaceOrientations": [
           "UIInterfaceOrientationPortrait"
         ],
@@ -56,7 +53,10 @@
         "android.permission.ACTIVITY_RECOGNITION",
         "android.permission.WAKE_LOCK",
         "android.permission.RECEIVE_BOOT_COMPLETED",
-        "android.permission.FOREGROUND_SERVICE"
+        "android.permission.FOREGROUND_SERVICE",
+        "android.permission.RECEIVE_BOOT_COMPLETED",
+        "android.permission.VIBRATE",
+        "android.permission.USE_FULL_SCREEN_INTENT"
       ],
       "config": {
         "googleMobileAdsAppId": "ca-app-pub-3940256099942544~3347511713"
@@ -69,6 +69,14 @@
     "plugins": [
       "expo-task-manager",
       "expo-background-fetch",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/notification-icon.png",
+          "color": "#2196F3",
+          "sounds": ["./assets/notification-sound.wav"]
+        }
+      ],
       [
         "expo-health-connect",
         {
