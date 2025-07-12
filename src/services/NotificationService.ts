@@ -28,6 +28,8 @@ Notifications.setNotificationHandler({
     shouldShowAlert: true,
     shouldPlaySound: true,
     shouldSetBadge: false,
+    shouldShowBanner: true,
+    shouldShowList: true,
   }),
 });
 
@@ -261,10 +263,11 @@ export class NotificationService {
           sound: true,
         },
         trigger: {
+          type: Notifications.SchedulableTriggerInputTypes.CALENDAR,
           hour: this.settings.bedtimeReminderHour,
           minute: 0,
           repeats: true,
-        },
+        } as Notifications.CalendarTriggerInput,
       });
 
       console.log(`Bedtime reminder scheduled for ${this.settings.bedtimeReminderHour}:00`);
