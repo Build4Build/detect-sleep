@@ -401,13 +401,6 @@ Your sleep data is stored locally on your device. The app does not send your dat
 **Sleep Detector** is generously distributed under the [MIT License](license.md).
 
 
-## Acknowledgments
-
-- Built with React Native and Expo
-- Uses AsyncStorage for data persistence
-- Charts powered by react-native-chart-kit
-
-
 <!-- GitHub's Markdown reference links -->
 [x-icon]: https://img.shields.io/badge/x-000000?style=for-the-badge&logo=x
 [github-icon]: https://img.shields.io/badge/GitHub-100000?style=for-the-badge&logo=github&logoColor=white
