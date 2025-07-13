@@ -481,47 +481,91 @@ export class BackgroundActivityService {
   }
 
   /**
-   * Stop monitoring
+   * Stop monitoring with enhanced error handling
    */
   public async stopMonitoring(): Promise<void> {
-    if (!this.isMonitoring) return;
+    if (!this.isMonitoring) {
+      console.log('📱 Background monitoring already stopped');
+      return;
+    }
 
-    console.log('Stopping background activity monitoring...');
+    console.log('🛑 Stopping background activity monitoring...');
     this.isMonitoring = false;
 
-    // Clean up subscriptions
-    if (this.accelerometerSubscription) {
-      this.accelerometerSubscription.remove();
-      this.accelerometerSubscription = null;
-    }
-
-    if (this.gyroscopeSubscription) {
-      this.gyroscopeSubscription.remove();
-      this.gyroscopeSubscription = null;
-    }
-
-    if (this.appStateSubscription) {
-      this.appStateSubscription.remove();
-      this.appStateSubscription = null;
-    }
-
-    if (this.activityCheckInterval) {
-      clearInterval(this.activityCheckInterval);
-      this.activityCheckInterval = null;
-    }
-
-    if (this.inactivityUpdateInterval) {
-      clearInterval(this.inactivityUpdateInterval);
-      this.inactivityUpdateInterval = null;
-    }
-
-    // Unregister background task
+    // Enhanced cleanup with individual try-catch blocks to prevent cascade failures
+    
+    // Clean up accelerometer subscription
     try {
-      await BackgroundFetch.unregisterTaskAsync(BACKGROUND_ACTIVITY_TASK);
-      console.log('Background task unregistered');
+      if (this.accelerometerSubscription) {
+        this.accelerometerSubscription.remove();
+        this.accelerometerSubscription = null;
+        console.log('✅ Accelerometer subscription cleaned up');
+      }
     } catch (error) {
-      console.error('Failed to unregister background task:', error);
+      console.error('❌ Error cleaning up accelerometer:', error);
     }
+
+    // Clean up gyroscope subscription
+    try {
+      if (this.gyroscopeSubscription) {
+        this.gyroscopeSubscription.remove();
+        this.gyroscopeSubscription = null;
+        console.log('✅ Gyroscope subscription cleaned up');
+      }
+    } catch (error) {
+      console.error('❌ Error cleaning up gyroscope:', error);
+    }
+
+    // Clean up app state subscription
+    try {
+      if (this.appStateSubscription) {
+        this.appStateSubscription.remove();
+        this.appStateSubscription = null;
+        console.log('✅ App state subscription cleaned up');
+      }
+    } catch (error) {
+      console.error('❌ Error cleaning up app state subscription:', error);
+    }
+
+    // Clear intervals
+    try {
+      if (this.activityCheckInterval) {
+        clearInterval(this.activityCheckInterval);
+        this.activityCheckInterval = null;
+        console.log('✅ Activity check interval cleared');
+      }
+    } catch (error) {
+      console.error('❌ Error clearing activity check interval:', error);
+    }
+
+    try {
+      if (this.inactivityUpdateInterval) {
+        clearInterval(this.inactivityUpdateInterval);
+        this.inactivityUpdateInterval = null;
+        console.log('✅ Inactivity update interval cleared');
+      }
+    } catch (error) {
+      console.error('❌ Error clearing inactivity update interval:', error);
+    }
+
+    // Unregister background task with timeout protection
+    try {
+      console.log('🔄 Unregistering background task...');
+      
+      // Add timeout to prevent hanging
+      const unregisterPromise = BackgroundFetch.unregisterTaskAsync(BACKGROUND_ACTIVITY_TASK);
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Background task unregister timeout')), 5000)
+      );
+      
+      await Promise.race([unregisterPromise, timeoutPromise]);
+      console.log('✅ Background task unregistered successfully');
+    } catch (error) {
+      console.error('❌ Failed to unregister background task (non-critical):', error);
+      // Don't throw here - this is cleanup, not critical for app function
+    }
+
+    console.log('🎯 Background activity monitoring stopped successfully');
   }
 
   /**
@@ -529,6 +573,35 @@ export class BackgroundActivityService {
    */
   public isActive(): boolean {
     return this.isMonitoring;
+  }
+
+  /**
+   * Emergency shutdown - force cleanup without waiting for async operations
+   * Use this when the app is being force-closed
+   */
+  public emergencyShutdown(): void {
+    console.log('🚨 Emergency shutdown initiated');
+    
+    try {
+      this.isMonitoring = false;
+      
+      // Synchronous cleanup only
+      if (this.activityCheckInterval) {
+        clearInterval(this.activityCheckInterval);
+        this.activityCheckInterval = null;
+      }
+      
+      if (this.inactivityUpdateInterval) {
+        clearInterval(this.inactivityUpdateInterval);
+        this.inactivityUpdateInterval = null;
+      }
+
+      // Note: We skip sensor cleanup here as it might be async and cause crashes
+      console.log('🎯 Emergency shutdown completed');
+    } catch (error) {
+      console.error('❌ Error during emergency shutdown:', error);
+      // Don't rethrow - we're already in an emergency situation
+    }
   }
 }
 
