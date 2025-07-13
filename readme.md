@@ -31,7 +31,7 @@ The app monitors your phone usage to determine when you're awake or asleep:
 
 1. Clone the repository:
 ```
-git clone https://github.com/yourusername/detect-sleep.git
+git clone https://github.com/pH-7/detect-sleep.git
 cd detect-sleep
 ```
 
@@ -90,106 +90,6 @@ npm run android
 ```bash
 npx expo start
 ```
-
-### Generating App Icons
-
-You can use the included script to generate app icons:
-```bash
-chmod +x build-deploy.sh
-./build-deploy.sh
-# Select option 5 (Generate app icons)
-```
-
-Or manually create these required assets in the `assets` folder:
-- `icon.png` (1024×1024 px)
-- `splash.png` (1242×2436 px)
-- `adaptive-icon.png` (1024×1024 px) 
-- `favicon.png` (192×192 px)
-
-## Screenshots Generator
-
-### Using the Screenshot Generator Script
-
-The app includes a helpful script for generating App Store and Google Play Store screenshots. This script uses ImageMagick to create professional-looking screenshots with frames, titles and descriptions.
-
-#### Prerequisites
-
-- ImageMagick must be installed on your system
-  ```bash
-  # For macOS:
-  brew install imagemagick
-  
-  # For Linux:
-  sudo apt-get install imagemagick
-  ```
-
-#### Running the Script
-
-1. Make the script executable if it's not already:
-   ```bash
-   chmod +x generate-screenshots.sh
-   ```
-
-2. Run the script:
-   ```bash
-   ./generate-screenshots.sh
-   ```
-
-3. The script will:
-   - Create an `assets/screenshots` directory if it doesn't exist
-   - Generate placeholder screenshots with professional layouts
-   - Add device frames, titles, and app mockups
-
-#### Customizing Screenshots
-
-The script generates template screenshots that you need to customize:
-
-1. Replace the placeholder images with actual app screenshots:
-   - Take screenshots of your app in different screens
-   - Replace the placeholder mockups in each generated screenshot
-   
-2. Customize text and colors:
-   - Open the script to edit titles, subtitles, and accent colors
-   - Modify the `create_screenshot` function calls at the bottom of the script
-
-3. Add device frames:
-   - For iOS: Use Apple's Marketing Resources (https://developer.apple.com/app-store/marketing/guidelines/#section-products)
-   - For Android: Use Google's Device Art Generator
-
-#### Output
-
-The script creates 5 screenshots in the `assets/screenshots` directory:
-1. Sleep Tracking screen
-2. Detailed Analytics screen
-3. Sleep History screen
-4. Export Data screen
-5. Settings screen
-
-These screenshots will need further customization with your actual app content before submission.
-
-### Preparing Store Assets
-
-After generating screenshots, make sure to prepare all required store assets:
-
-1. Resize screenshots for all required dimensions:
-   - iOS: 6.5", 5.5", and 12.9" iPad Pro dimensions
-   - Android: Phone, 7-inch tablet, and 10-inch tablet dimensions
-
-2. Create promotional images:
-   - App Store: 1024x1024 icon
-   - Google Play: 512x512 icon and 1024x500 feature graphic
-
-You can find the complete list of requirements in the STORE_LISTING_CONTENT.md file.
-
-## Adding Home Screen Widget (Future Enhancement)
-
-To add a home screen widget, you'll need to:
-
-1. **Eject to a bare workflow** or use **EAS Build** with custom native code
-2. **Create a native iOS Widget Extension** using WidgetKit
-3. **Share data** between your app and widget using App Groups
-
-This requires iOS native development skills and is planned for a future version.
 
 ## Publishing Your App
 
