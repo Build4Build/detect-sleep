@@ -60,16 +60,16 @@ export class BackgroundActivityService {
     try {
       // Register background task
       await this.registerBackgroundTask();
-      
+
       // Set up sensor monitoring
       await this.setupSensorMonitoring();
-      
+
       // Set up app state monitoring
       this.setupAppStateMonitoring();
-      
+
       // Start background fetch
       await this.startBackgroundFetch();
-      
+
       console.log('BackgroundActivityService initialized successfully');
     } catch (error) {
       console.error('Failed to initialize BackgroundActivityService:', error);
@@ -101,10 +101,10 @@ export class BackgroundActivityService {
         const now = Date.now();
         const lastActivity = await this.getLastActivityTimestamp();
         const inactiveTime = (now - lastActivity) / (1000 * 60); // minutes
-        
+
         // Get user settings
         const userSettings = await this.getUserSettings();
-        
+
         // Log activity check
         await this.logActivity({
           timestamp: now,
@@ -136,13 +136,13 @@ export class BackgroundActivityService {
     try {
       // Configure accelerometer with optimized settings
       Accelerometer.setUpdateInterval(1000); // Check every second to reduce noise
-      
+
       let lastSignificantMovement = 0;
-      
+
       this.accelerometerSubscription = Accelerometer.addListener(accelerometerData => {
         const { x, y, z } = accelerometerData;
         const magnitude = Math.sqrt(x * x + y * y + z * z);
-        
+
         // Detect significant movement with noise filtering
         if (magnitude > MOVEMENT_THRESHOLD) {
           const now = Date.now();
@@ -156,13 +156,13 @@ export class BackgroundActivityService {
 
       // Configure gyroscope for rotation detection
       Gyroscope.setUpdateInterval(1000); // Check every second
-      
+
       let lastSignificantRotation = 0;
-      
+
       this.gyroscopeSubscription = Gyroscope.addListener(gyroscopeData => {
         const { x, y, z } = gyroscopeData;
         const magnitude = Math.sqrt(x * x + y * y + z * z);
-        
+
         // Detect phone rotation/usage with noise filtering
         if (magnitude > GYRO_THRESHOLD) {
           const now = Date.now();
@@ -195,7 +195,7 @@ export class BackgroundActivityService {
         // Start a grace period to see if user actually interacts with the app
         this.startAppActiveGracePeriod();
       }
-      
+
       // If app goes to background, start more aggressive monitoring
       if (nextAppState === 'background' || nextAppState === 'inactive') {
         this.onAppBackground();
@@ -210,14 +210,14 @@ export class BackgroundActivityService {
   private startAppActiveGracePeriod(): void {
     // Initially mark as just a check
     this.onMovementDetected('app_active_check');
-    
+
     // Set up a timer to upgrade to genuine activity if user stays active
     setTimeout(() => {
       if (this.currentAppState === 'active') {
         // User has been actively using the app for 15 seconds
         this.onMovementDetected('app_active');
         console.log('⏰ Upgraded app check to genuine activity - user actively using app');
-        
+
         // Set up another timer for extended genuine usage
         setTimeout(() => {
           if (this.currentAppState === 'active') {
@@ -240,7 +240,7 @@ export class BackgroundActivityService {
         stopOnTerminate: false,
         startOnBoot: true,
       });
-      
+
       console.log('Background fetch registered successfully');
     } catch (error) {
       console.error('Failed to register background fetch:', error);
@@ -252,19 +252,19 @@ export class BackgroundActivityService {
    */
   private onMovementDetected(source: string = 'sensor'): void {
     const now = Date.now();
-    
+
     // Only update last movement for actual physical movement, not just app activation
     if (source !== 'app_active_check') {
       this.lastMovementTimestamp = now;
       this.lastActivityUpdate = now;
-      
+
       // Store last activity timestamp
       AsyncStorage.setItem(LAST_ACTIVITY_KEY, now.toString());
       console.log(`🟢 GENUINE ACTIVITY detected from ${source} at ${new Date(now).toLocaleTimeString()}`);
     } else {
       console.log(`📱 APP CHECK detected at ${new Date(now).toLocaleTimeString()} - not updating activity timer`);
     }
-    
+
     // Log the activity with proper confidence scoring
     this.logActivity({
       timestamp: now,
@@ -293,7 +293,7 @@ export class BackgroundActivityService {
    */
   private onAppBackground(): void {
     console.log('Setting up background monitoring...');
-    
+
     // Clear any existing intervals
     if (this.activityCheckInterval) {
       clearInterval(this.activityCheckInterval);
@@ -307,7 +307,7 @@ export class BackgroundActivityService {
       const now = Date.now();
       const timeSinceLastMovement = now - this.lastMovementTimestamp;
       const timeSinceLastUpdate = now - this.lastActivityUpdate;
-      
+
       // Log inactivity every check
       this.logActivity({
         timestamp: now,
@@ -323,13 +323,13 @@ export class BackgroundActivityService {
     this.inactivityUpdateInterval = setInterval(async () => {
       const now = Date.now();
       const inactiveMinutes = (now - this.lastMovementTimestamp) / (1000 * 60);
-      
+
       // Update the last activity timestamp in storage to current time if no movement
       // This ensures getInactivityDuration() returns the correct value
       if (inactiveMinutes > 1) { // Only if we've been inactive for more than 1 minute
         console.log(`Updating inactivity: ${Math.round(inactiveMinutes)} minutes inactive`);
       }
-      
+
       this.lastActivityUpdate = now;
     }, INACTIVITY_UPDATE_INTERVAL);
   }
@@ -341,13 +341,13 @@ export class BackgroundActivityService {
     try {
       const existingLog = await AsyncStorage.getItem(ACTIVITY_LOG_KEY);
       const log: ActivityData[] = existingLog ? JSON.parse(existingLog) : [];
-      
+
       // Add new activity
       log.push(activity);
-      
+
       // Keep only last 1000 entries to manage storage
       const recentLog = log.slice(-1000);
-      
+
       await AsyncStorage.setItem(ACTIVITY_LOG_KEY, JSON.stringify(recentLog));
     } catch (error) {
       console.error('Failed to log activity:', error);
@@ -381,10 +381,10 @@ export class BackgroundActivityService {
     try {
       const log = await AsyncStorage.getItem(ACTIVITY_LOG_KEY);
       if (!log) return [];
-      
+
       const activities: ActivityData[] = JSON.parse(log);
       const cutoffTime = Date.now() - (hours * 60 * 60 * 1000);
-      
+
       return activities.filter(activity => activity.timestamp >= cutoffTime);
     } catch (error) {
       console.error('Failed to get activity log:', error);
@@ -398,7 +398,7 @@ export class BackgroundActivityService {
   private async notifyPotentialSleep(inactiveMinutes: number): Promise<void> {
     // This will be called by the sleep context to update sleep status
     console.log(`Potential sleep detected: ${inactiveMinutes} minutes of inactivity`);
-    
+
     // Send notification if user has been inactive long enough
     try {
       const notificationService = NotificationService.getInstance();
@@ -416,17 +416,17 @@ export class BackgroundActivityService {
     const lastActivity = await this.getLastActivityTimestamp();
     const now = Date.now();
     const inactiveMinutes = (now - lastActivity) / (1000 * 60);
-    
+
     // If we're currently checking the app but want to ignore the current session
     if (!includeCurrentCheck && this.currentAppState === 'active') {
       // Get the activity log to find the last non-check activity
       const recentActivity = await this.getActivityLog(3); // Extended to 3 hours for better analysis
-      
+
       // Find the last activity that was genuine movement (not just app checks)
       const lastGenuineActivity = recentActivity
         .filter(activity => activity.hasMovement === true && activity.confidence >= 70)
         .sort((a, b) => b.timestamp - a.timestamp)[0];
-      
+
       if (lastGenuineActivity) {
         const genuineInactiveMinutes = (now - lastGenuineActivity.timestamp) / (1000 * 60);
         console.log(`📊 Inactivity Analysis: ${Math.round(inactiveMinutes)}min total, ${Math.round(genuineInactiveMinutes)}min genuine inactivity`);
@@ -436,7 +436,7 @@ export class BackgroundActivityService {
         const recentAppActivity = recentActivity
           .filter(activity => activity.timestamp > (now - (2 * 60 * 60 * 1000))) // Last 2 hours
           .sort((a, b) => b.timestamp - a.timestamp);
-        
+
         if (recentAppActivity.length > 0) {
           // Find the most recent high-confidence activity
           const lastHighConfidenceActivity = recentAppActivity.find(activity => activity.confidence >= 85);
@@ -446,17 +446,17 @@ export class BackgroundActivityService {
             return Math.max(0, adjustedInactiveMinutes);
           }
         }
-        
+
         // Fall back to buffered approach but with more conservative buffer
         const bufferedInactiveMinutes = Math.max(0, inactiveMinutes - 5); // 5 minute buffer for app session
         console.log(`📊 No recent genuine activity found, using conservative buffered inactivity: ${Math.round(bufferedInactiveMinutes)}min`);
         return bufferedInactiveMinutes;
       }
     }
-    
+
     // Log the inactivity check for debugging
     console.log(`📊 Total inactivity: ${Math.round(inactiveMinutes)} minutes since last activity`);
-    
+
     return Math.max(0, inactiveMinutes); // Ensure non-negative return
   }
 
@@ -468,14 +468,14 @@ export class BackgroundActivityService {
       console.log('Background monitoring already active');
       return;
     }
-    
+
     this.isMonitoring = true;
     this.lastMovementTimestamp = Date.now();
     this.lastActivityUpdate = Date.now();
-    
+
     // Initialize the last activity timestamp
     await AsyncStorage.setItem(LAST_ACTIVITY_KEY, Date.now().toString());
-    
+
     await this.initialize();
     console.log('Background activity monitoring started successfully');
   }
@@ -485,36 +485,36 @@ export class BackgroundActivityService {
    */
   public async stopMonitoring(): Promise<void> {
     if (!this.isMonitoring) return;
-    
+
     console.log('Stopping background activity monitoring...');
     this.isMonitoring = false;
-    
+
     // Clean up subscriptions
     if (this.accelerometerSubscription) {
       this.accelerometerSubscription.remove();
       this.accelerometerSubscription = null;
     }
-    
+
     if (this.gyroscopeSubscription) {
       this.gyroscopeSubscription.remove();
       this.gyroscopeSubscription = null;
     }
-    
+
     if (this.appStateSubscription) {
       this.appStateSubscription.remove();
       this.appStateSubscription = null;
     }
-    
+
     if (this.activityCheckInterval) {
       clearInterval(this.activityCheckInterval);
       this.activityCheckInterval = null;
     }
-    
+
     if (this.inactivityUpdateInterval) {
       clearInterval(this.inactivityUpdateInterval);
       this.inactivityUpdateInterval = null;
     }
-    
+
     // Unregister background task
     try {
       await BackgroundFetch.unregisterTaskAsync(BACKGROUND_ACTIVITY_TASK);

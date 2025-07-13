@@ -317,7 +317,7 @@ Update `eas.json`:
     "version": "1.0.0",
     "android": {
       "versionCode": 1,
-      "package": "com.yourcompany.sleepdetector"
+      "package": "me.ph7.sleepdetector"
     }
   }
 }
