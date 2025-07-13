@@ -493,7 +493,7 @@ export class BackgroundActivityService {
     this.isMonitoring = false;
 
     // Enhanced cleanup with individual try-catch blocks to prevent cascade failures
-    
+
     // Clean up accelerometer subscription
     try {
       if (this.accelerometerSubscription) {
@@ -551,13 +551,13 @@ export class BackgroundActivityService {
     // Unregister background task with timeout protection
     try {
       console.log('🔄 Unregistering background task...');
-      
+
       // Add timeout to prevent hanging
       const unregisterPromise = BackgroundFetch.unregisterTaskAsync(BACKGROUND_ACTIVITY_TASK);
-      const timeoutPromise = new Promise((_, reject) => 
+      const timeoutPromise = new Promise((_, reject) =>
         setTimeout(() => reject(new Error('Background task unregister timeout')), 5000)
       );
-      
+
       await Promise.race([unregisterPromise, timeoutPromise]);
       console.log('✅ Background task unregistered successfully');
     } catch (error) {
@@ -581,16 +581,16 @@ export class BackgroundActivityService {
    */
   public emergencyShutdown(): void {
     console.log('🚨 Emergency shutdown initiated');
-    
+
     try {
       this.isMonitoring = false;
-      
+
       // Synchronous cleanup only
       if (this.activityCheckInterval) {
         clearInterval(this.activityCheckInterval);
         this.activityCheckInterval = null;
       }
-      
+
       if (this.inactivityUpdateInterval) {
         clearInterval(this.inactivityUpdateInterval);
         this.inactivityUpdateInterval = null;

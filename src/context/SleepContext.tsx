@@ -149,7 +149,7 @@ export const SleepProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     // Enhanced cleanup function with error handling
     return () => {
       console.log('🧹 SleepContext cleanup initiated');
-      
+
       try {
         // Try graceful shutdown first
         backgroundService.stopMonitoring().catch((error) => {
@@ -166,7 +166,7 @@ export const SleepProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           console.error('❌ Emergency shutdown also failed:', emergencyError);
         }
       }
-      
+
       console.log('✅ SleepContext cleanup completed');
     };
   }, []);

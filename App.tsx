@@ -23,7 +23,7 @@ export default function App() {
     // Handle app state changes to prevent crashes on force close
     const handleAppStateChange = async (nextAppState: AppStateStatus) => {
       console.log(`🔄 App state changed to: ${nextAppState}`);
-      
+
       if (nextAppState === 'background' || nextAppState === 'inactive') {
         try {
           // Gracefully handle app going to background
@@ -41,7 +41,7 @@ export default function App() {
     return () => {
       console.log('🧹 Cleaning up app state subscription');
       subscription?.remove();
-      
+
       // Emergency cleanup for background service
       try {
         const backgroundService = BackgroundActivityService.getInstance();
