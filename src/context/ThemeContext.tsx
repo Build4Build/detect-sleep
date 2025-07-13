@@ -135,9 +135,11 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
     try {
       setThemeModeState(mode);
       await AsyncStorage.setItem(THEME_STORAGE_KEY, mode);
-      console.log(`Theme mode changed to: ${mode}`);
+      console.log(`Theme mode saved and applied: ${mode}`);
     } catch (error) {
       console.error('Failed to save theme preference:', error);
+      // Revert the state if save failed
+      setThemeModeState(themeMode);
     }
   };
 

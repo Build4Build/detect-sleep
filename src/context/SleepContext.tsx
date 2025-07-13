@@ -275,34 +275,37 @@ export const SleepProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       status = SleepStatus.ASLEEP;
       // Calculate confidence based on how long past threshold
       const excessTime = inactiveTime - settings.inactivityThreshold;
-      confidence = 75 + Math.min(25, excessTime / 30 * 25); // Scale from 75% to 100% over 30 minutes
+      // More gradual confidence increase over longer periods
+      confidence = 70 + Math.min(30, (excessTime / 60) * 30); // Scale from 70% to 100% over 60 minutes
     } else {
       status = SleepStatus.AWAKE;
       // Higher confidence the more recent the activity
       const proximityToThreshold = inactiveTime / settings.inactivityThreshold;
-      confidence = 100 - (proximityToThreshold * 40); // Scale from 100% to 60%
+      confidence = 100 - (proximityToThreshold * 35); // Scale from 100% to 65%
     }
 
     // Consider time of day if enabled
     if (settings.considerTimeOfDay) {
       const { typicalSleepStart, typicalSleepEnd } = sleepPatterns;
 
-      // Determine if it's typical sleep hours
-      const isNighttime = (currentHour >= typicalSleepStart) || (currentHour < typicalSleepEnd);
+      // Determine if it's typical sleep hours (handle overnight periods)
+      const isNighttime = typicalSleepStart > typicalSleepEnd
+        ? (currentHour >= typicalSleepStart || currentHour < typicalSleepEnd)
+        : (currentHour >= typicalSleepStart && currentHour < typicalSleepEnd);
 
       // Adjust confidence based on time appropriateness
       if (status === SleepStatus.ASLEEP) {
         if (isNighttime) {
           // Sleeping at night is expected - boost confidence
-          confidence = Math.min(100, confidence + 20);
+          confidence = Math.min(100, confidence + 15);
         } else {
-          // Sleeping during day is less typical - reduce confidence
-          confidence = Math.max(30, confidence - 25);
+          // Sleeping during day - reduce confidence but don't penalize too much (naps are normal)
+          confidence = Math.max(40, confidence - 15);
         }
       } else {
-        if (isNighttime && inactiveTime > settings.inactivityThreshold * 0.5) {
-          // Being awake late at night when inactive is suspicious
-          confidence = Math.max(40, confidence - 20);
+        if (isNighttime && inactiveTime > settings.inactivityThreshold * 0.6) {
+          // Being awake late at night when quite inactive is suspicious
+          confidence = Math.max(45, confidence - 15);
         } else if (!isNighttime) {
           // Being awake during day is expected
           confidence = Math.min(100, confidence + 10);
@@ -310,9 +313,22 @@ export const SleepProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       }
     }
 
-    // Additional confidence boost for very long inactivity periods
-    if (status === SleepStatus.ASLEEP && inactiveTime > settings.inactivityThreshold * 2) {
-      confidence = Math.min(100, confidence + 10);
+    // Additional confidence adjustments based on extended inactivity
+    if (status === SleepStatus.ASLEEP) {
+      if (inactiveTime > settings.inactivityThreshold * 3) {
+        // Very long inactivity (3x threshold) strongly suggests sleep
+        confidence = Math.min(100, confidence + 15);
+      } else if (inactiveTime > settings.inactivityThreshold * 2) {
+        // Extended inactivity (2x threshold) suggests sleep
+        confidence = Math.min(100, confidence + 10);
+      }
+    }
+
+    // Ensure minimum confidence levels for decision stability
+    if (status === SleepStatus.ASLEEP && confidence < 60) {
+      confidence = 60; // Minimum 60% confidence for sleep detection
+    } else if (status === SleepStatus.AWAKE && confidence < 70) {
+      confidence = 70; // Minimum 70% confidence for awake detection
     }
 
     return [status, Math.round(Math.max(0, Math.min(100, confidence)))];
@@ -346,45 +362,62 @@ export const SleepProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         // Calculate sleep status and confidence based on inactivity
         const [detectedStatus, confidence] = calculateSleepConfidence(inactiveMinutes, currentHour);
 
-        // Only update if status changed or confidence changed significantly
-        if (detectedStatus !== currentStatus || Math.abs(confidence - currentConfidence) > 15) {
-          console.log(`🔄 Status change detected: ${detectedStatus} (${confidence}% confidence)`);
+        // Only update if status changed or confidence changed significantly (>10%)
+        const significantConfidenceChange = Math.abs(confidence - currentConfidence) > 10;
+        const statusChanged = detectedStatus !== currentStatus;
+
+        if (statusChanged || significantConfidenceChange) {
+          console.log(`🔄 Status change detected: ${detectedStatus} (${confidence}% confidence, prev: ${currentConfidence}%)`);
 
           if (detectedStatus === SleepStatus.ASLEEP && currentStatus === SleepStatus.AWAKE) {
             // Transitioning to sleep - use the actual time when we believe sleep started
             const estimatedSleepStart = Date.now() - (inactiveMinutes * 60 * 1000);
             addActivityRecord(SleepStatus.ASLEEP, estimatedSleepStart, confidence);
             console.log(`😴 Sleep detected - estimated sleep start: ${new Date(estimatedSleepStart).toLocaleTimeString()}`);
-            
+
             // Send sleep detection notification
             await notificationService.notifySleepDetected(inactiveMinutes);
           } else if (detectedStatus === SleepStatus.AWAKE && currentStatus === SleepStatus.ASLEEP) {
             // Waking up
             addActivityRecord(SleepStatus.AWAKE, Date.now(), confidence);
             console.log(`☀️ Wake detected at ${new Date().toLocaleTimeString()}`);
-            
+
             // Calculate sleep duration and quality for wake notification
             const sleepDuration = getTodaySleepDuration();
             const sleepQuality = calculateSleepQuality(sleepDuration);
             await notificationService.notifyWakeDetected(sleepDuration, sleepQuality);
+          } else if (!statusChanged && significantConfidenceChange) {
+            // Status same but confidence changed significantly - update confidence only
+            setCurrentConfidence(confidence);
+            console.log(`🎯 Confidence updated: ${detectedStatus} (${confidence}%)`);
           }
 
-          // Update current status even if no transition (for confidence changes)
-          setCurrentStatus(detectedStatus);
-          setCurrentConfidence(confidence);
+          // Update current status and confidence
+          if (statusChanged) {
+            setCurrentStatus(detectedStatus);
+            setCurrentConfidence(confidence);
+          }
+        } else {
+          // Log minor updates without flooding the console
+          if (Math.random() < 0.1) { // Log 10% of the time for monitoring
+            console.log(`🔄 Status stable: ${detectedStatus} (${confidence}%)`);
+          }
         }
       } catch (error) {
         console.error('❌ Error checking sleep status:', error);
       }
     };
 
-    // Check every 2 minutes when app is active
-    const interval = setInterval(checkSleepStatus, 2 * 60 * 1000);
+    // Check every 90 seconds when app is active (more frequent than before)
+    const interval = setInterval(checkSleepStatus, 90 * 1000);
 
-    // Initial check
-    checkSleepStatus();
+    // Initial check after a short delay
+    const initialTimeout = setTimeout(checkSleepStatus, 5000);
 
-    return () => clearInterval(interval);
+    return () => {
+      clearInterval(interval);
+      clearTimeout(initialTimeout);
+    };
   }, [currentStatus, currentConfidence, settings.inactivityThreshold, settings.considerTimeOfDay]);
   // Handle app state changes (enhanced with background service integration)
   useEffect(() => {
@@ -404,7 +437,7 @@ export const SleepProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           // If we were asleep, record waking up only if we interact beyond just checking
           // For now, record as awake but with lower confidence until we get real interaction
           addActivityRecord(SleepStatus.AWAKE, now, 85); // Slightly lower confidence for just opening app
-          
+
           // Send wake detection notification with sleep summary
           const sleepDuration = getTodaySleepDuration();
           const sleepQuality = calculateSleepQuality(sleepDuration);
@@ -462,7 +495,7 @@ export const SleepProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   // Allow manual setting of sleep status
   const manuallySetStatus = async (status: SleepStatus) => {
     const previousStatus = currentStatus;
-    
+
     // Add record with high confidence since user manually set it
     addActivityRecord(status, Date.now(), 100);
 
@@ -563,6 +596,27 @@ export const SleepProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     );
   };
 
+  // Test method to check current sleep detection status (for debugging)
+  const testSleepDetection = async (): Promise<{
+    inactivityMinutes: number;
+    currentHour: number;
+    detectedStatus: SleepStatus;
+    confidence: number;
+    threshold: number;
+  }> => {
+    const inactivityMinutes = await backgroundService.getInactivityDuration(false);
+    const currentHour = new Date().getHours();
+    const [detectedStatus, confidence] = calculateSleepConfidence(inactivityMinutes, currentHour);
+
+    return {
+      inactivityMinutes,
+      currentHour,
+      detectedStatus,
+      confidence,
+      threshold: settings.inactivityThreshold
+    };
+  };
+
   return (
     <SleepContext.Provider
       value={{
@@ -589,4 +643,4 @@ export const useSleep = (): SleepContextType => {
     throw new Error('useSleep must be used within a SleepProvider');
   }
   return context;
-}; 
+};

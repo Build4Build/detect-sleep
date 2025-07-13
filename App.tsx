@@ -1,14 +1,12 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { SleepProvider } from './src/context/SleepContext';
 import { ThemeProvider, useTheme } from './src/context/ThemeContext';
 import AppNavigator from './src/navigation/AppNavigator';
-import * as Notifications from 'expo-notifications';
 
 const AppContent = () => {
   const { isDarkMode } = useTheme();
-
   return (
     <>
       <AppNavigator />

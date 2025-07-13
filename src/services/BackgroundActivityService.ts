@@ -214,11 +214,20 @@ export class BackgroundActivityService {
     // Set up a timer to upgrade to genuine activity if user stays active
     setTimeout(() => {
       if (this.currentAppState === 'active') {
-        // User has been actively using the app for 10 seconds
+        // User has been actively using the app for 15 seconds
         this.onMovementDetected('app_active');
         console.log('⏰ Upgraded app check to genuine activity - user actively using app');
+        
+        // Set up another timer for extended genuine usage
+        setTimeout(() => {
+          if (this.currentAppState === 'active') {
+            // User has been using app for 45 seconds - definitely genuine activity
+            this.onMovementDetected('user_interaction');
+            console.log('🎯 Confirmed extended app usage - marking as strong user interaction');
+          }
+        }, 30000); // Additional 30 seconds = 45 total
       }
-    }, 10000); // 10 second grace period
+    }, 15000); // Increased to 15 seconds for more reliable detection
   }
 
   /**
@@ -411,7 +420,7 @@ export class BackgroundActivityService {
     // If we're currently checking the app but want to ignore the current session
     if (!includeCurrentCheck && this.currentAppState === 'active') {
       // Get the activity log to find the last non-check activity
-      const recentActivity = await this.getActivityLog(2); // Last 2 hours
+      const recentActivity = await this.getActivityLog(3); // Extended to 3 hours for better analysis
       
       // Find the last activity that was genuine movement (not just app checks)
       const lastGenuineActivity = recentActivity
@@ -421,12 +430,26 @@ export class BackgroundActivityService {
       if (lastGenuineActivity) {
         const genuineInactiveMinutes = (now - lastGenuineActivity.timestamp) / (1000 * 60);
         console.log(`📊 Inactivity Analysis: ${Math.round(inactiveMinutes)}min total, ${Math.round(genuineInactiveMinutes)}min genuine inactivity`);
-        return genuineInactiveMinutes;
+        return Math.max(0, genuineInactiveMinutes);
       } else {
-        // If no genuine activity found in recent history, use the stored timestamp
-        // but add a buffer since we might be in a checking session
-        const bufferedInactiveMinutes = Math.max(0, inactiveMinutes - 2); // Subtract 2 minutes buffer
-        console.log(`📊 No recent genuine activity found, using buffered inactivity: ${Math.round(bufferedInactiveMinutes)}min`);
+        // If no genuine activity found in recent history, analyze recent app state changes
+        const recentAppActivity = recentActivity
+          .filter(activity => activity.timestamp > (now - (2 * 60 * 60 * 1000))) // Last 2 hours
+          .sort((a, b) => b.timestamp - a.timestamp);
+        
+        if (recentAppActivity.length > 0) {
+          // Find the most recent high-confidence activity
+          const lastHighConfidenceActivity = recentAppActivity.find(activity => activity.confidence >= 85);
+          if (lastHighConfidenceActivity) {
+            const adjustedInactiveMinutes = (now - lastHighConfidenceActivity.timestamp) / (1000 * 60);
+            console.log(`📊 Using high-confidence activity timestamp: ${Math.round(adjustedInactiveMinutes)}min inactivity`);
+            return Math.max(0, adjustedInactiveMinutes);
+          }
+        }
+        
+        // Fall back to buffered approach but with more conservative buffer
+        const bufferedInactiveMinutes = Math.max(0, inactiveMinutes - 5); // 5 minute buffer for app session
+        console.log(`📊 No recent genuine activity found, using conservative buffered inactivity: ${Math.round(bufferedInactiveMinutes)}min`);
         return bufferedInactiveMinutes;
       }
     }
@@ -434,7 +457,7 @@ export class BackgroundActivityService {
     // Log the inactivity check for debugging
     console.log(`📊 Total inactivity: ${Math.round(inactiveMinutes)} minutes since last activity`);
     
-    return inactiveMinutes; // Return minutes
+    return Math.max(0, inactiveMinutes); // Ensure non-negative return
   }
 
   /**
