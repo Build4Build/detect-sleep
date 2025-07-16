@@ -52,10 +52,10 @@ export class NotificationService {
     try {
       // Load settings
       await this.loadSettings();
-      
+
       // Request permissions and get token
       await this.registerForPushNotificationsAsync();
-      
+
       console.log('NotificationService initialized successfully');
     } catch (error) {
       console.error('Failed to initialize NotificationService:', error);
@@ -104,9 +104,9 @@ export class NotificationService {
         token = (await Notifications.getExpoPushTokenAsync({
           projectId: 'c1f660d1-2639-4a53-9a69-0e3e3dd453fb',
         })).data;
-        
+
         console.log('Push notification token:', token);
-        
+
         // Store token
         await AsyncStorage.setItem(NOTIFICATION_TOKEN_KEY, token);
         this.expoPushToken = token;
@@ -165,7 +165,7 @@ export class NotificationService {
     try {
       const inactiveHours = Math.floor(inactiveMinutes / 60);
       const remainingMinutes = Math.floor(inactiveMinutes % 60);
-      
+
       let timeText = '';
       if (inactiveHours > 0) {
         timeText = `${inactiveHours}h ${remainingMinutes}m`;
@@ -203,7 +203,7 @@ export class NotificationService {
     try {
       const sleepHours = Math.floor(sleepDuration / 60);
       const sleepMinutes = Math.floor(sleepDuration % 60);
-      
+
       let durationText = '';
       if (sleepHours > 0) {
         durationText = `${sleepHours}h ${sleepMinutes}m`;
@@ -219,9 +219,23 @@ export class NotificationService {
       else if (sleepQuality === 'Poor') emoji = '😴';
       else if (sleepQuality === 'Insufficient') emoji = '😵';
 
+      // Create a time-neutral wake notification title
+      const currentHour = new Date().getHours();
+      let greetingTitle = '';
+
+      if (currentHour >= 5 && currentHour < 12) {
+        greetingTitle = `${emoji} Good Morning!`;
+      } else if (currentHour >= 12 && currentHour < 17) {
+        greetingTitle = `${emoji} Nap Complete`;
+      } else if (currentHour >= 17 && currentHour < 21) {
+        greetingTitle = `${emoji} Good Evening!`;
+      } else {
+        greetingTitle = `${emoji} Wake Up Detected`;
+      }
+
       await Notifications.scheduleNotificationAsync({
         content: {
-          title: `${emoji} Good Morning!`,
+          title: greetingTitle,
           body: `You slept for ${durationText}. Sleep quality: ${sleepQuality}`,
           data: {
             type: 'wake-detected',
@@ -282,13 +296,13 @@ export class NotificationService {
   public async cancelBedtimeReminder(): Promise<void> {
     try {
       const scheduledNotifications = await Notifications.getAllScheduledNotificationsAsync();
-      
+
       for (const notification of scheduledNotifications) {
         if (notification.content.data?.type === 'bedtime-reminder') {
           await Notifications.cancelScheduledNotificationAsync(notification.identifier);
         }
       }
-      
+
       console.log('Bedtime reminders cancelled');
     } catch (error) {
       console.error('Failed to cancel bedtime reminder:', error);
@@ -302,7 +316,7 @@ export class NotificationService {
     try {
       const sleepHours = Math.floor(totalSleep / 60);
       const sleepMinutes = Math.floor(totalSleep % 60);
-      
+
       await Notifications.scheduleNotificationAsync({
         content: {
           title: '📊 Sleep Summary',
