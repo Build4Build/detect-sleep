@@ -102,7 +102,7 @@ export class NotificationService {
 
       try {
         token = (await Notifications.getExpoPushTokenAsync({
-          projectId: 'c1f660d1-2639-4a53-9a69-0e3e3dd453fb',
+          projectId: 'c1f660d1-2639-4a53-9a69-0e3e3dd453fb', // project ID needs to match with app.json's projectId
         })).data;
 
         console.log('Push notification token:', token);
