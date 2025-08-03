@@ -12,13 +12,31 @@ import BackgroundMonitorDebug from '../components/BackgroundMonitorDebug';
 
 type SettingsScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
-// Define threshold options
+// Define threshold options (updated with more granular options)
 const THRESHOLD_OPTIONS = [
+  { label: '20 minutes', value: 20 },
+  { label: '25 minutes', value: 25 },
   { label: '30 minutes', value: 30 },
+  { label: '35 minutes', value: 35 },
+  { label: '40 minutes', value: 40 },
   { label: '45 minutes', value: 45 },
   { label: '1 hour', value: 60 },
   { label: '1.5 hours', value: 90 },
   { label: '2 hours', value: 120 },
+];
+
+// Define sensitivity options
+const SENSITIVITY_OPTIONS = [
+  { label: 'Low (Less sensitive)', value: 'low' as const },
+  { label: 'Medium (Balanced)', value: 'medium' as const },
+  { label: 'High (More sensitive)', value: 'high' as const },
+];
+
+// Define background persistence options
+const PERSISTENCE_OPTIONS = [
+  { label: 'Normal', value: 'normal' as const },
+  { label: 'Aggressive', value: 'aggressive' as const },
+  { label: 'Maximum', value: 'maximum' as const },
 ];
 
 // Define theme options
@@ -34,7 +52,20 @@ const SettingsScreen = () => {
   const { themeMode, setThemeMode, colors, isDarkMode } = useTheme();
   const [useMachineLearning, setUseMachineLearning] = useState(settings.useMachineLearning);
   const [considerTimeOfDay, setConsiderTimeOfDay] = useState(settings.considerTimeOfDay);
+  const [adaptiveThreshold, setAdaptiveThreshold] = useState(settings.adaptiveThreshold ?? true);
+  const [napDetection, setNapDetection] = useState(settings.napDetection ?? true);
+  // New advanced settings state
+  const [smartWakeupWindow, setSmartWakeupWindow] = useState(settings.smartWakeupWindow ?? true);
+  const [confidenceBasedAdjustment, setConfidenceBasedAdjustment] = useState(settings.confidenceBasedAdjustment ?? true);
+  const [contextualNotifications, setContextualNotifications] = useState(settings.contextualNotifications ?? true);
+  const [advancedSensorFiltering, setAdvancedSensorFiltering] = useState(settings.advancedSensorFiltering ?? true);
+  const [batteryOptimizedMode, setBatteryOptimizedMode] = useState(settings.batteryOptimizedMode ?? false);
+  const [weekendModeEnabled, setWeekendModeEnabled] = useState(settings.weekendModeEnabled ?? true);
+  const [sleepDataValidation, setSleepDataValidation] = useState(settings.sleepDataValidation ?? true);
+
   const [showThresholdModal, setShowThresholdModal] = useState(false);
+  const [showSensitivityModal, setShowSensitivityModal] = useState(false);
+  const [showPersistenceModal, setShowPersistenceModal] = useState(false);
   const [showThemeModal, setShowThemeModal] = useState(false);
   const [showDebugMonitor, setShowDebugMonitor] = useState(false);
   const [settingsInitialized, setSettingsInitialized] = useState(false);
@@ -45,21 +76,61 @@ const SettingsScreen = () => {
   // Sync local state with context settings when they change
   useEffect(() => {
     // Only update local state if we haven't initialized yet or if settings have actually changed
-    if (!settingsInitialized || 
-        useMachineLearning !== settings.useMachineLearning ||
-        considerTimeOfDay !== settings.considerTimeOfDay) {
-      
+    if (!settingsInitialized ||
+      useMachineLearning !== settings.useMachineLearning ||
+      considerTimeOfDay !== settings.considerTimeOfDay ||
+      adaptiveThreshold !== (settings.adaptiveThreshold || true) ||
+      napDetection !== (settings.napDetection || true) ||
+      smartWakeupWindow !== (settings.smartWakeupWindow ?? true) ||
+      confidenceBasedAdjustment !== (settings.confidenceBasedAdjustment ?? true) ||
+      contextualNotifications !== (settings.contextualNotifications ?? true) ||
+      advancedSensorFiltering !== (settings.advancedSensorFiltering ?? true) ||
+      batteryOptimizedMode !== (settings.batteryOptimizedMode ?? false) ||
+      weekendModeEnabled !== (settings.weekendModeEnabled ?? true) ||
+      sleepDataValidation !== (settings.sleepDataValidation ?? true)) {
+
       setUseMachineLearning(settings.useMachineLearning);
       setConsiderTimeOfDay(settings.considerTimeOfDay);
+      setAdaptiveThreshold(settings.adaptiveThreshold || true);
+      setNapDetection(settings.napDetection || true);
+      // New advanced settings synchronization
+      setSmartWakeupWindow(settings.smartWakeupWindow ?? true);
+      setConfidenceBasedAdjustment(settings.confidenceBasedAdjustment ?? true);
+      setContextualNotifications(settings.contextualNotifications ?? true);
+      setAdvancedSensorFiltering(settings.advancedSensorFiltering ?? true);
+      setBatteryOptimizedMode(settings.batteryOptimizedMode ?? false);
+      setWeekendModeEnabled(settings.weekendModeEnabled ?? true);
+      setSleepDataValidation(settings.sleepDataValidation ?? true);
       setSettingsInitialized(true);
       console.log('Settings Screen synchronized with context:', settings);
     }
-  }, [settings.useMachineLearning, settings.considerTimeOfDay, settingsInitialized]);
+  }, [
+    settings.useMachineLearning,
+    settings.considerTimeOfDay,
+    settings.adaptiveThreshold,
+    settings.napDetection,
+    settings.smartWakeupWindow,
+    settings.confidenceBasedAdjustment,
+    settings.contextualNotifications,
+    settings.advancedSensorFiltering,
+    settings.batteryOptimizedMode,
+    settings.weekendModeEnabled,
+    settings.sleepDataValidation,
+    settingsInitialized
+  ]);
 
-  // Find the current threshold option
+  // Find the current options
   const currentThresholdOption = THRESHOLD_OPTIONS.find(
     option => option.value === settings.inactivityThreshold
-  ) || THRESHOLD_OPTIONS[1]; // Default to 45 min if not found
+  ) || THRESHOLD_OPTIONS[3]; // Default to 35 min if not found
+
+  const currentSensitivityOption = SENSITIVITY_OPTIONS.find(
+    option => option.value === settings.sensitivityLevel
+  ) || SENSITIVITY_OPTIONS[1]; // Default to medium if not found
+
+  const currentPersistenceOption = PERSISTENCE_OPTIONS.find(
+    option => option.value === settings.backgroundPersistence
+  ) || PERSISTENCE_OPTIONS[1]; // Default to aggressive if not found
 
   // Find the current theme option
   const currentThemeOption = THEME_OPTIONS.find(
@@ -70,6 +141,18 @@ const SettingsScreen = () => {
   const handleThresholdSelect = (value: number) => {
     updateSettings({ inactivityThreshold: value });
     setShowThresholdModal(false);
+  };
+
+  // Handle sensitivity selection
+  const handleSensitivitySelect = (value: 'low' | 'medium' | 'high') => {
+    updateSettings({ sensitivityLevel: value });
+    setShowSensitivityModal(false);
+  };
+
+  // Handle persistence selection
+  const handlePersistenceSelect = (value: 'normal' | 'aggressive' | 'maximum') => {
+    updateSettings({ backgroundPersistence: value });
+    setShowPersistenceModal(false);
   };
 
   // Handle theme selection
@@ -94,6 +177,66 @@ const SettingsScreen = () => {
   const handleTimeOfDayToggle = (value: boolean) => {
     setConsiderTimeOfDay(value);
     updateSettings({ considerTimeOfDay: value });
+  };
+
+  // Handle adaptive threshold toggle
+  const handleAdaptiveThresholdToggle = (value: boolean) => {
+    setAdaptiveThreshold(value);
+    updateSettings({ adaptiveThreshold: value });
+    if (value) {
+      Alert.alert(
+        'Adaptive Threshold Enabled',
+        'Sleep detection will now adjust the inactivity threshold based on time of day and your patterns for more accurate detection.'
+      );
+    }
+  };
+
+  // Handle nap detection toggle
+  const handleNapDetectionToggle = (value: boolean) => {
+    setNapDetection(value);
+    updateSettings({ napDetection: value });
+  };
+
+  // Handle smart wakeup window toggle
+  const handleSmartWakeupWindowToggle = (value: boolean) => {
+    setSmartWakeupWindow(value);
+    updateSettings({ smartWakeupWindow: value });
+  };
+
+  // Handle confidence based adjustment toggle
+  const handleConfidenceBasedAdjustmentToggle = (value: boolean) => {
+    setConfidenceBasedAdjustment(value);
+    updateSettings({ confidenceBasedAdjustment: value });
+  };
+
+  // Handle contextual notifications toggle
+  const handleContextualNotificationsToggle = (value: boolean) => {
+    setContextualNotifications(value);
+    updateSettings({ contextualNotifications: value });
+  };
+
+  // Handle advanced sensor filtering toggle
+  const handleAdvancedSensorFilteringToggle = (value: boolean) => {
+    setAdvancedSensorFiltering(value);
+    updateSettings({ advancedSensorFiltering: value });
+  };
+
+  // Handle battery optimized mode toggle
+  const handleBatteryOptimizedModeToggle = (value: boolean) => {
+    setBatteryOptimizedMode(value);
+    updateSettings({ batteryOptimizedMode: value });
+  };
+
+  // Handle weekend mode toggle
+  const handleWeekendModeToggle = (value: boolean) => {
+    setWeekendModeEnabled(value);
+    updateSettings({ weekendModeEnabled: value });
+  };
+
+  // Handle sleep data validation toggle
+  const handleSleepDataValidationToggle = (value: boolean) => {
+    setSleepDataValidation(value);
+    updateSettings({ sleepDataValidation: value });
   };
 
   // Reset sleep data
@@ -170,7 +313,7 @@ const SettingsScreen = () => {
           <View>
             <Text style={themedStyles.settingLabel}>Inactivity Threshold</Text>
             <Text style={themedStyles.settingDescription}>
-              Inactivity time before considered asleep
+              Base inactivity time before considered asleep
             </Text>
           </View>
           <View style={themedStyles.dropdownValueContainer}>
@@ -178,6 +321,71 @@ const SettingsScreen = () => {
             <Ionicons name="chevron-down" size={20} color={colors.primary} />
           </View>
         </TouchableOpacity>
+
+        <TouchableOpacity
+          style={themedStyles.dropdownButton}
+          onPress={() => setShowSensitivityModal(true)}
+        >
+          <View>
+            <Text style={themedStyles.settingLabel}>Movement Sensitivity</Text>
+            <Text style={themedStyles.settingDescription}>
+              How sensitive to detect phone movement and usage
+            </Text>
+          </View>
+          <View style={themedStyles.dropdownValueContainer}>
+            <Text style={themedStyles.dropdownValue}>{currentSensitivityOption.label}</Text>
+            <Ionicons name="chevron-down" size={20} color={colors.primary} />
+          </View>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={themedStyles.dropdownButton}
+          onPress={() => setShowPersistenceModal(true)}
+        >
+          <View>
+            <Text style={themedStyles.settingLabel}>Background Persistence</Text>
+            <Text style={themedStyles.settingDescription}>
+              How aggressively to maintain background monitoring
+            </Text>
+          </View>
+          <View style={themedStyles.dropdownValueContainer}>
+            <Text style={themedStyles.dropdownValue}>{currentPersistenceOption.label}</Text>
+            <Ionicons name="chevron-down" size={20} color={colors.primary} />
+          </View>
+        </TouchableOpacity>
+      </View>
+
+      <View style={themedStyles.section}>
+        <Text style={themedStyles.sectionTitle}>Adaptive Detection</Text>
+        <View style={themedStyles.settingItem}>
+          <View style={themedStyles.switchContainer}>
+            <Text style={themedStyles.settingLabel}>Adaptive Threshold</Text>
+            <Switch
+              value={adaptiveThreshold}
+              onValueChange={handleAdaptiveThresholdToggle}
+              trackColor={{ false: colors.border, true: colors.primary + '80' }}
+              thumbColor={adaptiveThreshold ? colors.primary : colors.surface}
+            />
+          </View>
+          <Text style={themedStyles.settingDescription}>
+            Automatically adjust threshold based on time of day and patterns
+          </Text>
+        </View>
+
+        <View style={themedStyles.settingItem}>
+          <View style={themedStyles.switchContainer}>
+            <Text style={themedStyles.settingLabel}>Enhanced Nap Detection</Text>
+            <Switch
+              value={napDetection}
+              onValueChange={handleNapDetectionToggle}
+              trackColor={{ false: colors.border, true: colors.primary + '80' }}
+              thumbColor={napDetection ? colors.primary : colors.surface}
+            />
+          </View>
+          <Text style={themedStyles.settingDescription}>
+            Optimized detection for short afternoon naps and unusual sleep times
+          </Text>
+        </View>
       </View>
 
       <View style={themedStyles.section}>
@@ -209,6 +417,117 @@ const SettingsScreen = () => {
           </View>
           <Text style={themedStyles.settingDescription}>
             Factor in typical sleep hours for better detection
+          </Text>
+        </View>
+      </View>
+
+      <View style={themedStyles.section}>
+        <Text style={themedStyles.sectionTitle}>Advanced Settings</Text>
+        <View style={themedStyles.settingItem}>
+          <View style={themedStyles.switchContainer}>
+            <Text style={themedStyles.settingLabel}>Smart Wakeup Window</Text>
+            <Switch
+              value={smartWakeupWindow}
+              onValueChange={handleSmartWakeupWindowToggle}
+              trackColor={{ false: colors.border, true: colors.primary + '80' }}
+              thumbColor={smartWakeupWindow ? colors.primary : colors.surface}
+            />
+          </View>
+          <Text style={themedStyles.settingDescription}>
+            Optimize wakeup detection during light sleep phases
+          </Text>
+        </View>
+
+        <View style={themedStyles.settingItem}>
+          <View style={themedStyles.switchContainer}>
+            <Text style={themedStyles.settingLabel}>Confidence-Based Adjustment</Text>
+            <Switch
+              value={confidenceBasedAdjustment}
+              onValueChange={handleConfidenceBasedAdjustmentToggle}
+              trackColor={{ false: colors.border, true: colors.primary + '80' }}
+              thumbColor={confidenceBasedAdjustment ? colors.primary : colors.surface}
+            />
+          </View>
+          <Text style={themedStyles.settingDescription}>
+            Adjust detection thresholds based on confidence scoring
+          </Text>
+        </View>
+
+        <View style={themedStyles.settingItem}>
+          <View style={themedStyles.switchContainer}>
+            <Text style={themedStyles.settingLabel}>Contextual Notifications</Text>
+            <Switch
+              value={contextualNotifications}
+              onValueChange={handleContextualNotificationsToggle}
+              trackColor={{ false: colors.border, true: colors.primary + '80' }}
+              thumbColor={contextualNotifications ? colors.primary : colors.surface}
+            />
+          </View>
+          <Text style={themedStyles.settingDescription}>
+            Generate notifications based on sleep context and time
+          </Text>
+        </View>
+
+        <View style={themedStyles.settingItem}>
+          <View style={themedStyles.switchContainer}>
+            <Text style={themedStyles.settingLabel}>Advanced Sensor Filtering</Text>
+            <Switch
+              value={advancedSensorFiltering}
+              onValueChange={handleAdvancedSensorFilteringToggle}
+              trackColor={{ false: colors.border, true: colors.primary + '80' }}
+              thumbColor={advancedSensorFiltering ? colors.primary : colors.surface}
+            />
+          </View>
+          <Text style={themedStyles.settingDescription}>
+            Use enhanced multi-layer sensor filtering for better accuracy
+          </Text>
+        </View>
+      </View>
+
+      <View style={themedStyles.section}>
+        <Text style={themedStyles.sectionTitle}>Power & Lifestyle</Text>
+        <View style={themedStyles.settingItem}>
+          <View style={themedStyles.switchContainer}>
+            <Text style={themedStyles.settingLabel}>Battery Optimized Mode</Text>
+            <Switch
+              value={batteryOptimizedMode}
+              onValueChange={handleBatteryOptimizedModeToggle}
+              trackColor={{ false: colors.border, true: colors.primary + '80' }}
+              thumbColor={batteryOptimizedMode ? colors.primary : colors.surface}
+            />
+          </View>
+          <Text style={themedStyles.settingDescription}>
+            Reduce battery usage with optimized monitoring intervals
+          </Text>
+        </View>
+
+        <View style={themedStyles.settingItem}>
+          <View style={themedStyles.switchContainer}>
+            <Text style={themedStyles.settingLabel}>Weekend Mode</Text>
+            <Switch
+              value={weekendModeEnabled}
+              onValueChange={handleWeekendModeToggle}
+              trackColor={{ false: colors.border, true: colors.primary + '80' }}
+              thumbColor={weekendModeEnabled ? colors.primary : colors.surface}
+            />
+          </View>
+          <Text style={themedStyles.settingDescription}>
+            Adjust detection patterns for weekend sleep schedules
+          </Text>
+        </View>
+
+        <View style={themedStyles.settingItem}>
+          <View style={themedStyles.switchContainer}>
+            <Text style={themedStyles.settingLabel}>Sleep Data Validation</Text>
+            <Switch
+              value={sleepDataValidation}
+              onValueChange={handleSleepDataValidationToggle}
+              trackColor={{ false: colors.border, true: colors.primary + '80' }}
+              thumbColor={sleepDataValidation ? colors.primary : colors.surface}
+            />
+          </View>
+          <Text style={themedStyles.settingDescription}>
+            Validate and clean sleep data for improved reliability
           </Text>
         </View>
       </View>
@@ -298,7 +617,105 @@ const SettingsScreen = () => {
         </View>
       </View>
 
-      {/* Threshold Selection Modal */}
+      {/* Sensitivity Selection Modal */}
+      <Modal
+        visible={showSensitivityModal}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setShowSensitivityModal(false)}
+      >
+        <View style={themedStyles.modalOverlay}>
+          <View style={themedStyles.modalContent}>
+            <View style={themedStyles.modalHeader}>
+              <Text style={themedStyles.modalTitle}>Select Movement Sensitivity</Text>
+              <TouchableOpacity onPress={() => setShowSensitivityModal(false)}>
+                <Ionicons name="close" size={24} color={colors.text} />
+              </TouchableOpacity>
+            </View>
+
+            <FlatList
+              data={SENSITIVITY_OPTIONS}
+              keyExtractor={(item) => item.value}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  style={[
+                    themedStyles.thresholdOption,
+                    item.value === settings.sensitivityLevel && themedStyles.selectedOption
+                  ]}
+                  onPress={() => handleSensitivitySelect(item.value)}
+                >
+                  <Text
+                    style={[
+                      themedStyles.thresholdOptionText,
+                      item.value === settings.sensitivityLevel && themedStyles.selectedOptionText
+                    ]}
+                  >
+                    {item.label}
+                  </Text>
+                  {item.value === settings.sensitivityLevel && (
+                    <Ionicons name="checkmark" size={20} color={colors.primary} />
+                  )}
+                </TouchableOpacity>
+              )}
+              ItemSeparatorComponent={() => <View style={themedStyles.separator} />}
+            />
+
+            <Text style={themedStyles.modalDescription}>
+              High sensitivity detects even small movements but may trigger false positives. Low sensitivity is more conservative but might miss subtle activity.
+            </Text>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Background Persistence Selection Modal */}
+      <Modal
+        visible={showPersistenceModal}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setShowPersistenceModal(false)}
+      >
+        <View style={themedStyles.modalOverlay}>
+          <View style={themedStyles.modalContent}>
+            <View style={themedStyles.modalHeader}>
+              <Text style={themedStyles.modalTitle}>Select Background Persistence</Text>
+              <TouchableOpacity onPress={() => setShowPersistenceModal(false)}>
+                <Ionicons name="close" size={24} color={colors.text} />
+              </TouchableOpacity>
+            </View>
+
+            <FlatList
+              data={PERSISTENCE_OPTIONS}
+              keyExtractor={(item) => item.value}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  style={[
+                    themedStyles.thresholdOption,
+                    item.value === settings.backgroundPersistence && themedStyles.selectedOption
+                  ]}
+                  onPress={() => handlePersistenceSelect(item.value)}
+                >
+                  <Text
+                    style={[
+                      themedStyles.thresholdOptionText,
+                      item.value === settings.backgroundPersistence && themedStyles.selectedOptionText
+                    ]}
+                  >
+                    {item.label}
+                  </Text>
+                  {item.value === settings.backgroundPersistence && (
+                    <Ionicons name="checkmark" size={20} color={colors.primary} />
+                  )}
+                </TouchableOpacity>
+              )}
+              ItemSeparatorComponent={() => <View style={themedStyles.separator} />}
+            />
+
+            <Text style={themedStyles.modalDescription}>
+              Higher persistence improves accuracy but may use more battery. Maximum persistence works best on devices with battery optimization disabled.
+            </Text>
+          </View>
+        </View>
+      </Modal>
       <Modal
         visible={showThresholdModal}
         transparent={true}
@@ -376,13 +793,13 @@ const SettingsScreen = () => {
                   onPress={() => handleThemeSelect(item.value)}
                 >
                   <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                    <Ionicons 
+                    <Ionicons
                       name={
                         item.value === 'auto' ? 'phone-portrait-outline' :
-                        item.value === 'light' ? 'sunny-outline' : 'moon-outline'
-                      } 
-                      size={20} 
-                      color={colors.textSecondary} 
+                          item.value === 'light' ? 'sunny-outline' : 'moon-outline'
+                      }
+                      size={20}
+                      color={colors.textSecondary}
                       style={{ marginRight: 12 }}
                     />
                     <Text
@@ -755,4 +1172,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default SettingsScreen; 
+export default SettingsScreen;

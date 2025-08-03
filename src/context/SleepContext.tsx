@@ -8,9 +8,21 @@ import { NotificationService } from '../services/NotificationService';
 
 // Default settings
 const DEFAULT_SETTINGS: AppSettings = {
-  inactivityThreshold: 45, // 45 minutes of inactivity before considered asleep
-  useMachineLearning: true, // New setting for enhanced detection
-  considerTimeOfDay: true, // New setting to consider typical sleep hours
+  inactivityThreshold: 30, // Reduced to 30 minutes for more responsive detection
+  useMachineLearning: true, // Enhanced ML-based detection
+  considerTimeOfDay: true, // Consider typical sleep hours
+  sensitivityLevel: 'medium', // Movement detection sensitivity
+  adaptiveThreshold: true, // Adapt threshold based on time and patterns
+  napDetection: true, // Better short nap detection
+  backgroundPersistence: 'aggressive', // Background service persistence level
+  // New advanced options for enhanced control
+  smartWakeupWindow: true, // Enable smart wake-up detection
+  confidenceBasedAdjustment: true, // Dynamic threshold adjustment
+  contextualNotifications: true, // Enhanced notification messages
+  advancedSensorFiltering: true, // Multi-layer sensor filtering
+  batteryOptimizedMode: false, // Full accuracy by default
+  weekendModeEnabled: true, // Different weekend behavior
+  sleepDataValidation: true, // Additional data validation
 };
 
 // Storage keys
@@ -134,6 +146,8 @@ export const SleepProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
         // Initialize notification service
         await notificationService.initialize();
+        // Pass app settings to notification service for contextual notifications
+        notificationService.updateAppSettings(settings);
         console.log('Notification service initialized');
       } catch (error) {
         console.error('Failed to load data from storage:', error);
@@ -280,7 +294,7 @@ export const SleepProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     return mostFrequentHour;
   };
 
-  // Calculate sleep detection confidence based on multiple factors
+  // Calculate sleep detection confidence based on multiple factors with adaptive threshold
   const calculateSleepConfidence = (
     inactiveTime: number,
     currentHour: number
@@ -289,18 +303,51 @@ export const SleepProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     let confidence = 0;
     let status = SleepStatus.AWAKE;
 
-    // Determine status based on inactivity threshold
-    if (inactiveTime >= settings.inactivityThreshold) {
+    // Get adaptive threshold based on settings and time of day
+    let effectiveThreshold = settings.inactivityThreshold;
+
+    if (settings.adaptiveThreshold) {
+      // Adjust threshold based on time of day and patterns
+      if (currentHour >= 22 || currentHour <= 6) {
+        // Nighttime - reduce threshold for faster detection
+        effectiveThreshold = Math.max(20, settings.inactivityThreshold - 15);
+      } else if (currentHour >= 13 && currentHour <= 15) {
+        // Typical nap time - slightly reduce threshold
+        effectiveThreshold = Math.max(25, settings.inactivityThreshold - 10);
+      } else if (currentHour >= 7 && currentHour <= 11) {
+        // Morning - increase threshold (less likely to be sleeping)
+        effectiveThreshold = settings.inactivityThreshold + 10;
+      }
+    }
+
+    // Enhanced nap detection
+    const isNapTimeframe = currentHour >= 12 && currentHour <= 17;
+    const isNightTimeframe = currentHour >= 21 || currentHour <= 6;
+
+    // Determine status based on adaptive threshold
+    if (inactiveTime >= effectiveThreshold) {
       status = SleepStatus.ASLEEP;
       // Calculate confidence based on how long past threshold
-      const excessTime = inactiveTime - settings.inactivityThreshold;
+      const excessTime = inactiveTime - effectiveThreshold;
       // More gradual confidence increase over longer periods
       confidence = 70 + Math.min(30, (excessTime / 60) * 30); // Scale from 70% to 100% over 60 minutes
+
+      // Boost confidence for expected sleep times
+      if (isNightTimeframe) {
+        confidence = Math.min(100, confidence + 15); // Night sleep bonus
+      } else if (isNapTimeframe && settings.napDetection) {
+        confidence = Math.min(100, confidence + 10); // Nap detection bonus
+      }
     } else {
       status = SleepStatus.AWAKE;
       // Higher confidence the more recent the activity
-      const proximityToThreshold = inactiveTime / settings.inactivityThreshold;
+      const proximityToThreshold = inactiveTime / effectiveThreshold;
       confidence = 100 - (proximityToThreshold * 35); // Scale from 100% to 65%
+
+      // Reduce confidence if it's expected sleep time but we're awake
+      if (isNightTimeframe && inactiveTime > effectiveThreshold * 0.7) {
+        confidence = Math.max(50, confidence - 20); // Late night activity penalty
+      }
     }
 
     // Consider time of day if enabled
@@ -322,7 +369,7 @@ export const SleepProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           confidence = Math.max(40, confidence - 15);
         }
       } else {
-        if (isNighttime && inactiveTime > settings.inactivityThreshold * 0.6) {
+        if (isNighttime && inactiveTime > effectiveThreshold * 0.6) {
           // Being awake late at night when quite inactive is suspicious
           confidence = Math.max(45, confidence - 15);
         } else if (!isNighttime) {
@@ -334,10 +381,10 @@ export const SleepProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
     // Additional confidence adjustments based on extended inactivity
     if (status === SleepStatus.ASLEEP) {
-      if (inactiveTime > settings.inactivityThreshold * 3) {
+      if (inactiveTime > effectiveThreshold * 3) {
         // Very long inactivity (3x threshold) strongly suggests sleep
         confidence = Math.min(100, confidence + 15);
-      } else if (inactiveTime > settings.inactivityThreshold * 2) {
+      } else if (inactiveTime > effectiveThreshold * 2) {
         // Extended inactivity (2x threshold) suggests sleep
         confidence = Math.min(100, confidence + 10);
       }
@@ -349,6 +396,8 @@ export const SleepProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     } else if (status === SleepStatus.AWAKE && confidence < 70) {
       confidence = 70; // Minimum 70% confidence for awake detection
     }
+
+    console.log(`🧠 Adaptive detection: threshold ${effectiveThreshold}min (base: ${settings.inactivityThreshold}min), inactive: ${Math.round(inactiveTime)}min, confidence: ${Math.round(confidence)}%`);
 
     return [status, Math.round(Math.max(0, Math.min(100, confidence)))];
   };
@@ -427,11 +476,11 @@ export const SleepProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       }
     };
 
-    // Check every 90 seconds when app is active (more frequent than before)
-    const interval = setInterval(checkSleepStatus, 90 * 1000);
+    // Check every 60 seconds when app is active (more frequent for better responsiveness)
+    const interval = setInterval(checkSleepStatus, 60 * 1000);
 
     // Initial check after a short delay
-    const initialTimeout = setTimeout(checkSleepStatus, 5000);
+    const initialTimeout = setTimeout(checkSleepStatus, 3000);
 
     return () => {
       clearInterval(interval);
@@ -582,9 +631,13 @@ export const SleepProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setDailySummaries(newSummaries);
   };
 
-  // Update settings
+  // Update settings and pass to services
   const updateSettings = (newSettings: Partial<AppSettings>) => {
-    setSettings(prev => ({ ...prev, ...newSettings }));
+    const updatedSettings = { ...settings, ...newSettings };
+    setSettings(updatedSettings);
+    
+    // Update notification service settings for contextual notifications
+    notificationService.updateAppSettings(updatedSettings);
   };
 
   // Export data as JSON

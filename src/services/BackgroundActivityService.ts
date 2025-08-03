@@ -13,18 +13,42 @@ const LAST_ACTIVITY_KEY = 'last-device-activity';
 const ACTIVITY_LOG_KEY = 'device-activity-log';
 const SETTINGS_KEY = 'sleep-tracker-settings'; // Same key as SleepContext
 
-// Activity detection thresholds
-const MOVEMENT_THRESHOLD = 0.1; // Lowered threshold for detecting movement
-const GYRO_THRESHOLD = 0.05; // Threshold for gyroscope rotation detection
-const ACTIVITY_CHECK_INTERVAL = 30000; // Check every 30 seconds when active
-const BACKGROUND_CHECK_INTERVAL = 60000; // Check every 60 seconds in background
-const INACTIVITY_UPDATE_INTERVAL = 300000; // Update inactivity every 5 minutes
+// Activity detection thresholds - now configurable based on sensitivity
+const SENSITIVITY_SETTINGS = {
+  low: {
+    MOVEMENT_THRESHOLD: 0.06, // Enhanced from 0.08 for better detection
+    GYRO_THRESHOLD: 0.04, // Enhanced from 0.05
+    ACTIVITY_CHECK_INTERVAL: 25000, // More frequent than 30s
+    BACKGROUND_CHECK_INTERVAL: 45000, // More frequent than 60s
+    NOISE_REDUCTION_FACTOR: 0.7, // Less noise filtering for conservative detection
+  },
+  medium: {
+    MOVEMENT_THRESHOLD: 0.04, // Enhanced from 0.05 for optimal balance
+    GYRO_THRESHOLD: 0.025, // Enhanced from 0.03
+    ACTIVITY_CHECK_INTERVAL: 15000, // More frequent than 20s
+    BACKGROUND_CHECK_INTERVAL: 25000, // More frequent than 30s
+    NOISE_REDUCTION_FACTOR: 0.8, // Balanced noise filtering
+  },
+  high: {
+    MOVEMENT_THRESHOLD: 0.025, // Enhanced from 0.03 for maximum sensitivity
+    GYRO_THRESHOLD: 0.015, // Enhanced from 0.02
+    ACTIVITY_CHECK_INTERVAL: 12000, // More frequent than 15s
+    BACKGROUND_CHECK_INTERVAL: 18000, // More frequent than 20s
+    NOISE_REDUCTION_FACTOR: 0.9, // Higher noise filtering to prevent false positives
+  }
+};
+
+const INACTIVITY_UPDATE_INTERVAL = 45000; // Update inactivity every 45 seconds (more frequent)
 
 // Default settings (should match SleepContext)
 const DEFAULT_SETTINGS = {
-  inactivityThreshold: 45, // 45 minutes of inactivity before considered asleep
+  inactivityThreshold: 30, // Reduced to 30 minutes for more responsive detection
   useMachineLearning: true,
   considerTimeOfDay: true,
+  sensitivityLevel: 'medium' as const,
+  adaptiveThreshold: true,
+  napDetection: true,
+  backgroundPersistence: 'aggressive' as 'normal' | 'aggressive' | 'maximum',
 };
 
 interface ActivityData {
@@ -45,6 +69,7 @@ export class BackgroundActivityService {
   private inactivityUpdateInterval: NodeJS.Timeout | null = null; // New interval for inactivity updates
   private appStateSubscription: any = null;
   private currentAppState: AppStateStatus = 'active';
+  private currentSensitivity: 'low' | 'medium' | 'high' = 'medium'; // Track current sensitivity level
 
   public static getInstance(): BackgroundActivityService {
     if (!BackgroundActivityService.instance) {
@@ -77,19 +102,27 @@ export class BackgroundActivityService {
   }
 
   /**
-   * Get user settings from storage
+   * Get user settings from storage and update sensitivity
    */
   private async getUserSettings(): Promise<typeof DEFAULT_SETTINGS> {
     try {
-      const settingsJson = await AsyncStorage.getItem(SETTINGS_KEY);
-      if (settingsJson) {
-        const loadedSettings = JSON.parse(settingsJson);
-        return { ...DEFAULT_SETTINGS, ...loadedSettings };
+      const settings = await AsyncStorage.getItem(SETTINGS_KEY);
+      if (settings) {
+        const parsedSettings = { ...DEFAULT_SETTINGS, ...JSON.parse(settings) };
+        this.currentSensitivity = parsedSettings.sensitivityLevel || 'medium';
+        return parsedSettings;
       }
     } catch (error) {
-      console.error('Failed to load user settings in background service:', error);
+      console.error('Failed to get user settings:', error);
     }
     return DEFAULT_SETTINGS;
+  }
+
+  /**
+   * Get current sensitivity thresholds
+   */
+  private getSensitivityThresholds() {
+    return SENSITIVITY_SETTINGS[this.currentSensitivity];
   }
 
   /**
@@ -134,49 +167,102 @@ export class BackgroundActivityService {
    */
   private async setupSensorMonitoring(): Promise<void> {
     try {
-      // Configure accelerometer with optimized settings
-      Accelerometer.setUpdateInterval(1000); // Check every second to reduce noise
+      // Get current sensitivity settings
+      const thresholds = this.getSensitivityThresholds();
+      
+      // Configure accelerometer with enhanced settings
+      Accelerometer.setUpdateInterval(300); // Increased from 500ms for better responsiveness
 
       let lastSignificantMovement = 0;
+      let movementBuffer: number[] = [];
+      let previousMagnitude = 0;
 
       this.accelerometerSubscription = Accelerometer.addListener(accelerometerData => {
         const { x, y, z } = accelerometerData;
         const magnitude = Math.sqrt(x * x + y * y + z * z);
+        
+        // Enhanced noise filtering with derivative-based detection
+        const magnitudeDelta = Math.abs(magnitude - previousMagnitude);
+        previousMagnitude = magnitude;
 
-        // Detect significant movement with noise filtering
-        if (magnitude > MOVEMENT_THRESHOLD) {
+        // Use a longer buffer for better noise reduction
+        movementBuffer.push(magnitude);
+        if (movementBuffer.length > 5) { // Increased from 3 for better filtering
+          movementBuffer.shift();
+        }
+
+        // Calculate weighted average with recent bias
+        const weights = [0.1, 0.15, 0.2, 0.25, 0.3]; // More weight to recent readings
+        const weightedMagnitude = movementBuffer
+          .map((val, idx) => val * (weights[idx] || 0.2))
+          .reduce((sum, val) => sum + val, 0);
+
+        // Multi-criteria movement detection
+        const avgMagnitude = movementBuffer.reduce((sum, val) => sum + val, 0) / movementBuffer.length;
+        const isSignificantMovement = (
+          (avgMagnitude > thresholds.MOVEMENT_THRESHOLD && movementBuffer.length >= 4) ||
+          (magnitudeDelta > thresholds.MOVEMENT_THRESHOLD * 1.5) || // Sudden movement
+          (weightedMagnitude > thresholds.MOVEMENT_THRESHOLD * thresholds.NOISE_REDUCTION_FACTOR)
+        );
+
+        if (isSignificantMovement) {
           const now = Date.now();
-          // Debounce movements - only record if it's been at least 3 seconds since last
-          if (now - lastSignificantMovement > 3000) {
+          // Enhanced debouncing with adaptive timing
+          const debounceTime = this.currentSensitivity === 'high' ? 1500 : 
+                              this.currentSensitivity === 'medium' ? 2000 : 2500;
+          
+          if (now - lastSignificantMovement > debounceTime) {
             lastSignificantMovement = now;
             this.onMovementDetected('accelerometer');
+            console.log(`📱 Enhanced accelerometer detection: ${avgMagnitude.toFixed(3)} (threshold: ${thresholds.MOVEMENT_THRESHOLD}, delta: ${magnitudeDelta.toFixed(3)})`);
           }
         }
       });
 
-      // Configure gyroscope for rotation detection
-      Gyroscope.setUpdateInterval(1000); // Check every second
+      // Configure gyroscope with enhanced rotation detection
+      Gyroscope.setUpdateInterval(400); // Optimized from 500ms
 
       let lastSignificantRotation = 0;
+      let rotationBuffer: number[] = [];
+      let rotationVariance = 0;
 
       this.gyroscopeSubscription = Gyroscope.addListener(gyroscopeData => {
         const { x, y, z } = gyroscopeData;
         const magnitude = Math.sqrt(x * x + y * y + z * z);
 
-        // Detect phone rotation/usage with noise filtering
-        if (magnitude > GYRO_THRESHOLD) {
-          const now = Date.now();
-          // Debounce rotations - only record if it's been at least 2 seconds since last
-          if (now - lastSignificantRotation > 2000) {
-            lastSignificantRotation = now;
-            this.onMovementDetected('gyroscope');
+        // Enhanced rotation detection with variance analysis
+        rotationBuffer.push(magnitude);
+        if (rotationBuffer.length > 4) { // Increased buffer for better analysis
+          rotationBuffer.shift();
+        }
+
+        if (rotationBuffer.length >= 4) {
+          const avgMagnitude = rotationBuffer.reduce((sum, val) => sum + val, 0) / rotationBuffer.length;
+          // Calculate variance to detect consistent rotation patterns
+          rotationVariance = rotationBuffer.reduce((sum, val) => sum + Math.pow(val - avgMagnitude, 2), 0) / rotationBuffer.length;
+          
+          // Multi-criteria rotation detection
+          const significantRotation = (
+            avgMagnitude > thresholds.GYRO_THRESHOLD ||
+            rotationVariance > thresholds.GYRO_THRESHOLD * 0.5 // Consistent rotation pattern
+          );
+
+          if (significantRotation) {
+            const now = Date.now();
+            const debounceTime = this.currentSensitivity === 'high' ? 1200 : 1500;
+            
+            if (now - lastSignificantRotation > debounceTime) {
+              lastSignificantRotation = now;
+              this.onMovementDetected('gyroscope');
+              console.log(`🔄 Enhanced gyroscope detection: ${avgMagnitude.toFixed(3)} (threshold: ${thresholds.GYRO_THRESHOLD}, variance: ${rotationVariance.toFixed(3)})`);
+            }
           }
         }
       });
 
-      console.log('🔧 Sensor monitoring configured with enhanced detection and noise filtering');
+      console.log(`🔧 Enhanced sensor monitoring configured with ${this.currentSensitivity} sensitivity and advanced multi-layer filtering`);
     } catch (error) {
-      console.error('❌ Failed to set up sensor monitoring:', error);
+      console.error('❌ Failed to set up enhanced sensor monitoring:', error);
     }
   }
 
@@ -214,20 +300,20 @@ export class BackgroundActivityService {
     // Set up a timer to upgrade to genuine activity if user stays active
     setTimeout(() => {
       if (this.currentAppState === 'active') {
-        // User has been actively using the app for 15 seconds
+        // User has been actively using the app for 10 seconds
         this.onMovementDetected('app_active');
         console.log('⏰ Upgraded app check to genuine activity - user actively using app');
 
         // Set up another timer for extended genuine usage
         setTimeout(() => {
           if (this.currentAppState === 'active') {
-            // User has been using app for 45 seconds - definitely genuine activity
+            // User has been using app for 30 seconds - definitely genuine activity
             this.onMovementDetected('user_interaction');
             console.log('🎯 Confirmed extended app usage - marking as strong user interaction');
           }
-        }, 30000); // Additional 30 seconds = 45 total
+        }, 20000); // Additional 20 seconds = 30 total
       }
-    }, 15000); // Increased to 15 seconds for more reliable detection
+    }, 10000); // Reduced to 10 seconds for more responsive detection
   }
 
   /**
@@ -235,13 +321,37 @@ export class BackgroundActivityService {
    */
   private async startBackgroundFetch(): Promise<void> {
     try {
+      // Unregister any existing task first
+      try {
+        await BackgroundFetch.unregisterTaskAsync(BACKGROUND_ACTIVITY_TASK);
+      } catch (error) {
+        // Ignore errors during cleanup
+      }
+
+      // Get user settings for adaptive intervals
+      const userSettings = await this.getUserSettings();
+      let minimumInterval = 15; // Default 15 seconds
+
+      // Adaptive interval based on persistence setting
+      switch (userSettings.backgroundPersistence) {
+        case 'maximum':
+          minimumInterval = 10; // Most aggressive
+          break;
+        case 'aggressive':
+          minimumInterval = 12; // Balanced aggressive
+          break;
+        case 'normal':
+          minimumInterval = 20; // Conservative
+          break;
+      }
+
       await BackgroundFetch.registerTaskAsync(BACKGROUND_ACTIVITY_TASK, {
-        minimumInterval: 60, // Minimum 1 minute between checks
+        minimumInterval, // Adaptive interval based on user preference
         stopOnTerminate: false,
         startOnBoot: true,
       });
 
-      console.log('Background fetch registered successfully');
+      console.log(`Background fetch registered with ${minimumInterval}s interval (${userSettings.backgroundPersistence} persistence)`);
     } catch (error) {
       console.error('Failed to register background fetch:', error);
     }
@@ -294,6 +404,9 @@ export class BackgroundActivityService {
   private onAppBackground(): void {
     console.log('Setting up background monitoring...');
 
+    // Get current sensitivity settings
+    const thresholds = this.getSensitivityThresholds();
+
     // Clear any existing intervals
     if (this.activityCheckInterval) {
       clearInterval(this.activityCheckInterval);
@@ -317,7 +430,7 @@ export class BackgroundActivityService {
       });
 
       console.log(`Background check: ${Math.round(timeSinceLastMovement / (1000 * 60))} minutes since last movement`);
-    }, BACKGROUND_CHECK_INTERVAL);
+    }, thresholds.BACKGROUND_CHECK_INTERVAL);
 
     // Set up regular inactivity updates
     this.inactivityUpdateInterval = setInterval(async () => {

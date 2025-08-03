@@ -30,6 +30,18 @@ export interface AppSettings {
   inactivityThreshold: number; // Minutes of inactivity before considered asleep
   useMachineLearning: boolean; // Whether to use enhanced ML-based detection
   considerTimeOfDay: boolean; // Consider typical sleep hours in detection
+  sensitivityLevel: 'low' | 'medium' | 'high'; // Movement detection sensitivity
+  adaptiveThreshold: boolean; // Adapt threshold based on time and patterns
+  napDetection: boolean; // Enable enhanced nap detection
+  backgroundPersistence: 'normal' | 'aggressive' | 'maximum'; // Background service persistence
+  // New advanced options for enhanced control
+  smartWakeupWindow: boolean; // Enable smart wake-up within a time window
+  confidenceBasedAdjustment: boolean; // Adjust thresholds based on detection confidence
+  contextualNotifications: boolean; // Enhanced context-aware notification messages
+  advancedSensorFiltering: boolean; // Use multi-layer sensor noise filtering
+  batteryOptimizedMode: boolean; // Balance accuracy vs battery usage
+  weekendModeEnabled: boolean; // Different thresholds for weekends
+  sleepDataValidation: boolean; // Additional validation for sleep records
 }
 
 // Navigation types
