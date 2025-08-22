@@ -138,25 +138,68 @@ export class BackgroundActivityService {
         // Get user settings
         const userSettings = await this.getUserSettings();
 
-        // Log activity check
+        // Log detailed activity check
         await this.logActivity({
           timestamp: now,
-          hasMovement: false, // No movement detected in background
+          hasMovement: false,
           appState: 'background',
           confidence: 90
         });
 
-        // If inactive for more than user's threshold, user is likely asleep
+        // CRITICAL FIX: Precise threshold detection
         if (inactiveTime >= userSettings.inactivityThreshold) {
-          await this.notifyPotentialSleep(inactiveTime);
-          console.log(`🛌 Sleep threshold reached: ${Math.round(inactiveTime)} minutes inactive`);
+          // Check if we've already recorded this threshold crossing
+          const lastThresholdEventStr = await AsyncStorage.getItem('SLEEP_THRESHOLD_CROSSED');
+          let shouldTriggerEvent = true;
+
+          if (lastThresholdEventStr) {
+            const lastEvent = JSON.parse(lastThresholdEventStr);
+            // Don't trigger again if we've already triggered within the last 5 minutes
+            const timeSinceLastEvent = (now - lastEvent.timestamp) / (1000 * 60);
+            if (lastEvent.detected && timeSinceLastEvent < 5) {
+              shouldTriggerEvent = false;
+              console.log(`⏭️ Skipping duplicate threshold event (${Math.round(timeSinceLastEvent)}min ago)`);
+            }
+          }
+
+          if (shouldTriggerEvent) {
+            // Calculate when sleep actually started (at the threshold moment)
+            const sleepStartTime = now - (userSettings.inactivityThreshold * 60 * 1000);
+
+            // Store threshold crossing event for SleepContext to process immediately
+            const thresholdEvent = {
+              detected: true,
+              timestamp: now,
+              detectionTime: now,
+              sleepStartTime: sleepStartTime,
+              inactiveMinutes: inactiveTime,
+              thresholdMinutes: userSettings.inactivityThreshold,
+              notificationSent: false
+            };
+
+            await AsyncStorage.setItem('SLEEP_THRESHOLD_CROSSED', JSON.stringify(thresholdEvent));
+
+            // Send immediate notification about sleep detection
+            try {
+              await this.notifyPotentialSleep(inactiveTime);
+              // Update the event to mark notification as sent
+              thresholdEvent.notificationSent = true;
+              await AsyncStorage.setItem('SLEEP_THRESHOLD_CROSSED', JSON.stringify(thresholdEvent));
+            } catch (error) {
+              console.error('Failed to send sleep detection notification:', error);
+            }
+          }
         } else {
-          console.log(`⏰ Background check: ${Math.round(inactiveTime)} minutes inactive (threshold: ${userSettings.inactivityThreshold})`);
+          // Still active or not enough inactivity - clear any stale threshold events
+          const existingEvent = await AsyncStorage.getItem('SLEEP_THRESHOLD_CROSSED');
+          if (existingEvent) {
+            await AsyncStorage.removeItem('SLEEP_THRESHOLD_CROSSED');
+          }
         }
 
         return BackgroundFetch.BackgroundFetchResult.NewData;
       } catch (error) {
-        console.error('Background task error:', error);
+        console.error('❌ Background task error:', error);
         return BackgroundFetch.BackgroundFetchResult.Failed;
       }
     });
@@ -169,7 +212,7 @@ export class BackgroundActivityService {
     try {
       // Get current sensitivity settings
       const thresholds = this.getSensitivityThresholds();
-      
+
       // Configure accelerometer with enhanced settings
       Accelerometer.setUpdateInterval(300); // Increased from 500ms for better responsiveness
 
@@ -180,7 +223,7 @@ export class BackgroundActivityService {
       this.accelerometerSubscription = Accelerometer.addListener(accelerometerData => {
         const { x, y, z } = accelerometerData;
         const magnitude = Math.sqrt(x * x + y * y + z * z);
-        
+
         // Enhanced noise filtering with derivative-based detection
         const magnitudeDelta = Math.abs(magnitude - previousMagnitude);
         previousMagnitude = magnitude;
@@ -208,13 +251,12 @@ export class BackgroundActivityService {
         if (isSignificantMovement) {
           const now = Date.now();
           // Enhanced debouncing with adaptive timing
-          const debounceTime = this.currentSensitivity === 'high' ? 1500 : 
-                              this.currentSensitivity === 'medium' ? 2000 : 2500;
-          
+          const debounceTime = this.currentSensitivity === 'high' ? 1500 :
+            this.currentSensitivity === 'medium' ? 2000 : 2500;
+
           if (now - lastSignificantMovement > debounceTime) {
             lastSignificantMovement = now;
             this.onMovementDetected('accelerometer');
-            console.log(`📱 Enhanced accelerometer detection: ${avgMagnitude.toFixed(3)} (threshold: ${thresholds.MOVEMENT_THRESHOLD}, delta: ${magnitudeDelta.toFixed(3)})`);
           }
         }
       });
@@ -240,7 +282,7 @@ export class BackgroundActivityService {
           const avgMagnitude = rotationBuffer.reduce((sum, val) => sum + val, 0) / rotationBuffer.length;
           // Calculate variance to detect consistent rotation patterns
           rotationVariance = rotationBuffer.reduce((sum, val) => sum + Math.pow(val - avgMagnitude, 2), 0) / rotationBuffer.length;
-          
+
           // Multi-criteria rotation detection
           const significantRotation = (
             avgMagnitude > thresholds.GYRO_THRESHOLD ||
@@ -250,17 +292,14 @@ export class BackgroundActivityService {
           if (significantRotation) {
             const now = Date.now();
             const debounceTime = this.currentSensitivity === 'high' ? 1200 : 1500;
-            
+
             if (now - lastSignificantRotation > debounceTime) {
               lastSignificantRotation = now;
               this.onMovementDetected('gyroscope');
-              console.log(`🔄 Enhanced gyroscope detection: ${avgMagnitude.toFixed(3)} (threshold: ${thresholds.GYRO_THRESHOLD}, variance: ${rotationVariance.toFixed(3)})`);
             }
           }
         }
       });
-
-      console.log(`🔧 Enhanced sensor monitoring configured with ${this.currentSensitivity} sensitivity and advanced multi-layer filtering`);
     } catch (error) {
       console.error('❌ Failed to set up enhanced sensor monitoring:', error);
     }
@@ -302,14 +341,12 @@ export class BackgroundActivityService {
       if (this.currentAppState === 'active') {
         // User has been actively using the app for 10 seconds
         this.onMovementDetected('app_active');
-        console.log('⏰ Upgraded app check to genuine activity - user actively using app');
 
         // Set up another timer for extended genuine usage
         setTimeout(() => {
           if (this.currentAppState === 'active') {
             // User has been using app for 30 seconds - definitely genuine activity
             this.onMovementDetected('user_interaction');
-            console.log('🎯 Confirmed extended app usage - marking as strong user interaction');
           }
         }, 20000); // Additional 20 seconds = 30 total
       }
@@ -350,8 +387,6 @@ export class BackgroundActivityService {
         stopOnTerminate: false,
         startOnBoot: true,
       });
-
-      console.log(`Background fetch registered with ${minimumInterval}s interval (${userSettings.backgroundPersistence} persistence)`);
     } catch (error) {
       console.error('Failed to register background fetch:', error);
     }
@@ -370,9 +405,6 @@ export class BackgroundActivityService {
 
       // Store last activity timestamp
       AsyncStorage.setItem(LAST_ACTIVITY_KEY, now.toString());
-      console.log(`🟢 GENUINE ACTIVITY detected from ${source} at ${new Date(now).toLocaleTimeString()}`);
-    } else {
-      console.log(`📱 APP CHECK detected at ${new Date(now).toLocaleTimeString()} - not updating activity timer`);
     }
 
     // Log the activity with proper confidence scoring
@@ -402,8 +434,6 @@ export class BackgroundActivityService {
    * Handle app going to background
    */
   private onAppBackground(): void {
-    console.log('Setting up background monitoring...');
-
     // Get current sensitivity settings
     const thresholds = this.getSensitivityThresholds();
 
@@ -428,8 +458,6 @@ export class BackgroundActivityService {
         appState: 'background',
         confidence: 70
       });
-
-      console.log(`Background check: ${Math.round(timeSinceLastMovement / (1000 * 60))} minutes since last movement`);
     }, thresholds.BACKGROUND_CHECK_INTERVAL);
 
     // Set up regular inactivity updates
@@ -509,8 +537,16 @@ export class BackgroundActivityService {
    * Notify about potential sleep state
    */
   private async notifyPotentialSleep(inactiveMinutes: number): Promise<void> {
-    // This will be called by the sleep context to update sleep status
-    console.log(`Potential sleep detected: ${inactiveMinutes} minutes of inactivity`);
+    // Store the threshold crossing event for immediate pickup by sleep context
+    try {
+      await AsyncStorage.setItem('SLEEP_THRESHOLD_CROSSED', JSON.stringify({
+        timestamp: Date.now(),
+        inactiveMinutes: inactiveMinutes,
+        detected: true
+      }));
+    } catch (error) {
+      console.error('Failed to store threshold crossing event:', error);
+    }
 
     // Send notification if user has been inactive long enough
     try {
@@ -716,6 +752,99 @@ export class BackgroundActivityService {
       // Don't rethrow - we're already in an emergency situation
     }
   }
+
+  /**
+   * Force check for threshold crossing (can be called manually for immediate checking)
+   */
+  public async forceThresholdCheck(): Promise<boolean> {
+    try {
+      const now = Date.now();
+      const inactiveTime = await this.getInactivityDuration(false);
+      const userSettings = await this.getUserSettings();
+
+      console.log(`🔍 FORCE THRESHOLD CHECK: ${Math.round(inactiveTime)}min inactive (threshold: ${userSettings.inactivityThreshold}min)`);
+
+      if (inactiveTime >= userSettings.inactivityThreshold) {
+        // Check if we've already recorded this threshold crossing recently
+        const lastThresholdEventStr = await AsyncStorage.getItem('SLEEP_THRESHOLD_CROSSED');
+        let shouldTriggerEvent = true;
+
+        if (lastThresholdEventStr) {
+          const lastEvent = JSON.parse(lastThresholdEventStr);
+          const timeSinceLastEvent = (now - lastEvent.timestamp) / (1000 * 60);
+          if (lastEvent.detected && timeSinceLastEvent < 3) {
+            shouldTriggerEvent = false;
+            console.log(`⏭️ Skipping duplicate force threshold check (${Math.round(timeSinceLastEvent)}min ago)`);
+          }
+        }
+
+        if (shouldTriggerEvent) {
+          console.log(`🚨 FORCE THRESHOLD TRIGGERED! ${Math.round(inactiveTime)} minutes inactive`);
+
+          const sleepStartTime = now - (userSettings.inactivityThreshold * 60 * 1000);
+
+          const thresholdEvent = {
+            detected: true,
+            timestamp: now,
+            detectionTime: now,
+            sleepStartTime: sleepStartTime,
+            inactiveMinutes: inactiveTime,
+            thresholdMinutes: userSettings.inactivityThreshold,
+            notificationSent: false,
+            source: 'force_check'
+          };
+
+          await AsyncStorage.setItem('SLEEP_THRESHOLD_CROSSED', JSON.stringify(thresholdEvent));
+          console.log(`💾 Force threshold event stored: sleep started at ${new Date(sleepStartTime).toLocaleTimeString()}`);
+
+          // Send notification
+          await this.notifyPotentialSleep(inactiveTime);
+
+          return true;
+        }
+      }
+
+      return false;
+    } catch (error) {
+      console.error('❌ Error in force threshold check:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Clear any pending threshold crossing events (called when user becomes active)
+   */
+  public async clearThresholdCrossingEvent(): Promise<void> {
+    try {
+      await AsyncStorage.removeItem('SLEEP_THRESHOLD_CROSSED');
+      console.log('🚨 Cleared threshold crossing event - user is active');
+    } catch (error) {
+      console.error('Error clearing threshold crossing event:', error);
+    }
+  }
+
+  /**
+   * Check if there's a pending threshold crossing event
+   */
+  public async hasThresholdCrossingEvent(): Promise<boolean> {
+    try {
+      const event = await AsyncStorage.getItem('SLEEP_THRESHOLD_CROSSED');
+      if (event) {
+        const parsedEvent = JSON.parse(event);
+        // Check if event is recent (within last 30 minutes)
+        const eventAge = Date.now() - parsedEvent.timestamp;
+        return eventAge < 1800000; // 30 minutes
+      }
+      return false;
+    } catch (error) {
+      console.error('Error checking threshold crossing event:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Get the timestamp of the last detected activity
+   */
 }
 
 export default BackgroundActivityService;

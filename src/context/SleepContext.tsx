@@ -424,51 +424,110 @@ export const SleepProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         // Get inactivity duration, excluding the current app check session
         const inactiveMinutes = await backgroundService.getInactivityDuration(false);
         const currentHour = new Date().getHours();
+        const now = Date.now();
 
-        console.log(`🔍 Sleep status check: ${Math.round(inactiveMinutes)} minutes genuine inactivity`);
+        // CRITICAL FIX: Check for threshold crossing event from background service
+        try {
+          const thresholdEvent = await AsyncStorage.getItem('SLEEP_THRESHOLD_CROSSED');
+          if (thresholdEvent) {
+            const event = JSON.parse(thresholdEvent);
+            // Process threshold crossing events if we're currently awake and event is recent
+            const eventAge = (now - event.timestamp) / (1000 * 60); // minutes
+
+            if (event.detected && eventAge < 10 && currentStatus === SleepStatus.AWAKE) {
+              // Use the sleep start time calculated by background service if available
+              const sleepStartTime = event.sleepStartTime || (event.timestamp - ((event.inactiveMinutes - settings.inactivityThreshold) * 60 * 1000));
+
+              // Record sleep with accurate start time and high confidence
+              addActivityRecord(SleepStatus.ASLEEP, sleepStartTime, 90);
+
+              // Send sleep detection notification if not already sent
+              if (!event.notificationSent) {
+                await notificationService.notifySleepDetected(event.inactiveMinutes);
+              }
+
+              // Clear the event so we don't process it again
+              await AsyncStorage.removeItem('SLEEP_THRESHOLD_CROSSED');
+              console.log(`✅ Threshold crossing event processed and cleared`);
+
+              return; // Exit early - we've handled the threshold crossing
+            } else if (eventAge >= 10) {
+              // Clean up old events
+              await AsyncStorage.removeItem('SLEEP_THRESHOLD_CROSSED');
+              console.log(`🧹 Cleaned up old threshold event (${Math.round(eventAge)}min old)`);
+            }
+          }
+        } catch (thresholdError) {
+          console.error('Error checking threshold crossing event:', thresholdError);
+        }
 
         // Calculate sleep status and confidence based on inactivity
         const [detectedStatus, confidence] = calculateSleepConfidence(inactiveMinutes, currentHour);
 
-        // Only update if status changed or confidence changed significantly (>10%)
-        const significantConfidenceChange = Math.abs(confidence - currentConfidence) > 10;
+        // ENHANCED THRESHOLD DETECTION: Immediate sleep recording when threshold is reached
+        if (inactiveMinutes >= settings.inactivityThreshold && currentStatus === SleepStatus.AWAKE) {
+          console.log(`🛌 SLEEP THRESHOLD REACHED: ${Math.round(inactiveMinutes)} minutes >= ${settings.inactivityThreshold} minutes`);
+
+          // Calculate accurate sleep start time (when threshold was reached)
+          const sleepStartTime = now - (settings.inactivityThreshold * 60 * 1000);
+
+          // Record sleep with the correct start time
+          addActivityRecord(SleepStatus.ASLEEP, sleepStartTime, confidence);
+          console.log(`😴 Sleep auto-recorded from foreground check - start: ${new Date(sleepStartTime).toLocaleTimeString()}, current duration: ${Math.round(inactiveMinutes)}min`);
+
+          // Send sleep detection notification
+          await notificationService.notifySleepDetected(inactiveMinutes);
+
+          // Also trigger a force threshold check to ensure background service is in sync
+          try {
+            await backgroundService.forceThresholdCheck();
+          } catch (error) {
+            console.error('Error in force threshold check:', error);
+          }
+
+          return; // Exit early to avoid duplicate processing
+        }
+
+        // FALLBACK: Force threshold check if we're close to threshold (90% of threshold)
+        const closeToThreshold = inactiveMinutes >= (settings.inactivityThreshold * 0.9);
+        if (closeToThreshold && currentStatus === SleepStatus.AWAKE) {
+          console.log(`⚠️ Close to threshold: ${Math.round(inactiveMinutes)}min (${Math.round((inactiveMinutes / settings.inactivityThreshold) * 100)}% of ${settings.inactivityThreshold}min threshold)`);
+
+          // Force a background threshold check
+          try {
+            const thresholdTriggered = await backgroundService.forceThresholdCheck();
+            if (thresholdTriggered) {
+              console.log(`🚨 Force threshold check triggered sleep detection`);
+              return; // Exit to let the event be processed on next cycle
+            }
+          } catch (error) {
+            console.error('Error in force threshold check:', error);
+          }
+        }
+
+        const wakeThreshold = Math.min(15, settings.inactivityThreshold * 0.4); // More responsive wake detection
+        if (inactiveMinutes < wakeThreshold && currentStatus === SleepStatus.ASLEEP) {
+          // Record wake time
+          addActivityRecord(SleepStatus.AWAKE, now, confidence);
+
+          // Calculate sleep duration and quality for wake notification
+          const sleepDuration = getTodaySleepDuration();
+          const sleepQuality = calculateSleepQuality(sleepDuration);
+          await notificationService.notifyWakeDetected(sleepDuration, sleepQuality);
+
+          return; // Exit early
+        }
+
+        // Only update if status changed or confidence changed significantly (>15%)
+        const significantConfidenceChange = Math.abs(confidence - currentConfidence) > 15;
         const statusChanged = detectedStatus !== currentStatus;
 
         if (statusChanged || significantConfidenceChange) {
-          console.log(`🔄 Status change detected: ${detectedStatus} (${confidence}% confidence, prev: ${currentConfidence}%)`);
-
-          if (detectedStatus === SleepStatus.ASLEEP && currentStatus === SleepStatus.AWAKE) {
-            // Transitioning to sleep - use the actual time when we believe sleep started
-            const estimatedSleepStart = Date.now() - (inactiveMinutes * 60 * 1000);
-            addActivityRecord(SleepStatus.ASLEEP, estimatedSleepStart, confidence);
-            console.log(`😴 Sleep detected - estimated sleep start: ${new Date(estimatedSleepStart).toLocaleTimeString()}`);
-
-            // Send sleep detection notification
-            await notificationService.notifySleepDetected(inactiveMinutes);
-          } else if (detectedStatus === SleepStatus.AWAKE && currentStatus === SleepStatus.ASLEEP) {
-            // Waking up
-            addActivityRecord(SleepStatus.AWAKE, Date.now(), confidence);
-            console.log(`☀️ Wake detected at ${new Date().toLocaleTimeString()}`);
-
-            // Calculate sleep duration and quality for wake notification
-            const sleepDuration = getTodaySleepDuration();
-            const sleepQuality = calculateSleepQuality(sleepDuration);
-            await notificationService.notifyWakeDetected(sleepDuration, sleepQuality);
-          } else if (!statusChanged && significantConfidenceChange) {
-            // Status same but confidence changed significantly - update confidence only
-            setCurrentConfidence(confidence);
-            console.log(`🎯 Confidence updated: ${detectedStatus} (${confidence}%)`);
-          }
-
-          // Update current status and confidence
           if (statusChanged) {
             setCurrentStatus(detectedStatus);
             setCurrentConfidence(confidence);
-          }
-        } else {
-          // Log minor updates without flooding the console
-          if (Math.random() < 0.1) { // Log 10% of the time for monitoring
-            console.log(`🔄 Status stable: ${detectedStatus} (${confidence}%)`);
+          } else if (significantConfidenceChange) {
+            setCurrentConfidence(confidence);
           }
         }
       } catch (error) {
@@ -476,11 +535,10 @@ export const SleepProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       }
     };
 
-    // Check every 60 seconds when app is active (more frequent for better responsiveness)
-    const interval = setInterval(checkSleepStatus, 60 * 1000);
+    const interval = setInterval(checkSleepStatus, 30 * 1000);
 
     // Initial check after a short delay
-    const initialTimeout = setTimeout(checkSleepStatus, 3000);
+    const initialTimeout = setTimeout(checkSleepStatus, 2000);
 
     return () => {
       clearInterval(interval);
@@ -493,39 +551,61 @@ export const SleepProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       const now = Date.now();
       const currentHour = new Date().getHours();
 
-      console.log(`App state changed to: ${nextAppState}`);
-
       if (nextAppState === 'active') {
-        // App became active - get actual inactivity time from background service
+        // App became active - record genuine user activity
+        backgroundService.recordUserActivity();
+
+        // Check if there was a pending threshold crossing event that we need to clear
+        const hadThresholdEvent = await backgroundService.hasThresholdCrossingEvent();
+        if (hadThresholdEvent) {
+          console.log('🚨 User became active with pending sleep detection - clearing threshold event');
+          await backgroundService.clearThresholdCrossingEvent();
+        }
+
+        // Get actual inactivity time from background service
         const inactiveTime = await backgroundService.getInactivityDuration(false);
+        console.log(`📱 App became active after ${Math.round(inactiveTime)} minutes of inactivity`);
 
-        console.log(`App became active after ${Math.round(inactiveTime)} minutes of inactivity`);
-
+        // ENHANCED WAKE DETECTION: More responsive wake detection
         if (currentStatus === SleepStatus.ASLEEP) {
-          // If we were asleep, record waking up only if we interact beyond just checking
-          // For now, record as awake but with lower confidence until we get real interaction
-          addActivityRecord(SleepStatus.AWAKE, now, 85); // Slightly lower confidence for just opening app
+          // User was sleeping and just became active - this is a wake event
+          console.log('☀️ WAKE DETECTED: User opened app while sleeping');
+
+          addActivityRecord(SleepStatus.AWAKE, now, 95); // High confidence for active app usage
 
           // Send wake detection notification with sleep summary
           const sleepDuration = getTodaySleepDuration();
           const sleepQuality = calculateSleepQuality(sleepDuration);
           await notificationService.notifyWakeDetected(sleepDuration, sleepQuality);
+
         } else if (inactiveTime >= settings.inactivityThreshold) {
-          // If we were inactive for longer than the threshold, we were asleep
+          // If we were inactive for longer than the threshold, we missed the sleep detection
+          console.log(`🛌 MISSED SLEEP DETECTION: App became active after ${Math.round(inactiveTime)}min (threshold: ${settings.inactivityThreshold}min)`);
+
           const [detectedStatus, confidence] = calculateSleepConfidence(inactiveTime, currentHour);
 
           if (detectedStatus === SleepStatus.ASLEEP) {
-            // First record that we fell asleep after the threshold was reached
+            // Record retroactive sleep period
             const fellAsleepAt = now - (inactiveTime * 60 * 1000) + (settings.inactivityThreshold * 60 * 1000);
             addActivityRecord(SleepStatus.ASLEEP, fellAsleepAt, confidence);
+
             // Then record that we're now awake
             addActivityRecord(SleepStatus.AWAKE, now, 95);
+
+            // Send wake notification with sleep summary
+            const sleepDuration = getTodaySleepDuration();
+            const sleepQuality = calculateSleepQuality(sleepDuration);
+            await notificationService.notifyWakeDetected(sleepDuration, sleepQuality);
           }
+        } else {
+          // Just a normal app activation - record minor activity update
+          console.log(`📱 Normal app activation after ${Math.round(inactiveTime)} minutes`);
         }
+
       } else if (nextAppState === 'background' || nextAppState === 'inactive') {
-        // App went to background, but background service will continue monitoring
+        // App went to background - background service will continue monitoring
         setLastActiveTimestamp(now);
-        console.log('App went to background - background monitoring will continue');
+        console.log('📵 App went to background - background monitoring will continue');
       }
     };
 
@@ -635,7 +715,7 @@ export const SleepProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const updateSettings = (newSettings: Partial<AppSettings>) => {
     const updatedSettings = { ...settings, ...newSettings };
     setSettings(updatedSettings);
-    
+
     // Update notification service settings for contextual notifications
     notificationService.updateAppSettings(updatedSettings);
   };
