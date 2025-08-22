@@ -841,10 +841,6 @@ export class BackgroundActivityService {
       return false;
     }
   }
-
-  /**
-   * Get the timestamp of the last detected activity
-   */
 }
 
 export default BackgroundActivityService;
