@@ -1,4 +1,4 @@
-# Sleep Detector 😴
+# Sleep Detector Mobile App 😴
 
 **Sleep Detector** is a React Native Expo app that automatically tracks your sleep patterns based on phone usage.
 
