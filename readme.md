@@ -292,9 +292,9 @@ Enjoying this project? **[Buy me a coffee](https://ko-fi.com/phenry)** (spoiler:
 [![@phenrysay][x-icon]](https://x.com/phenrysay "Follow Me on X") [![YouTube Tech Videos][youtube-icon]](https://www.youtube.com/@pH7Programming "My YouTube Tech Channel") [![pH-7][github-icon]](https://github.com/pH-7 "Follow Me on GitHub") [![BlueSky](https://img.shields.io/badge/BlueSky-00A8E8?style=for-the-badge&logo=bluesky&logoColor=white)](https://bsky.app/profile/ph7s.bsky.social "Follow Me on BlueSky")
 
 
-## Privacy
+## Privacy First!
 
-Your sleep data is stored locally on your device. The app does not send your data to any servers unless you explicitly use the export feature to share it.
+Your sleep data is always stored locally on your device. The app does not send your data to any servers unless you explicitly use the export feature to share it.
 
 ## License
 
