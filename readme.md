@@ -282,8 +282,8 @@ eas submit --platform ios --profile production --verbose
 ## Who Built This Sleep Tracker Mobile App?
 
 **Pierre-Henry Soria** — a **super passionate engineer** who loves automating content creation efficiently!
-Enthusiast of YouTube, AI, learning, and—of course—writing!
-Find me at [pH7.me](https://ph7.me)
+Enthusiast of YouTube, AI, learning, and of course, writing!
+Find me at [pH7.me](https://ph7.me) ⚡️
 
 Enjoying this project? **[Buy me a coffee](https://ko-fi.com/phenry)** (spoiler: I love almond extra-hot flat white coffees).
 
