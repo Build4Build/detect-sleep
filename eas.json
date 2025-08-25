@@ -33,9 +33,8 @@
       "autoIncrement": true,
       "ios": {
         "resourceClass": "medium",
-        "credentialsSource": "local",
-        "image": "macos-sequoia-15.3-xcode-16.2",
-        "appleTeamId": "2V8LZ2444Y"
+        "credentialsSource": "remote",
+        "image": "macos-sequoia-15.3-xcode-16.2"
       },
       "android": {
         "buildType": "app-bundle",
