@@ -1,4 +1,4 @@
-# Sleep Detector 😴
+# Sleep Detector Mobile App 😴
 
 **Sleep Detector** is a React Native Expo app that automatically tracks your sleep patterns based on phone usage.
 
@@ -282,7 +282,8 @@ eas submit --platform ios --profile production --verbose
 ## Who Built This Sleep Tracker App?
 
 **Pierre-Henry Soria** — a **super passionate engineer** who loves automating content creation efficiently!
-Enthusiast of YouTube, AI, learning, and writing performant code!
+
+Enthusiast of YouTube, AI, learning, and writing performant code!  ⚡️
 Find me at [pH7.me](https://ph7.me)
 
 Enjoying this project? **[Buy me a coffee](https://ko-fi.com/phenry)** (spoiler: I love almond extra-hot flat white coffees).
@@ -292,9 +293,9 @@ Enjoying this project? **[Buy me a coffee](https://ko-fi.com/phenry)** (spoiler:
 [![@phenrysay][x-icon]](https://x.com/phenrysay "Follow Me on X") [![YouTube Tech Videos][youtube-icon]](https://www.youtube.com/@pH7Programming "My YouTube Tech Channel") [![pH-7][github-icon]](https://github.com/pH-7 "Follow Me on GitHub") [![BlueSky][bsky-icon]](https://bsky.app/profile/ph7s.bsky.social "Follow Me on BlueSky")
 
 
-## Privacy
+## Privacy First!
 
-Your sleep data is stored locally on your device. The app does not send your data to any servers unless you explicitly use the export feature to share it.
+Your sleep data is always stored locally on your device. The app does not send your data to any servers unless you explicitly use the export feature to share it.
 
 ## License
 
