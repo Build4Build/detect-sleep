@@ -40,7 +40,13 @@ cd detect-sleep
 npm install
 ```
 
-3. Start the Expo development server:
+3. Set up environment variables:
+```
+cp .env.example .env
+```
+Then edit `.env` and fill in your `APPLE_TEAM_ID`.
+
+4. Start the Expo development server:
 ```
 npx expo start
 ```
