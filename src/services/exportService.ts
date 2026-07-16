@@ -1,4 +1,4 @@
-import * as FileSystem from 'expo-file-system';
+import { File, Paths } from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import { format } from 'date-fns';
 
@@ -7,17 +7,17 @@ export const exportDataToJson = async (data: string): Promise<void> => {
   try {
     // Create filename with current date
     const fileName = `sleep-data-${format(new Date(), 'yyyy-MM-dd-HHmmss')}.json`;
-    const filePath = `${FileSystem.documentDirectory}${fileName}`;
+    const file = new File(Paths.document, fileName);
     
     // Write data to file
-    await FileSystem.writeAsStringAsync(filePath, data);
+    file.write(data);
     
     // Check if sharing is available
     const isSharingAvailable = await Sharing.isAvailableAsync();
     
     if (isSharingAvailable) {
       // Share the file
-      await Sharing.shareAsync(filePath);
+      await Sharing.shareAsync(file.uri);
     } else {
       console.log('Sharing is not available on this device');
       // Could implement alternative export method here
@@ -49,17 +49,17 @@ export const exportDataToCsv = async (
     
     // Create filename with current date
     const fileName = `sleep-data-${format(new Date(), 'yyyy-MM-dd-HHmmss')}.csv`;
-    const filePath = `${FileSystem.documentDirectory}${fileName}`;
+    const file = new File(Paths.document, fileName);
     
     // Write data to file
-    await FileSystem.writeAsStringAsync(filePath, csvContent);
+    file.write(csvContent);
     
     // Check if sharing is available
     const isSharingAvailable = await Sharing.isAvailableAsync();
     
     if (isSharingAvailable) {
       // Share the file
-      await Sharing.shareAsync(filePath);
+      await Sharing.shareAsync(file.uri);
     } else {
       console.log('Sharing is not available on this device');
       // Could implement alternative export method here
@@ -68,4 +68,4 @@ export const exportDataToCsv = async (
     console.error('Error exporting data to CSV:', error);
     throw error;
   }
-}; 
+};

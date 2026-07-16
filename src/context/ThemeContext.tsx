@@ -94,7 +94,7 @@ interface ThemeProviderProps {
 export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
   const [themeMode, setThemeModeState] = useState<ThemeMode>('auto');
   const [systemColorScheme, setSystemColorScheme] = useState<ColorSchemeName>(
-    Appearance.getColorScheme()
+    Appearance.getColorScheme() ?? 'unspecified'
   );
   const [forceUpdate, setForceUpdate] = useState(0); // <--- add force update state
 

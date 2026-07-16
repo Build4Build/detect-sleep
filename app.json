@@ -22,7 +22,6 @@
       "supportsTablet": false,
       "bundleIdentifier": "com.sleepdetector.app",
       "buildNumber": "23",
-      "jsEngine": "jsc",
       "infoPlist": {
         "NSHealthShareUsageDescription": "Sleep Detector reads sleep records so it can avoid duplicating sleep periods in Apple Health.",
         "NSHealthUpdateUsageDescription": "Sleep Detector writes the sleep periods you record to Apple Health when you enable Health sync.",
