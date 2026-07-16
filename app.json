@@ -24,19 +24,12 @@
       "buildNumber": "23",
       "jsEngine": "jsc",
       "infoPlist": {
-        "BGTaskSchedulerPermittedIdentifiers": [
-          "com.sleepdetector.app.sleeprefresh",
-          "com.sleepdetector.app.sleepprocessing",
-          "background-activity-monitor"
-        ],
-        "NSMotionUsageDescription": "We use motion data to more accurately detect when you're asleep or awake by monitoring device movement patterns",
-        "NSHealthShareUsageDescription": "We use Health data to improve sleep detection accuracy and to compare with our detection algorithm",
-        "NSHealthUpdateUsageDescription": "We can write your detected sleep data to Apple Health to consolidate your health information",
+        "NSHealthShareUsageDescription": "Sleep Detector reads sleep records so it can avoid duplicating sleep periods in Apple Health.",
+        "NSHealthUpdateUsageDescription": "Sleep Detector writes the sleep periods you record to Apple Health when you enable Health sync.",
         "NSUserNotificationsUsageDescription": "We send you notifications when sleep is detected and when you wake up with sleep summaries",
         "UISupportedInterfaceOrientations": [
           "UIInterfaceOrientationPortrait"
-        ],
-        "UISupportedInterfaceOrientations~ipad": null
+        ]
       },
       "config": {
         "usesNonExemptEncryption": false
@@ -50,12 +43,7 @@
       "package": "com.sleepdetector.app",
       "versionCode": 22,
       "permissions": [
-        "android.permission.ACTIVITY_RECOGNITION",
-        "android.permission.WAKE_LOCK",
-        "android.permission.RECEIVE_BOOT_COMPLETED",
-        "android.permission.FOREGROUND_SERVICE",
-        "android.permission.VIBRATE",
-        "android.permission.USE_FULL_SCREEN_INTENT"
+        "android.permission.VIBRATE"
       ],
       "config": {
         "googleMobileAdsAppId": "ca-app-pub-3940256099942544~3347511713"
@@ -66,12 +54,18 @@
       ]
     },
     "plugins": [
-      "expo-task-manager",
-      "expo-background-fetch",
+      [
+        "@kingstinct/react-native-healthkit",
+        {
+          "NSHealthShareUsageDescription": "Sleep Detector reads sleep records so it can avoid duplicating sleep periods in Apple Health.",
+          "NSHealthUpdateUsageDescription": "Sleep Detector writes the sleep periods you record to Apple Health when you enable Health sync.",
+          "background": false
+        }
+      ],
       [
         "expo-notifications",
         {
-          "icon": "./assets/notification-icon.png",
+          "icon": "./assets/icon.png",
           "color": "#2196F3"
         }
       ],

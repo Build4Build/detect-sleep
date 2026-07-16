@@ -2,14 +2,25 @@ import { Platform } from 'react-native';
 import { SleepEntry } from '../types/SleepEntry';
 import { AppleHealthService } from './AppleHealthService';
 import { GoogleFitService } from './GoogleFitService';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+const HEALTH_SYNC_ENABLED_KEY = '@SleepDetector:healthSyncEnabled';
 
 /**
  * A unified service for health integrations that works on both iOS and Android
  */
 export class HealthService {
+  private static instance: HealthService;
   private appleHealthService: AppleHealthService | null = null;
   private googleFitService: GoogleFitService | null = null;
   private initialized: boolean = false;
+  private configurationLoaded = false;
+  private syncEnabled = false;
+
+  public static getInstance(): HealthService {
+    if (!HealthService.instance) HealthService.instance = new HealthService();
+    return HealthService.instance;
+  }
 
   constructor() {
     // Initialize the platform-specific service
@@ -24,16 +35,15 @@ export class HealthService {
    * Initialize the health service for the current platform
    * @returns Promise that resolves when initialization is complete
    */
-  public async initialize(): Promise<boolean> {
-    if (this.initialized) {
-      return true;
-    }
+  public async initialize(requestPermissions = false): Promise<boolean> {
+    await this.loadConfiguration();
+    if (this.initialized && !requestPermissions) return this.hasRequiredPermissions();
 
     try {
       if (Platform.OS === 'ios' && this.appleHealthService) {
-        await this.appleHealthService.initialize();
+        const authorized = await this.appleHealthService.initialize(requestPermissions);
         this.initialized = true;
-        return true;
+        return authorized;
       } else if (Platform.OS === 'android' && this.googleFitService) {
         await this.googleFitService.initialize();
         this.initialized = true;
@@ -47,6 +57,25 @@ export class HealthService {
       console.warn('Failed to initialize health service:', error, '- continuing without health integration');
       return false;
     }
+  }
+
+  private async loadConfiguration(): Promise<void> {
+    if (this.configurationLoaded) return;
+    this.syncEnabled = (await AsyncStorage.getItem(HEALTH_SYNC_ENABLED_KEY)) === 'true';
+    this.configurationLoaded = true;
+  }
+
+  public async setSyncEnabled(enabled: boolean): Promise<boolean> {
+    await this.loadConfiguration();
+    if (enabled && !(await this.initialize(true))) return false;
+    this.syncEnabled = enabled;
+    await AsyncStorage.setItem(HEALTH_SYNC_ENABLED_KEY, String(enabled));
+    return true;
+  }
+
+  public async getSyncEnabled(): Promise<boolean> {
+    await this.loadConfiguration();
+    return this.syncEnabled;
   }
 
   /**
@@ -83,7 +112,7 @@ export class HealthService {
    */
   public async getSleepData(startDate: Date, endDate: Date): Promise<SleepEntry[]> {
     if (!this.initialized) {
-      await this.initialize();
+      await this.initialize(false);
     }
 
     if (Platform.OS === 'ios' && this.appleHealthService) {
@@ -102,7 +131,7 @@ export class HealthService {
    */
   public async saveSleepData(sleepEntry: SleepEntry): Promise<void> {
     if (!this.initialized) {
-      await this.initialize();
+      await this.initialize(false);
     }
 
     if (Platform.OS === 'ios' && this.appleHealthService) {
@@ -126,4 +155,4 @@ export class HealthService {
     }
     return 'Unknown Health Service';
   }
-} 
+}

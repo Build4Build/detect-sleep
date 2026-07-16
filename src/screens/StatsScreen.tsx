@@ -4,8 +4,7 @@ import { BarChart } from 'react-native-chart-kit';
 
 import { useSleep } from '../context/SleepContext';
 import { useTheme } from '../context/ThemeContext';
-import { formatDuration } from '../utils/dateUtils';
-import { getPastWeekDates, getPastMonthDates, getDayOfWeek } from '../utils/dateUtils';
+import { formatDuration, getPastWeekDates, getPastMonthDates, getDayOfWeek } from '../utils/dateUtils';
 
 const { width } = Dimensions.get('window');
 
@@ -123,9 +122,6 @@ const StatsScreen = () => {
     decimalPlaces: 1,
     style: {
       borderRadius: 8,
-    },
-    propsForLabels: {
-      fontSize: timeRange === 'week' ? 12 : 10, // Smaller font for month view
     },
     formatXLabel: (value: string) => {
       // For month view, ensure we don't show overlapping labels

@@ -16,33 +16,32 @@
   },
   "dependencies": {
     "@expo/vector-icons": "^14.1.0",
+    "@kingstinct/react-native-healthkit": "^14.0.2",
     "@react-native-async-storage/async-storage": "^2.1.2",
-    "@react-native-community/datetimepicker": "8.3.0",
-    "@react-navigation/bottom-tabs": "^7.3.14",
-    "@react-navigation/native": "^7.1.10",
-    "@react-navigation/native-stack": "^7.3.14",
-    "@react-navigation/stack": "^7.3.3",
+    "@react-native-community/datetimepicker": "^8.4.1",
+    "@react-navigation/bottom-tabs": "^7.18.8",
+    "@react-navigation/native": "^7.3.8",
+    "@react-navigation/native-stack": "^7.17.10",
+    "@react-navigation/stack": "^7.10.11",
     "date-fns": "^4.1.0",
-    "expo": "53.0.12",
-    "expo-background-fetch": "~13.1.5",
-    "expo-constants": "~17.1.6",
+    "expo": "~53.0.27",
+    "expo-constants": "~17.1.8",
     "expo-device": "~7.1.4",
-    "expo-file-system": "~18.1.10",
+    "expo-file-system": "~18.1.11",
+    "expo-font": "~13.3.2",
     "expo-haptics": "~14.1.4",
     "expo-health-connect": "~0.1.1",
-    "expo-linking": "~7.1.5",
-    "expo-location": "~18.1.5",
-    "expo-notifications": "^0.29.13",
-    "expo-sensors": "~14.1.4",
+    "expo-linking": "~7.1.7",
+    "expo-location": "~18.1.6",
+    "expo-notifications": "^0.31.5",
     "expo-sharing": "^13.1.5",
     "expo-status-bar": "~2.2.3",
-    "expo-task-manager": "13.1.5",
-    "expo-updates": "~0.28.15",
+    "expo-updates": "^0.28.18",
     "react": "19.0.0",
-    "react-native": "0.79.4",
+    "react-native": "^0.79.6",
     "react-native-chart-kit": "^6.12.0",
     "react-native-gesture-handler": "~2.24.0",
-    "react-native-health": "^1.19.0",
+    "react-native-nitro-modules": "^0.35.10",
     "react-native-reanimated": "~3.17.4",
     "react-native-safe-area-context": "5.4.0",
     "react-native-screens": "~4.11.1",
@@ -50,14 +49,32 @@
   },
   "devDependencies": {
     "@babel/core": "^7.20.0",
+    "@babel/types": "^7.29.7",
+    "@types/jest": "^29.5.14",
     "@types/react": "~19.0.10",
     "@typescript-eslint/eslint-plugin": "^6.21.0",
     "@typescript-eslint/parser": "^6.21.0",
     "eslint": "^8.56.0",
     "eslint-config-universe": "^12.0.0",
     "jest": "^29.2.1",
+    "jest-expo": "~53.0.9",
     "prettier": "^3.2.5",
     "typescript": "^5.3.0"
+  },
+  "jest": {
+    "preset": "jest-expo"
+  },
+  "eslintConfig": {
+    "extends": "universe/native"
+  },
+  "expo": {
+    "doctor": {
+      "reactNativeDirectoryCheck": {
+        "exclude": [
+          "react-native-chart-kit"
+        ]
+      }
+    }
   },
   "private": true
 }
