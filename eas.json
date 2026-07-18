@@ -31,6 +31,10 @@
     },
     "production": {
       "autoIncrement": true,
+      "env": {
+        "FASTLANE_XCODEBUILD_SETTINGS_TIMEOUT": "60",
+        "FASTLANE_XCODEBUILD_SETTINGS_RETRIES": "4"
+      },
       "ios": {
         "resourceClass": "medium",
         "credentialsSource": "remote"
