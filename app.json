@@ -2,7 +2,7 @@
   "expo": {
     "name": "Sleep Detector",
     "slug": "detect-sleep",
-    "version": "1.1.4",
+    "version": "1.4.1",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -20,11 +20,12 @@
     ],
     "ios": {
       "supportsTablet": false,
+      "appleTeamId": "2V8LZ2444Y",
       "bundleIdentifier": "com.sleepdetector.app",
-      "buildNumber": "23",
+      "buildNumber": "82",
       "infoPlist": {
-        "NSHealthShareUsageDescription": "Sleep Detector reads sleep records so it can avoid duplicating sleep periods in Apple Health.",
-        "NSHealthUpdateUsageDescription": "Sleep Detector writes the sleep periods you record to Apple Health when you enable Health sync.",
+        "NSHealthShareUsageDescription": "When you enable Health integration, Sleep Detector reads sleep stages and optional recovery signals such as heart rate variability, resting heart rate, respiratory rate, and wrist temperature to improve your private daily report.",
+        "NSHealthUpdateUsageDescription": "Sleep Detector writes only the sleep periods you confirm to Apple Health when you enable Health sync.",
         "NSUserNotificationsUsageDescription": "We send you notifications when sleep is detected and when you wake up with sleep summaries",
         "UISupportedInterfaceOrientations": [
           "UIInterfaceOrientationPortrait"
@@ -32,6 +33,12 @@
       },
       "config": {
         "usesNonExemptEncryption": false
+      },
+      "entitlements": {
+        "com.apple.developer.healthkit": true,
+        "com.apple.security.application-groups": [
+          "group.com.sleepdetector.app"
+        ]
       }
     },
     "android": {
@@ -40,7 +47,7 @@
         "backgroundColor": "#ffffff"
       },
       "package": "com.sleepdetector.app",
-      "versionCode": 22,
+      "versionCode": 23,
       "permissions": [
         "android.permission.VIBRATE"
       ],
@@ -56,8 +63,8 @@
       [
         "@kingstinct/react-native-healthkit",
         {
-          "NSHealthShareUsageDescription": "Sleep Detector reads sleep records so it can avoid duplicating sleep periods in Apple Health.",
-          "NSHealthUpdateUsageDescription": "Sleep Detector writes the sleep periods you record to Apple Health when you enable Health sync.",
+          "NSHealthShareUsageDescription": "When you enable Health integration, Sleep Detector reads sleep stages and optional recovery signals such as heart rate variability, resting heart rate, respiratory rate, and wrist temperature to improve your private daily report.",
+          "NSHealthUpdateUsageDescription": "Sleep Detector writes only the sleep periods you confirm to Apple Health when you enable Health sync.",
           "background": false
         }
       ],
@@ -68,15 +75,7 @@
           "color": "#2196F3"
         }
       ],
-      [
-        "expo-health-connect",
-        {
-          "healthConnectPermissions": [
-            "READ_SLEEP",
-            "WRITE_SLEEP"
-          ]
-        }
-      ]
+      "@bacons/apple-targets"
     ],
     "extra": {
       "eas": {
