@@ -23,8 +23,6 @@ const StatsScreen = () => {
 
   // Update chart data when time range or daily summaries change
   useEffect(() => {
-    if (dailySummaries.length === 0) return;
-
     // Get date range based on selected time range
     const dateRange = timeRange === 'week' ? getPastWeekDates() : getPastMonthDates();
 
@@ -74,6 +72,7 @@ const StatsScreen = () => {
     const filteredSummaries = dailySummaries.filter(
       summary => dateRange.includes(summary.date)
     );
+    if (filteredSummaries.length === 0) return { consistency: 0, efficiency: 0 };
 
     // Calculate sleep consistency (lower standard deviation is better)
     const sleepDurations = filteredSummaries.map(s => s.totalSleepMinutes / 60);

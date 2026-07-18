@@ -77,7 +77,7 @@ const SleepDetailsScreen = ({ route }: SleepDetailsScreenProps) => {
       </View>
       
       <View style={themedStyles.card}>
-        <Text style={themedStyles.cardTitle}>Sleep Quality</Text>
+        <Text style={themedStyles.cardTitle}>Duration Assessment</Text>
         <View style={themedStyles.qualityContainer}>
           {getSleepQualityInfo(sleepSummary.totalSleepMinutes, colors)}
         </View>

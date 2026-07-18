@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Switch, TouchableOpacity, Alert, ScrollView, Modal, FlatList, Linking } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import Constants from 'expo-constants';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../types';
@@ -46,9 +47,12 @@ const THEME_OPTIONS = [
   { label: 'Dark', value: 'dark' as ThemeMode },
 ];
 
+// Keep unfinished controls out of production until they affect the detector.
+const SHOW_EXPERIMENTAL_DETECTION_SETTINGS = false;
+
 const SettingsScreen = () => {
   const navigation = useNavigation<SettingsScreenNavigationProp>();
-  const { settings, updateSettings } = useSleep();
+  const { settings, updateSettings, clearSleepData } = useSleep();
   const { themeMode, setThemeMode, colors, isDarkMode } = useTheme();
   const [useMachineLearning, setUseMachineLearning] = useState(settings.useMachineLearning);
   const [considerTimeOfDay, setConsiderTimeOfDay] = useState(settings.considerTimeOfDay);
@@ -72,6 +76,7 @@ const SettingsScreen = () => {
 
   // Create themed styles
   const themedStyles = createThemedStyles(colors);
+  const appVersion = Constants.expoConfig?.version ?? '1.4.1';
 
   // Sync local state with context settings when they change
   useEffect(() => {
@@ -79,8 +84,8 @@ const SettingsScreen = () => {
     if (!settingsInitialized ||
       useMachineLearning !== settings.useMachineLearning ||
       considerTimeOfDay !== settings.considerTimeOfDay ||
-      adaptiveThreshold !== (settings.adaptiveThreshold || true) ||
-      napDetection !== (settings.napDetection || true) ||
+      adaptiveThreshold !== (settings.adaptiveThreshold ?? true) ||
+      napDetection !== (settings.napDetection ?? true) ||
       smartWakeupWindow !== (settings.smartWakeupWindow ?? true) ||
       confidenceBasedAdjustment !== (settings.confidenceBasedAdjustment ?? true) ||
       contextualNotifications !== (settings.contextualNotifications ?? true) ||
@@ -91,8 +96,8 @@ const SettingsScreen = () => {
 
       setUseMachineLearning(settings.useMachineLearning);
       setConsiderTimeOfDay(settings.considerTimeOfDay);
-      setAdaptiveThreshold(settings.adaptiveThreshold || true);
-      setNapDetection(settings.napDetection || true);
+      setAdaptiveThreshold(settings.adaptiveThreshold ?? true);
+      setNapDetection(settings.napDetection ?? true);
       // New advanced settings synchronization
       setSmartWakeupWindow(settings.smartWakeupWindow ?? true);
       setConfidenceBasedAdjustment(settings.confidenceBasedAdjustment ?? true);
@@ -254,12 +259,7 @@ const SettingsScreen = () => {
           style: 'destructive',
           onPress: async () => {
             try {
-              // Only clear sleep-related data, not settings
-              await AsyncStorage.multiRemove([
-                'sleep-tracker-activity-records',
-                'sleep-tracker-daily-summaries',
-                'sleep-tracker-patterns'
-              ]);
+              await clearSleepData();
               Alert.alert('Success', 'All sleep data has been reset.');
             } catch (error) {
               console.error('Error resetting data:', error);
@@ -313,7 +313,7 @@ const SettingsScreen = () => {
           <View>
             <Text style={themedStyles.settingLabel}>Inactivity Threshold</Text>
             <Text style={themedStyles.settingDescription}>
-              Base inactivity time before considered asleep
+              Time away before a probable sleep candidate is created for your confirmation
             </Text>
           </View>
           <View style={themedStyles.dropdownValueContainer}>
@@ -322,7 +322,7 @@ const SettingsScreen = () => {
           </View>
         </TouchableOpacity>
 
-        <TouchableOpacity
+        {SHOW_EXPERIMENTAL_DETECTION_SETTINGS && <TouchableOpacity
           style={themedStyles.dropdownButton}
           onPress={() => setShowSensitivityModal(true)}
         >
@@ -336,9 +336,9 @@ const SettingsScreen = () => {
             <Text style={themedStyles.dropdownValue}>{currentSensitivityOption.label}</Text>
             <Ionicons name="chevron-down" size={20} color={colors.primary} />
           </View>
-        </TouchableOpacity>
+        </TouchableOpacity>}
 
-        <TouchableOpacity
+        {SHOW_EXPERIMENTAL_DETECTION_SETTINGS && <TouchableOpacity
           style={themedStyles.dropdownButton}
           onPress={() => setShowPersistenceModal(true)}
         >
@@ -352,10 +352,10 @@ const SettingsScreen = () => {
             <Text style={themedStyles.dropdownValue}>{currentPersistenceOption.label}</Text>
             <Ionicons name="chevron-down" size={20} color={colors.primary} />
           </View>
-        </TouchableOpacity>
+        </TouchableOpacity>}
       </View>
 
-      <View style={themedStyles.section}>
+      {SHOW_EXPERIMENTAL_DETECTION_SETTINGS && <View style={themedStyles.section}>
         <Text style={themedStyles.sectionTitle}>Adaptive Detection</Text>
         <View style={themedStyles.settingItem}>
           <View style={themedStyles.switchContainer}>
@@ -386,9 +386,9 @@ const SettingsScreen = () => {
             Optimized detection for short afternoon naps and unusual sleep times
           </Text>
         </View>
-      </View>
+      </View>}
 
-      <View style={themedStyles.section}>
+      {SHOW_EXPERIMENTAL_DETECTION_SETTINGS && <View style={themedStyles.section}>
         <Text style={themedStyles.sectionTitle}>Accuracy Settings</Text>
         <View style={themedStyles.settingItem}>
           <View style={themedStyles.switchContainer}>
@@ -419,9 +419,9 @@ const SettingsScreen = () => {
             Factor in typical sleep hours for better detection
           </Text>
         </View>
-      </View>
+      </View>}
 
-      <View style={themedStyles.section}>
+      {SHOW_EXPERIMENTAL_DETECTION_SETTINGS && <View style={themedStyles.section}>
         <Text style={themedStyles.sectionTitle}>Advanced Settings</Text>
         <View style={themedStyles.settingItem}>
           <View style={themedStyles.switchContainer}>
@@ -482,9 +482,9 @@ const SettingsScreen = () => {
             Use enhanced multi-layer sensor filtering for better accuracy
           </Text>
         </View>
-      </View>
+      </View>}
 
-      <View style={themedStyles.section}>
+      {SHOW_EXPERIMENTAL_DETECTION_SETTINGS && <View style={themedStyles.section}>
         <Text style={themedStyles.sectionTitle}>Power & Lifestyle</Text>
         <View style={themedStyles.settingItem}>
           <View style={themedStyles.switchContainer}>
@@ -530,7 +530,7 @@ const SettingsScreen = () => {
             Validate and clean sleep data for improved reliability
           </Text>
         </View>
-      </View>
+      </View>}
 
       <View style={themedStyles.section}>
         <Text style={themedStyles.sectionTitle}>Appearance</Text>
@@ -580,7 +580,7 @@ const SettingsScreen = () => {
         </TouchableOpacity>
       </View>
 
-      <View style={themedStyles.section}>
+      {__DEV__ && <View style={themedStyles.section}>
         <Text style={themedStyles.sectionTitle}>Debug & Monitoring</Text>
         <TouchableOpacity
           style={themedStyles.dataButton}
@@ -601,15 +601,15 @@ const SettingsScreen = () => {
             <BackgroundMonitorDebug />
           </View>
         )}
-      </View>
+      </View>}
 
       <View style={themedStyles.section}>
         <Text style={themedStyles.sectionTitle}>About</Text>
         <View style={themedStyles.aboutContainer}>
           <Text style={themedStyles.appName}>Sleep Detector</Text>
-          <Text style={themedStyles.appVersion}>Version 1.0.0</Text>
+          <Text style={themedStyles.appVersion}>Version {appVersion}</Text>
           <Text style={themedStyles.description}>
-            Track your sleep patterns based on phone usage.
+            Review probable sleep periods estimated from time away from Sleep Detector.
           </Text>
           <Text style={[themedStyles.description, themedStyles.mealSnapLink]} onPress={openMealSnapApp}>
             MealSnap helps with your eating habits
@@ -759,7 +759,7 @@ const SettingsScreen = () => {
             />
 
             <Text style={themedStyles.modalDescription}>
-              This is how long your phone needs to be inactive before Sleep Detector considers you asleep.
+              This is how long you must be away from Sleep Detector before it creates a probable sleep period for review.
             </Text>
           </View>
         </View>

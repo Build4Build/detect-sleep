@@ -16,11 +16,12 @@ export function detectSleepSession(
   const duration = resumedAt - inactiveStart;
   if (!Number.isFinite(duration) || duration <= thresholdMs) return null;
 
-  const detectedDurationMinutes = (duration - thresholdMs) / 60_000;
   return {
-    startTime: inactiveStart + thresholdMs,
+    // The threshold validates the candidate; it is not part of the sleep interval.
+    // A user must confirm this heuristic before it is recorded.
+    startTime: inactiveStart,
     endTime: resumedAt,
-    confidence: Math.round(Math.min(100, 80 + detectedDurationMinutes / 12)),
+    confidence: 50,
   };
 }
 
@@ -51,7 +52,7 @@ export function buildDailySleepSummaries(records: ActivityRecord[]): DailySleepS
       const date = format(cursor, 'yyyy-MM-dd');
       const summary = summaries.get(date) ?? { date, totalSleepMinutes: 0, sleepPeriods: [] };
       summary.sleepPeriods.push({ start: cursor, end: segmentEnd, confidence });
-      summary.totalSleepMinutes += ((segmentEnd - cursor) / 60_000) * (confidence / 100);
+      summary.totalSleepMinutes += (segmentEnd - cursor) / 60_000;
       summaries.set(date, summary);
       cursor = segmentEnd;
     }

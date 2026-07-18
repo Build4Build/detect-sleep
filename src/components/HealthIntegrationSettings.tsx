@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Alert, StyleSheet, Switch, Text, View } from 'react-native';
+import { Alert, AppState, StyleSheet, Switch, Text, View } from 'react-native';
 import { HealthService } from '../services/HealthService';
 import { useTheme } from '../context/ThemeContext';
 import { useSleep } from '../context/SleepContext';
@@ -10,7 +10,7 @@ interface HealthIntegrationSettingsProps {
 
 const HealthIntegrationSettings: React.FC<HealthIntegrationSettingsProps> = ({ onStatusChange }) => {
   const healthService = useMemo(() => HealthService.getInstance(), []);
-  const { dailySummaries } = useSleep();
+  const { syncHealthSessions } = useSleep();
   const { colors } = useTheme();
   const styles = createStyles(colors);
   const [available, setAvailable] = useState(false);
@@ -22,30 +22,20 @@ const HealthIntegrationSettings: React.FC<HealthIntegrationSettingsProps> = ({ o
     const load = async () => {
       const isAvailable = healthService.isAvailable();
       setAvailable(isAvailable);
-      setEnabled(isAvailable && await healthService.getSyncEnabled());
-      if (isAvailable) await healthService.initialize(false);
+      const authorized = isAvailable ? await healthService.initialize(false) : false;
+      const syncEnabled = isAvailable && await healthService.getSyncEnabled();
+      setEnabled(syncEnabled && authorized);
       setLoading(false);
     };
     load().catch(error => {
       console.error('Unable to load health integration:', error);
       setLoading(false);
     });
+    const subscription = AppState.addEventListener('change', state => {
+      if (state === 'active') load().catch(console.error);
+    });
+    return () => subscription.remove();
   }, [healthService]);
-
-  const backfillRecordedSleep = async () => {
-    for (const summary of dailySummaries) {
-      for (const period of summary.sleepPeriods) {
-        await healthService.saveSleepData({
-          id: `detected-${period.start}-${period.end}`,
-          startTime: period.start,
-          endTime: period.end,
-          isAwake: false,
-          confidence: period.confidence,
-          source: 'Sleep Detector',
-        });
-      }
-    }
-  };
 
   const changeSync = async (value: boolean) => {
     setLoading(true);
@@ -60,7 +50,7 @@ const HealthIntegrationSettings: React.FC<HealthIntegrationSettingsProps> = ({ o
       }
       setEnabled(value);
       onStatusChange?.(value);
-      if (value) await backfillRecordedSleep();
+      if (value) await syncHealthSessions();
     } catch (error) {
       console.error('Unable to update health sync:', error);
       Alert.alert('Health Sync Error', `Could not update ${serviceName}: ${error instanceof Error ? error.message : 'Unknown error'}`);
@@ -89,7 +79,7 @@ const HealthIntegrationSettings: React.FC<HealthIntegrationSettingsProps> = ({ o
               thumbColor={enabled ? colors.primary : colors.surface}
             />
           </View>
-          <Text style={styles.status}>{loading ? 'Checking permissions…' : enabled ? 'Connected' : 'Not connected'}</Text>
+          <Text style={styles.status}>{loading ? 'Checking permissions…' : enabled ? 'Sync enabled' : 'Sync disabled'}</Text>
         </>
       )}
     </View>

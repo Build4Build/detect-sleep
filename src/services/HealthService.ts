@@ -3,6 +3,7 @@ import { SleepEntry } from '../types/SleepEntry';
 import { AppleHealthService } from './AppleHealthService';
 import { GoogleFitService } from './GoogleFitService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { HealthRecoverySnapshot } from '../types';
 
 const HEALTH_SYNC_ENABLED_KEY = '@SleepDetector:healthSyncEnabled';
 
@@ -37,7 +38,6 @@ export class HealthService {
    */
   public async initialize(requestPermissions = false): Promise<boolean> {
     await this.loadConfiguration();
-    if (this.initialized && !requestPermissions) return this.hasRequiredPermissions();
 
     try {
       if (Platform.OS === 'ios' && this.appleHealthService) {
@@ -47,7 +47,7 @@ export class HealthService {
       } else if (Platform.OS === 'android' && this.googleFitService) {
         await this.googleFitService.initialize();
         this.initialized = true;
-        return true;
+        return this.googleFitService.hasRequiredPermissions();
       }
       
       // Not supported on this platform
@@ -122,6 +122,14 @@ export class HealthService {
     }
     
     return [];
+  }
+
+  public async getRecoverySnapshot(startDate: Date, endDate: Date): Promise<HealthRecoverySnapshot> {
+    if (!this.initialized) await this.initialize(false);
+    if (Platform.OS === 'ios' && this.appleHealthService) {
+      return this.appleHealthService.getRecoverySnapshot(startDate, endDate);
+    }
+    return { startTime: startDate.getTime(), endTime: endDate.getTime() };
   }
 
   /**

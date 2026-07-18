@@ -149,6 +149,11 @@ export class BackgroundActivityService {
     await AsyncStorage.removeItem(INACTIVE_SINCE_KEY);
   }
 
+  public async resetTrackingState(timestamp = Date.now()): Promise<void> {
+    await AsyncStorage.multiRemove([INACTIVE_SINCE_KEY, ACTIVITY_LOG_KEY, LAST_ACTIVITY_KEY]);
+    await this.recordUserActivity(timestamp);
+  }
+
   private async logActivity(activity: ActivityData): Promise<void> {
     try {
       const raw = await AsyncStorage.getItem(ACTIVITY_LOG_KEY);

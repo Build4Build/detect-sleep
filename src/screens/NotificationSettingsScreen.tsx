@@ -14,9 +14,9 @@ interface NotificationSettings {
 export const NotificationSettingsScreen = () => {
   const { colors } = useTheme();
   const [settings, setSettings] = useState<NotificationSettings>({
-    sleepDetectionEnabled: true,
-    wakeDetectionEnabled: true,
-    sleepRemindersEnabled: true,
+    sleepDetectionEnabled: false,
+    wakeDetectionEnabled: false,
+    sleepRemindersEnabled: false,
     bedtimeReminderHour: 22,
   });
   const [notificationService] = useState(() => NotificationService.getInstance());
@@ -39,6 +39,10 @@ export const NotificationSettingsScreen = () => {
 
   const updateSetting = async (key: keyof NotificationSettings, value: any) => {
     try {
+      if (value === true && !(await notificationService.requestPermissions())) {
+        Alert.alert('Permission Needed', 'Enable notifications in iOS Settings to use this option.');
+        return;
+      }
       const newSettings = { ...settings, [key]: value };
       setSettings(newSettings);
       await notificationService.updateSettings({ [key]: value });
