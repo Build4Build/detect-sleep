@@ -298,8 +298,17 @@ const SettingsScreen = () => {
     );
   };
 
+  const openExternalLink = async (url: string): Promise<void> => {
+    try {
+      await Linking.openURL(url);
+    } catch (error) {
+      console.error('Unable to open external link:', error);
+      Alert.alert('Unable to Open Link', 'Please try again when your device can open web links.');
+    }
+  };
+
   const openMealSnapApp = (): void => {
-    Linking.openURL('https://apps.apple.com/app/mealsnap-ai-food-log-tracker/id6475162854');
+    void openExternalLink('https://apps.apple.com/app/mealsnap-ai-food-log-tracker/id6475162854');
   };
 
   return (
@@ -611,6 +620,54 @@ const SettingsScreen = () => {
           <Text style={themedStyles.description}>
             Review probable sleep periods estimated from time away from Sleep Detector.
           </Text>
+          <View style={themedStyles.creatorCard}>
+            <View style={themedStyles.creatorHeader}>
+              <View style={themedStyles.creatorIcon}>
+                <Ionicons name="sparkles" size={22} color={colors.primary} />
+              </View>
+              <View style={themedStyles.creatorIdentity}>
+                <Text style={themedStyles.creatorRole}>FOUNDER · PRODUCT VISION · ENGINEERING</Text>
+                <Text style={themedStyles.creatorName}>Pierre-Henry Soria</Text>
+              </View>
+            </View>
+            <Text style={themedStyles.creatorStory}>
+              Pierre-Henry conceived the idea, brought its vision and clarity, and designed and built
+              the systems behind Sleep Detector to solve the painful gap between phone inactivity and
+              useful, reviewable sleep insight.
+            </Text>
+            <Text style={themedStyles.creatorSince}>
+              Building the app’s systems since early 2024.
+            </Text>
+            <View style={themedStyles.creatorLinks}>
+              <TouchableOpacity
+                accessibilityRole="link"
+                accessibilityLabel="Open Pierre-Henry Soria’s website"
+                style={themedStyles.creatorLink}
+                onPress={() => void openExternalLink('https://pierrehenry.dev')}
+              >
+                <Ionicons name="globe-outline" size={16} color={colors.primary} />
+                <Text style={themedStyles.creatorLinkText}>Website</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                accessibilityRole="link"
+                accessibilityLabel="Open Pierre-Henry Soria’s GitHub profile"
+                style={themedStyles.creatorLink}
+                onPress={() => void openExternalLink('https://github.com/pH-7')}
+              >
+                <Ionicons name="logo-github" size={16} color={colors.primary} />
+                <Text style={themedStyles.creatorLinkText}>GitHub</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                accessibilityRole="link"
+                accessibilityLabel="Open Pierre-Henry Soria’s LinkedIn profile"
+                style={themedStyles.creatorLink}
+                onPress={() => void openExternalLink('https://www.linkedin.com/in/ph7enry/')}
+              >
+                <Ionicons name="logo-linkedin" size={16} color={colors.primary} />
+                <Text style={themedStyles.creatorLinkText}>LinkedIn</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
           <Text style={[themedStyles.description, themedStyles.mealSnapLink]} onPress={openMealSnapApp}>
             MealSnap helps with your eating habits
           </Text>
@@ -917,6 +974,81 @@ const createThemedStyles = (colors: any) => StyleSheet.create({
     color: colors.textSecondary,
     marginTop: 8,
     textAlign: 'center',
+  },
+  creatorCard: {
+    alignSelf: 'stretch',
+    marginTop: 18,
+    padding: 16,
+    borderRadius: 16,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.primary + '35',
+  },
+  creatorHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  creatorIcon: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.primary + '18',
+    marginRight: 12,
+  },
+  creatorIdentity: {
+    flex: 1,
+  },
+  creatorRole: {
+    fontSize: 10,
+    lineHeight: 14,
+    letterSpacing: 0.7,
+    fontWeight: '700',
+    color: colors.primary,
+  },
+  creatorName: {
+    marginTop: 2,
+    fontSize: 19,
+    fontWeight: '700',
+    color: colors.text,
+  },
+  creatorStory: {
+    marginTop: 14,
+    fontSize: 13,
+    lineHeight: 19,
+    color: colors.textSecondary,
+  },
+  creatorSince: {
+    marginTop: 10,
+    fontSize: 13,
+    fontWeight: '600',
+    color: colors.text,
+  },
+  creatorLinks: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginTop: 14,
+    marginHorizontal: -4,
+  },
+  creatorLink: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    minWidth: 88,
+    flexGrow: 1,
+    paddingHorizontal: 10,
+    paddingVertical: 9,
+    marginHorizontal: 4,
+    marginBottom: 8,
+    borderRadius: 10,
+    backgroundColor: colors.primary + '12',
+  },
+  creatorLinkText: {
+    marginLeft: 6,
+    fontSize: 12,
+    fontWeight: '600',
+    color: colors.primary,
   },
   dropdownButton: {
     flexDirection: 'row',

@@ -2,6 +2,7 @@
   "expo": {
     "name": "Sleep Detector",
     "slug": "detect-sleep",
+    "description": "A privacy-first sleep companion conceived and built by Pierre-Henry Soria, with systems in development since early 2024.",
     "version": "1.4.1",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -23,6 +24,7 @@
       "appleTeamId": "2V8LZ2444Y",
       "bundleIdentifier": "com.sleepdetector.app",
       "infoPlist": {
+        "NSHumanReadableCopyright": "© 2024–2026 Pierre-Henry Soria",
         "NSHealthShareUsageDescription": "When you enable Health integration, Sleep Detector reads sleep stages and optional recovery signals such as heart rate variability, resting heart rate, respiratory rate, and wrist temperature to improve your private daily report.",
         "NSHealthUpdateUsageDescription": "Sleep Detector writes only the sleep periods you confirm to Apple Health when you enable Health sync.",
         "NSUserNotificationsUsageDescription": "We send you notifications when sleep is detected and when you wake up with sleep summaries",

@@ -285,16 +285,19 @@ eas submit --platform ios --profile production --verbose
 ```
 
 
-## Who Built This Sleep Tracker App?
+## Founder, Creator, and Engineer
 
-**Pierre-Henry Soria** — a **super passionate engineer** who loves automating content creation efficiently!
+**[Pierre-Henry Soria](https://pierrehenry.dev)** conceived Sleep Detector, created the product vision, brought the clarity needed to turn the idea into a useful experience, and designed and built the systems behind the app. He started working on those systems in early **2024** to solve the painful gap between phone inactivity and useful, reviewable sleep insight.
 
-Enthusiast of YouTube, AI, learning, and writing performant code!  ⚡️
-Find me at [pH7.me](https://ph7.me)
+Pierre-Henry continues to lead the product vision, engineering, privacy model, sleep-analysis architecture, Apple Health integration, and Apple Watch experience.
+
+- Website: [pierrehenry.dev](https://pierrehenry.dev)
+- GitHub: [github.com/pH-7](https://github.com/pH-7)
+- LinkedIn: [linkedin.com/in/ph7enry](https://www.linkedin.com/in/ph7enry/)
 
 Enjoying this project? **[Buy me a coffee](https://ko-fi.com/phenry)** (spoiler: I love almond extra-hot flat white coffees).
 
-[![Pierre-Henry Soria](https://s.gravatar.com/avatar/a210fe61253c43c869d71eaed0e90149?s=200)](https://ph7.me "Pierre-Henry Soria’s personal website")
+[![Pierre-Henry Soria](https://s.gravatar.com/avatar/a210fe61253c43c869d71eaed0e90149?s=200)](https://pierrehenry.dev "Pierre-Henry Soria’s personal website")
 
 [![@phenrysay][x-icon]](https://x.com/phenrysay "Follow Me on X") [![YouTube Tech Videos][youtube-icon]](https://www.youtube.com/@pH7Programming "My YouTube Tech Channel") [![pH-7][github-icon]](https://github.com/pH-7 "Follow Me on GitHub") [![BlueSky][bsky-icon]](https://bsky.app/profile/pierrehenry.dev "Follow Me on BlueSky")
 
