@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="422" height="514" viewBox="0 0 422 514">
+  <defs>
+    <linearGradient id="topVeil" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#03131a" stop-opacity="0.96"/><stop offset="0.31" stop-color="#03131a" stop-opacity="0.44"/><stop offset="0.68" stop-color="#03131a" stop-opacity="0"/></linearGradient>
+    <linearGradient id="case" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#a4adbd"/><stop offset="0.17" stop-color="#272d3b"/><stop offset="0.76" stop-color="#060810"/><stop offset="1" stop-color="#686f7e"/></linearGradient>
+    <linearGradient id="screen" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0a2530"/><stop offset="1" stop-color="#050913"/></linearGradient>
+    <linearGradient id="button" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#34c8c5"/><stop offset="1" stop-color="#578cff"/></linearGradient>
+    <filter id="shadow" x="-40%" y="-30%" width="180%" height="190%"><feGaussianBlur in="SourceAlpha" stdDeviation="12" result="b"/><feColorMatrix in="b" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .55 0"/><feOffset dy="10"/><feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+    <clipPath id="screenClip"><rect x="84" y="132" width="254" height="312" rx="58"/></clipPath>
+  </defs>
+  <rect width="422" height="240" fill="url(#topVeil)"/>
+  <g font-family="Arial, Helvetica, sans-serif" text-anchor="middle" fill="#fff"><text x="211" y="38" font-size="24.5" font-weight="700" letter-spacing="-.8">Smarter data. Lighter battery.</text><text x="211" y="68" font-size="12.5" fill="#c3edf0">Refreshes on demand—never a workout.</text></g>
+  <g filter="url(#shadow)"><rect x="72" y="120" width="278" height="336" rx="72" fill="url(#case)"/><rect x="79" y="127" width="264" height="322" rx="64" fill="#02030a"/><rect x="84" y="132" width="254" height="312" rx="58" fill="url(#screen)"/><rect x="348" y="226" width="10" height="54" rx="5" fill="#6d7483"/><circle cx="353" cy="208" r="9" fill="#111722" stroke="#89909e" stroke-width="3"/></g>
+  <g clip-path="url(#screenClip)" font-family="Arial, Helvetica, sans-serif">
+    <text x="106" y="158" fill="#fff" font-size="12" font-weight="700">Sleep Detector</text>
+    <rect x="98" y="176" width="226" height="58" rx="16" fill="#12232d" stroke="#3f8894" stroke-opacity="0.4"/>
+    <circle cx="122" cy="205" r="14" fill="#1b4550"/>
+    <path d="M116 205 l5 5 l9 -11" fill="none" stroke="#5ce3d7" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+    <text x="146" y="201" fill="#91a7b5" font-size="9.5">Last refresh</text>
+    <text x="146" y="217" fill="#fff" font-size="13" font-weight="700">Just now</text>
+    <rect x="98" y="246" width="226" height="96" rx="17" fill="#121827"/>
+    <text x="116" y="270" fill="#fff" font-size="11" font-weight="700">Battery-conscious by design</text>
+    <circle cx="118" cy="291" r="3" fill="#53d9cf"/><text x="130" y="295" fill="#b8c8d8" font-size="9.5">No continuous workout</text>
+    <circle cx="118" cy="314" r="3" fill="#53d9cf"/><text x="130" y="318" fill="#b8c8d8" font-size="9.5">No always-on sensor loop</text>
+    <rect x="108" y="360" width="206" height="42" rx="21" fill="url(#button)"/>
+    <text x="211" y="386" fill="#fff" font-size="12" font-weight="700" text-anchor="middle">Refresh sleep data</text>
+    <text x="211" y="427" fill="#8390ad" font-size="8.5" text-anchor="middle">Reads Apple Health only when requested</text>
+  </g>
+</svg>
