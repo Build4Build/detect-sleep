@@ -33,7 +33,8 @@
       "autoIncrement": true,
       "env": {
         "FASTLANE_XCODEBUILD_SETTINGS_TIMEOUT": "60",
-        "FASTLANE_XCODEBUILD_SETTINGS_RETRIES": "4"
+        "FASTLANE_XCODEBUILD_SETTINGS_RETRIES": "4",
+        "GYM_XCARGS": "CODE_SIGN_IDENTITY=DF910648A6E2D59C87DBCDE44B8ACFB4E6D170D5"
       },
       "ios": {
         "resourceClass": "medium",
