@@ -22,7 +22,6 @@
       "supportsTablet": false,
       "appleTeamId": "2V8LZ2444Y",
       "bundleIdentifier": "com.sleepdetector.app",
-      "buildNumber": "82",
       "infoPlist": {
         "NSHealthShareUsageDescription": "When you enable Health integration, Sleep Detector reads sleep stages and optional recovery signals such as heart rate variability, resting heart rate, respiratory rate, and wrist temperature to improve your private daily report.",
         "NSHealthUpdateUsageDescription": "Sleep Detector writes only the sleep periods you confirm to Apple Health when you enable Health sync.",
