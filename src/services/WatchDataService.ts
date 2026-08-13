@@ -64,15 +64,50 @@ export function watchSleepOverlapRatio(
   endTime: number,
 ): number {
   if (endTime <= startTime) return 0;
-  const bestOverlap = snapshots.reduce((best, snapshot) => {
+  return snapshots.reduce((best, snapshot) => {
     const overlap = Math.max(
       0,
       Math.min(endTime, snapshot.sleepEnd) -
         Math.max(startTime, snapshot.sleepStart),
     );
-    return Math.max(best, overlap);
+    const snapshotSpan = snapshot.sleepEnd - snapshot.sleepStart;
+    if (snapshotSpan <= 0) return best;
+
+    // A snapshot's outer boundaries can contain awake gaps. Weighting the
+    // boundary overlap by actual asleep time prevents a fragmented night from
+    // being treated as continuous, independently verified sleep.
+    const sleepEfficiency = Math.min(
+      1,
+      Math.max(0, snapshot.totalSleepMinutes * 60_000) / snapshotSpan,
+    );
+    const ratio = (overlap / (endTime - startTime)) * sleepEfficiency;
+    return Math.max(best, ratio);
   }, 0);
-  return Math.min(1, bestOverlap / (endTime - startTime));
+}
+
+/** Selects the Watch night with the most actual asleep time in the app-away window. */
+export function strongestWatchSleepWindow(
+  snapshots: WatchSleepSnapshot[],
+  startTime: number,
+  endTime: number,
+): { startTime: number; endTime: number; asleepMinutes: number } | null {
+  if (!Number.isFinite(startTime) || !Number.isFinite(endTime) || endTime <= startTime) {
+    return null;
+  }
+  const ranked = snapshots.flatMap(snapshot => {
+    const clippedStart = Math.max(startTime, snapshot.sleepStart);
+    const clippedEnd = Math.min(endTime, snapshot.sleepEnd);
+    const snapshotSpan = snapshot.sleepEnd - snapshot.sleepStart;
+    if (clippedEnd <= clippedStart || snapshotSpan <= 0) return [];
+    const overlapFraction = (clippedEnd - clippedStart) / snapshotSpan;
+    const asleepMinutes = Math.min(
+      (clippedEnd - clippedStart) / 60_000,
+      snapshot.totalSleepMinutes * overlapFraction,
+    );
+    return [{ startTime: clippedStart, endTime: clippedEnd, asleepMinutes }];
+  }).sort((left, right) => right.asleepMinutes - left.asleepMinutes);
+
+  return ranked[0] && ranked[0].asleepMinutes >= 30 ? ranked[0] : null;
 }
 
 export const WatchDataService = {

@@ -64,7 +64,9 @@ export class AppleHealthService {
     const samples = await queryCategorySamples(SLEEP_TYPE, {
       limit: 0,
       ascending: true,
-      filter: { date: { startDate, endDate, strictStartDate: true } },
+      // Include samples that begin before the requested boundary but overlap
+      // it, then clip/merge them in the analysis layer.
+      filter: { date: { startDate, endDate, strictStartDate: false } },
     });
 
     return samples.flatMap(sample => {
@@ -148,6 +150,28 @@ export class AppleHealthService {
       return syncIdentifier === sleepEntry.id || (isSleepDetectorSample && coversEntry);
     });
     if (alreadySynced) return;
+
+    const asleepIntervals = existing.flatMap(sample => {
+      const stage = this.sleepStage(sample.value);
+      if (!stage || stage === 'awake') return [];
+      const start = Math.max(sleepEntry.startTime, sample.startDate.getTime());
+      const end = Math.min(sleepEntry.endTime, sample.endDate.getTime());
+      return end > start ? [{ start, end }] : [];
+    }).sort((left, right) => left.start - right.start);
+    let coveredMilliseconds = 0;
+    let coveredUntil = sleepEntry.startTime;
+    for (const interval of asleepIntervals) {
+      const uncoveredStart = Math.max(coveredUntil, interval.start);
+      if (interval.end > uncoveredStart) {
+        coveredMilliseconds += interval.end - uncoveredStart;
+        coveredUntil = interval.end;
+      }
+    }
+    if (coveredMilliseconds / (sleepEntry.endTime - sleepEntry.startTime) >= 0.9) {
+      // Another Health source already represents this night. Avoid writing a
+      // duplicate sample that would inflate totals in downstream apps.
+      return;
+    }
 
     await saveCategorySample(
       SLEEP_TYPE,

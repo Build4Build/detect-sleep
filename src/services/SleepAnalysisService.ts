@@ -5,10 +5,12 @@ import {
   SleepEvidence,
   SleepSession,
 } from "../types";
+import { SleepEntry } from "../types/SleepEntry";
 import { LocalSleepIntelligence } from "./local/LocalSleepIntelligence";
 
 const MINUTE = 60_000;
 const MAX_CANDIDATE_MINUTES = 20 * 60;
+const MAX_SLEEP_STAGE_GAP = 90 * MINUTE;
 
 export interface SleepAnalysisInput {
   startTime: number;
@@ -47,6 +49,119 @@ const circularMean = (values: number[]): number | undefined => {
     (((angle < 0 ? angle + Math.PI * 2 : angle) / (Math.PI * 2)) * 1440) % 1440,
   );
 };
+
+export interface VerifiedSleepWindow {
+  startTime: number;
+  endTime: number;
+  asleepMinutes: number;
+}
+
+/**
+ * Finds the strongest contiguous Health sleep block inside an app-away window.
+ * Stage samples are commonly split into REM/core/deep intervals, so short awake
+ * gaps are kept in the same night while unrelated naps remain separate.
+ */
+export function strongestHealthSleepWindow(
+  entries: SleepEntry[],
+  startTime: number,
+  endTime: number,
+): VerifiedSleepWindow | null {
+  if (!Number.isFinite(startTime) || !Number.isFinite(endTime) || endTime <= startTime) {
+    return null;
+  }
+  const intervals = entries
+    .filter(entry =>
+      !entry.isAwake &&
+      Number.isFinite(entry.startTime) &&
+      Number.isFinite(entry.endTime),
+    )
+    .map(entry => ({
+      startTime: Math.max(startTime, entry.startTime),
+      endTime: Math.min(endTime, entry.endTime),
+    }))
+    .filter(interval => interval.endTime > interval.startTime)
+    .sort((left, right) => left.startTime - right.startTime);
+
+  const clusters: Array<{ startTime: number; endTime: number; intervals: typeof intervals }> = [];
+  for (const interval of intervals) {
+    const current = clusters[clusters.length - 1];
+    if (!current || interval.startTime - current.endTime > MAX_SLEEP_STAGE_GAP) {
+      clusters.push({
+        startTime: interval.startTime,
+        endTime: interval.endTime,
+        intervals: [interval],
+      });
+    } else {
+      current.endTime = Math.max(current.endTime, interval.endTime);
+      current.intervals.push(interval);
+    }
+  }
+
+  const ranked = clusters.map(cluster => {
+    let asleepMilliseconds = 0;
+    let coveredUntil = cluster.startTime;
+    for (const interval of cluster.intervals) {
+      const uncoveredStart = Math.max(coveredUntil, interval.startTime);
+      if (interval.endTime > uncoveredStart) {
+        asleepMilliseconds += interval.endTime - uncoveredStart;
+        coveredUntil = interval.endTime;
+      }
+    }
+    return { ...cluster, asleepMilliseconds };
+  }).sort((left, right) => right.asleepMilliseconds - left.asleepMilliseconds);
+
+  const strongest = ranked[0];
+  if (!strongest || strongest.asleepMilliseconds < 30 * MINUTE) return null;
+  return {
+    startTime: strongest.startTime,
+    endTime: strongest.endTime,
+    asleepMinutes: strongest.asleepMilliseconds / MINUTE,
+  };
+}
+
+/** Calculates unique asleep-stage coverage without double-counting sources. */
+export function healthSleepOverlapRatio(
+  entries: SleepEntry[],
+  startTime: number,
+  endTime: number,
+): number {
+  if (!Number.isFinite(startTime) || !Number.isFinite(endTime) || endTime <= startTime) {
+    return 0;
+  }
+  const intervals = entries
+    .filter(
+      (entry) =>
+        !entry.isAwake &&
+        Number.isFinite(entry.startTime) &&
+        Number.isFinite(entry.endTime),
+    )
+    .map((entry) => [
+      Math.max(startTime, entry.startTime),
+      Math.min(endTime, entry.endTime),
+    ] as const)
+    .filter(([start, end]) => end > start)
+    .sort((left, right) => left[0] - right[0]);
+
+  let covered = 0;
+  let currentStart: number | undefined;
+  let currentEnd: number | undefined;
+  for (const [intervalStart, intervalEnd] of intervals) {
+    if (currentStart === undefined || currentEnd === undefined) {
+      currentStart = intervalStart;
+      currentEnd = intervalEnd;
+    } else if (intervalStart <= currentEnd) {
+      currentEnd = Math.max(currentEnd, intervalEnd);
+    } else {
+      covered += currentEnd - currentStart;
+      currentStart = intervalStart;
+      currentEnd = intervalEnd;
+    }
+  }
+  if (currentStart !== undefined && currentEnd !== undefined) {
+    covered += currentEnd - currentStart;
+  }
+  return clamp(covered / (endTime - startTime), 0, 1);
+}
 
 export function buildSleepAnalysisFeatures(
   input: SleepAnalysisInput,

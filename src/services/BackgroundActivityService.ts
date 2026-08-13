@@ -77,25 +77,39 @@ export class BackgroundActivityService {
   }
 
   /**
-   * Atomically consumes the pending inactive interval before recording resume.
-   * Reading this interval before updating LAST_ACTIVITY_KEY fixes the former
-   * resume bug where inactivity was always observed as approximately zero.
+   * Consumes the pending inactive interval before recording resume. Reading
+   * this interval before updating LAST_ACTIVITY_KEY fixes the former resume
+   * bug where inactivity was always observed as approximately zero.
    */
   public async consumeInactivePeriod(resumedAt = Date.now()): Promise<InactivePeriod | null> {
     const stored = await AsyncStorage.getItem(INACTIVE_SINCE_KEY);
-    await AsyncStorage.removeItem(INACTIVE_SINCE_KEY);
-    await this.recordUserActivity(resumedAt);
+    const startTime = stored === null ? Number.NaN : Number(stored);
+    const period = Number.isFinite(startTime) &&
+      Number.isFinite(resumedAt) &&
+      resumedAt > startTime
+      ? {
+          startTime,
+          endTime: resumedAt,
+          durationMinutes: (resumedAt - startTime) / 60_000,
+        }
+      : null;
 
-    if (!stored) return null;
+    // Storage cleanup must never prevent the already-calculated boundary from
+    // reaching the detector. A failed removal can replay the same interval on
+    // the next launch, which is safe because candidates and sessions are
+    // de-duplicated; dropping the interval would lose an entire night.
+    try {
+      await AsyncStorage.removeItem(INACTIVE_SINCE_KEY);
+    } catch (error) {
+      console.warn('Unable to clear the consumed inactivity boundary:', error);
+    }
+    try {
+      await this.recordUserActivity(resumedAt);
+    } catch (error) {
+      console.warn('Unable to persist the app resume boundary:', error);
+    }
 
-    const startTime = Number(stored);
-    if (!Number.isFinite(startTime) || startTime >= resumedAt) return null;
-
-    return {
-      startTime,
-      endTime: resumedAt,
-      durationMinutes: (resumedAt - startTime) / 60_000,
-    };
+    return period;
   }
 
   public async recordUserActivity(timestamp = Date.now()): Promise<void> {

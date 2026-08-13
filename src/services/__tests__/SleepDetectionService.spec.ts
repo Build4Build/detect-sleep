@@ -1,5 +1,10 @@
 import { ActivityRecord, SleepStatus } from '../../types';
-import { buildDailySleepSummaries, detectSleepSession } from '../SleepDetectionService';
+import {
+  buildDailySleepSummaries,
+  buildDailySleepSummariesFromSessions,
+  detectSleepSession,
+} from '../SleepDetectionService';
+import { createSleepSession } from '../SleepSessionService';
 
 const record = (status: SleepStatus, timestamp: number, confidence = 100): ActivityRecord => ({
   id: `${status}-${timestamp}`,
@@ -33,7 +38,7 @@ describe('detectSleepSession', () => {
 });
 
 describe('buildDailySleepSummaries', () => {
-  it('pairs transitions and splits sleep that crosses midnight', () => {
+  it('pairs transitions and assigns overnight sleep to the wake-up date', () => {
     const asleepAt = new Date(2026, 6, 15, 23, 30).getTime();
     const awakeAt = new Date(2026, 6, 16, 1, 30).getTime();
     const summaries = buildDailySleepSummaries([
@@ -42,11 +47,13 @@ describe('buildDailySleepSummaries', () => {
       record(SleepStatus.AWAKE, awakeAt, 100),
     ]);
 
-    expect(summaries).toHaveLength(2);
-    expect(summaries[0].sleepPeriods[0]).toMatchObject({ start: asleepAt });
-    expect(summaries[1].sleepPeriods[0]).toMatchObject({ end: awakeAt });
-    expect(summaries[0].totalSleepMinutes).toBeCloseTo(30);
-    expect(summaries[1].totalSleepMinutes).toBeCloseTo(90);
+    expect(summaries).toHaveLength(1);
+    expect(summaries[0].date).toBe('2026-07-16');
+    expect(summaries[0].sleepPeriods[0]).toMatchObject({
+      start: asleepAt,
+      end: awakeAt,
+    });
+    expect(summaries[0].totalSleepMinutes).toBeCloseTo(120);
   });
 
   it('ignores an unfinished sleep record until a wake transition exists', () => {
@@ -65,5 +72,20 @@ describe('buildDailySleepSummaries', () => {
 
     expect(summary.totalSleepMinutes).toBe(120);
     expect(summary.sleepPeriods[0].confidence).toBe(30);
+  });
+
+  it('builds totals from durable sessions when transition records are unavailable', () => {
+    const session = createSleepSession({
+      startTime: new Date(2026, 6, 1, 23, 0).getTime(),
+      endTime: new Date(2026, 6, 2, 7, 0).getTime(),
+      confidence: 88,
+      source: 'combined',
+      userConfirmed: true,
+    });
+
+    const [summary] = buildDailySleepSummariesFromSessions([session]);
+    expect(summary.date).toBe('2026-07-02');
+    expect(summary.totalSleepMinutes).toBe(480);
+    expect(summary.sleepPeriods[0].confidence).toBe(88);
   });
 });

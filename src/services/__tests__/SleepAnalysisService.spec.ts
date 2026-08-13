@@ -12,6 +12,8 @@ import {
   applyLocalModelAssessment,
   buildSleepAnalysisFeatures,
   deterministicSleepAnalysis,
+  healthSleepOverlapRatio,
+  strongestHealthSleepWindow,
 } from "../SleepAnalysisService";
 
 const localTimestamp = (
@@ -84,5 +86,38 @@ describe("SleepAnalysisService", () => {
     expect(() => deterministicSleepAnalysis(features)).toThrow(
       /end after its start/,
     );
+  });
+
+  it("merges overlapping Health sleep stages without double-counting", () => {
+    const entries = [
+      { id: "core", startTime: 1_000, endTime: 5_000, source: "Watch", confidence: 95, isAwake: false },
+      { id: "deep", startTime: 3_000, endTime: 7_000, source: "Watch", confidence: 95, isAwake: false },
+      { id: "awake", startTime: 7_000, endTime: 9_000, source: "Watch", confidence: 95, isAwake: true },
+    ];
+
+    expect(healthSleepOverlapRatio(entries, 1_000, 9_000)).toBeCloseTo(0.75);
+  });
+
+  it("uses the strongest Health sleep block to refine broad app inactivity", () => {
+    const hour = 60 * 60_000;
+    const entries = [
+      { id: "nap", startTime: 2 * hour, endTime: 2.5 * hour, source: "Watch", confidence: 95, isAwake: false },
+      { id: "core", startTime: 5 * hour, endTime: 8 * hour, source: "Watch", confidence: 95, isAwake: false },
+      { id: "deep", startTime: 8.25 * hour, endTime: 10 * hour, source: "Watch", confidence: 95, isAwake: false },
+      { id: "awake", startTime: 8 * hour, endTime: 8.25 * hour, source: "Watch", confidence: 95, isAwake: true },
+    ];
+
+    expect(strongestHealthSleepWindow(entries, 0, 12 * hour)).toEqual({
+      startTime: 5 * hour,
+      endTime: 10 * hour,
+      asleepMinutes: 285,
+    });
+  });
+
+  it("does not refine a candidate from only a brief Health sample", () => {
+    const entries = [
+      { id: "brief", startTime: 0, endTime: 29 * 60_000, source: "Watch", confidence: 95, isAwake: false },
+    ];
+    expect(strongestHealthSleepWindow(entries, 0, 8 * 60 * 60_000)).toBeNull();
   });
 });

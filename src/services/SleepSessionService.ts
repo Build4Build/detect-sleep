@@ -1,6 +1,8 @@
 import { SleepEvidence, SleepSession, SleepSessionSource } from '../types';
 
 const MINUTE = 60_000;
+const PENDING_SYNC_RETRY_MS = 15 * MINUTE;
+const FAILED_SYNC_RETRY_MS = 6 * 60 * MINUTE;
 
 const uniqueEvidence = (items: SleepEvidence[]): SleepEvidence[] => {
   const seen = new Set<string>();
@@ -125,4 +127,27 @@ export function updateSessionSyncState(
         }
       : session,
   );
+}
+
+/** Avoids retrying unavailable Health permissions on every foreground event. */
+export function shouldAttemptHealthSync(
+  session: SleepSession,
+  now = Date.now(),
+): boolean {
+  if (
+    session.endTime === undefined ||
+    !session.userConfirmed ||
+    session.healthSyncState === 'synced'
+  ) {
+    return false;
+  }
+  if (session.healthSyncState === 'pending') {
+    const lastAttempt = Number.isFinite(session.updatedAt) ? session.updatedAt : 0;
+    return now - lastAttempt >= PENDING_SYNC_RETRY_MS;
+  }
+  if (session.healthSyncState === 'failed') {
+    const lastAttempt = Number.isFinite(session.updatedAt) ? session.updatedAt : 0;
+    return now - lastAttempt >= FAILED_SYNC_RETRY_MS;
+  }
+  return true;
 }

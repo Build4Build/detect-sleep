@@ -1,5 +1,6 @@
 import {
   createSleepSession,
+  shouldAttemptHealthSync,
   updateSessionSyncState,
   upsertSleepSession,
 } from '../SleepSessionService';
@@ -83,5 +84,30 @@ describe('SleepSessionService', () => {
     const [updated] = updateSessionSyncState([session], session.id, 'failed', 'Denied');
     expect(updated.healthSyncState).toBe('failed');
     expect(updated.healthSyncError).toBe('Denied');
+  });
+});
+
+describe('shouldAttemptHealthSync', () => {
+  const now = 10 * 60 * 60_000;
+  const session = createSleepSession({
+    startTime: 1_000,
+    endTime: 2_000,
+    confidence: 90,
+    source: 'manual',
+    userConfirmed: true,
+    now,
+  });
+
+  it('backs off failed and in-flight writes while retrying stale ones', () => {
+    const failed = {
+      ...updateSessionSyncState([session], session.id, 'failed', 'Denied')[0],
+      updatedAt: now,
+    };
+    expect(shouldAttemptHealthSync(failed, now + 60_000)).toBe(false);
+    expect(shouldAttemptHealthSync(failed, now + 6 * 60 * 60_000)).toBe(true);
+
+    const pending = { ...session, healthSyncState: 'pending' as const, updatedAt: now };
+    expect(shouldAttemptHealthSync(pending, now + 14 * 60_000)).toBe(false);
+    expect(shouldAttemptHealthSync(pending, now + 15 * 60_000)).toBe(true);
   });
 });
