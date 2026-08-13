@@ -46,7 +46,7 @@
     "expo-status-bar": "~55.0.6",
     "expo-updates": "~55.0.26",
     "react": "19.2.0",
-    "react-native": "0.83.6",
+    "react-native": "0.83.10",
     "react-native-chart-kit": "^6.12.0",
     "react-native-gesture-handler": "~2.30.0",
     "react-native-nitro-modules": "^0.35.10",
@@ -86,7 +86,16 @@
     }
   },
   "overrides": {
-    "@xmldom/xmldom": "0.8.13"
+    "@xmldom/xmldom": "0.8.13",
+    "minimatch@3.1.5": {
+      "brace-expansion": "1.1.18"
+    },
+    "brace-expansion@2.1.2": "2.1.4",
+    "brace-expansion@5.0.7": "5.0.9",
+    "js-yaml@3.15.0": "3.15.1",
+    "js-yaml@4.3.0": "4.3.1",
+    "nanoid@3.3.16": "3.3.18",
+    "postcss@8.5.19": "8.5.26"
   },
   "private": true
 }
