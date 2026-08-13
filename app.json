@@ -6,7 +6,7 @@
     "version": "1.4.1",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "automatic",
     "platforms": [
       "ios",
       "android"
@@ -27,7 +27,7 @@
         "NSHumanReadableCopyright": "© 2024–2026 Pierre-Henry Soria",
         "NSHealthShareUsageDescription": "When you enable Health integration, Sleep Detector reads sleep stages and optional recovery signals such as heart rate variability, resting heart rate, respiratory rate, and wrist temperature to improve your private daily report.",
         "NSHealthUpdateUsageDescription": "Sleep Detector writes only the sleep periods you confirm to Apple Health when you enable Health sync.",
-        "NSUserNotificationsUsageDescription": "We send you notifications when sleep is detected and when you wake up with sleep summaries",
+        "NSUserNotificationsUsageDescription": "Sleep Detector sends bedtime reminders and optional summaries after you confirm a sleep period.",
         "UISupportedInterfaceOrientations": [
           "UIInterfaceOrientationPortrait"
         ]
@@ -52,9 +52,6 @@
       "permissions": [
         "android.permission.VIBRATE"
       ],
-      "config": {
-        "googleMobileAdsAppId": "ca-app-pub-3940256099942544~3347511713"
-      },
       "blockedPermissions": [
         "android.permission.READ_PHONE_STATE",
         "android.permission.READ_CONTACTS"
