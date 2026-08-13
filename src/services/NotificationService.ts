@@ -460,6 +460,7 @@ ${qualityAdvice}`;
       console.log(`✅ Bedtime reminder scheduled for ${reminderHour}:00`);
     } catch (error) {
       console.error('❌ Failed to schedule bedtime reminder:', error);
+      throw error;
     }
   }
 
@@ -509,6 +510,7 @@ ${qualityAdvice}`;
       console.log(`✅ Test notification sent: ${testTitle} at ${currentHour}:xx`);
     } catch (error) {
       console.error('❌ Failed to send test notification:', error);
+      throw error;
     }
   }
 

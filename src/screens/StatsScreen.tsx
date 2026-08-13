@@ -142,6 +142,9 @@ const StatsScreen = () => {
       )
     }]
   };
+  const hasSleepData = enhancedChartData.datasets[0].data.some(
+    (hours: number) => hours > 0,
+  );
 
   return (
     <ScrollView style={themedStyles.container}>
@@ -175,7 +178,7 @@ const StatsScreen = () => {
 
       <View style={themedStyles.card}>
         <Text style={themedStyles.cardTitle}>Sleep Duration</Text>
-        {enhancedChartData.datasets[0].data.length > 0 ? (
+        {hasSleepData ? (
           <View>
             <BarChart
               data={enhancedChartData}
@@ -235,7 +238,7 @@ const StatsScreen = () => {
         </View>
 
         <View style={themedStyles.metricCard}>
-          <Text style={themedStyles.metricTitle}>Efficiency</Text>
+          <Text style={themedStyles.metricTitle}>7h+ nights</Text>
           <View style={themedStyles.progressContainer}>
             <View
               style={[
@@ -263,7 +266,7 @@ const StatsScreen = () => {
               • Have a sleep consistency of {Math.round(metrics.consistency)}%
             </Text>
             <Text style={themedStyles.patternText}>
-              • Achieve good sleep {Math.round(metrics.efficiency)}% of the time
+              • Reach 7+ hours on {Math.round(metrics.efficiency)}% of recorded nights
             </Text>
           </View>
         ) : (

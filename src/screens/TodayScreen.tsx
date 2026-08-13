@@ -86,7 +86,9 @@ const TodayScreen = () => {
   
   // Get sleep quality assessment
   const getSleepQualityText = () => {
-    if (sleepDuration >= 480) { // 8+ hours
+    if (sleepDuration <= 0) {
+      return { text: 'No data yet', color: colors.textSecondary };
+    } else if (sleepDuration >= 480) { // 8+ hours
       return { text: 'Excellent', color: '#4CAF50' };
     } else if (sleepDuration >= 420) { // 7+ hours
       return { text: 'Good', color: '#8BC34A' };

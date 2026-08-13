@@ -50,7 +50,7 @@ const HealthIntegrationSettings: React.FC<HealthIntegrationSettingsProps> = ({ o
       }
       setEnabled(value);
       onStatusChange?.(value);
-      if (value) await syncHealthSessions();
+      if (value) await syncHealthSessions(true);
     } catch (error) {
       console.error('Unable to update health sync:', error);
       Alert.alert('Health Sync Error', `Could not update ${serviceName}: ${error instanceof Error ? error.message : 'Unknown error'}`);
@@ -69,7 +69,9 @@ const HealthIntegrationSettings: React.FC<HealthIntegrationSettingsProps> = ({ o
           <View style={styles.row}>
             <View style={styles.copy}>
               <Text style={styles.label}>Sync detected sleep</Text>
-              <Text style={styles.secondary}>Write completed sleep periods to the Health app.</Text>
+              <Text style={styles.secondary}>
+                Write confirmed sleep periods, and read sleep stages plus optional recovery signals for private on-device insights.
+              </Text>
             </View>
             <Switch
               value={enabled}
