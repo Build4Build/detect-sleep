@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1320" height="2868" viewBox="0 0 1320 2868">
+  <defs>
+    <linearGradient id="veil" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#030617" stop-opacity="0.98"/><stop offset="0.25" stop-color="#030617" stop-opacity="0.5"/><stop offset="0.58" stop-color="#030617" stop-opacity="0"/><stop offset="1" stop-color="#02040d" stop-opacity="0.74"/></linearGradient>
+    <linearGradient id="case" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#abb4c5"/><stop offset="0.16" stop-color="#303746"/><stop offset="0.73" stop-color="#060810"/><stop offset="1" stop-color="#6e7685"/></linearGradient>
+    <linearGradient id="screen" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#11162a"/><stop offset="1" stop-color="#071016"/></linearGradient>
+    <linearGradient id="button" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#7657ff"/><stop offset="1" stop-color="#43c9ff"/></linearGradient>
+    <filter id="shadow" x="-30%" y="-20%" width="160%" height="150%"><feGaussianBlur in="SourceAlpha" stdDeviation="40" result="blur"/><feColorMatrix in="blur" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .65 0"/><feOffset dy="34"/><feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+    <clipPath id="screenClip"><rect x="210" y="530" width="900" height="2170" rx="105"/></clipPath>
+  </defs>
+  <rect width="1320" height="2868" fill="url(#veil)"/>
+  <g font-family="Arial, Helvetica, sans-serif" text-anchor="middle" fill="#fff">
+    <text x="660" y="175" font-size="100" font-weight="700" letter-spacing="-3.5">Apple Health. Your choice.</text>
+    <text x="660" y="265" font-size="40" fill="#cbd7f5">Read with permission. Write only confirmed sleep.</text>
+  </g>
+  <g filter="url(#shadow)"><rect x="165" y="485" width="990" height="2260" rx="156" fill="url(#case)"/><rect x="184" y="504" width="952" height="2222" rx="139" fill="#01030a"/><rect x="210" y="530" width="900" height="2170" rx="105" fill="url(#screen)"/></g>
+  <g clip-path="url(#screenClip)" font-family="Arial, Helvetica, sans-serif">
+    <rect x="210" y="530" width="900" height="2170" fill="url(#screen)"/>
+    <text x="270" y="595" fill="#f8fbff" font-size="27" font-weight="700">9:41</text><g fill="#dce5fb"><rect x="1016" y="567" width="42" height="22" rx="6"/><rect x="1062" y="573" width="5" height="10" rx="2"/></g>
+    <text x="260" y="720" fill="#fff" font-size="52" font-weight="700">Settings</text>
+    <text x="260" y="790" fill="#a4afc9" font-size="28">Health Integration</text>
+
+    <rect x="250" y="840" width="820" height="465" rx="44" fill="#1c2337" stroke="#5675a0" stroke-opacity="0.3" stroke-width="3"/>
+    <circle cx="330" cy="930" r="42" fill="#44233f"/><path d="M330 955c-12-11-38-29-38-51 0-16 12-27 27-27 9 0 17 5 22 13 5-8 13-13 22-13 15 0 27 11 27 27 0 22-26 40-60 67Z" fill="#ff6e8f"/>
+    <text x="400" y="920" fill="#fff" font-size="38" font-weight="700">Apple Health Integration</text>
+    <text x="400" y="967" fill="#aeb9d5" font-size="26">Optional and controlled by you</text>
+    <text x="300" y="1060" fill="#fff" font-size="31" font-weight="700">Sync confirmed sleep</text>
+    <text x="300" y="1110" fill="#aeb9d5" font-size="25">Read stages and optional recovery signals for</text>
+    <text x="300" y="1148" fill="#aeb9d5" font-size="25">private, on-device insights.</text>
+    <rect x="880" y="1055" width="130" height="70" rx="35" fill="#7657ff"/><circle cx="974" cy="1090" r="29" fill="#fff"/>
+    <circle cx="319" cy="1230" r="13" fill="#53d6b8"/><text x="350" y="1240" fill="#73dfc2" font-size="27" font-weight="700">Sync enabled</text>
+
+    <rect x="250" y="1350" width="820" height="670" rx="44" fill="#1c2337" stroke="#5675a0" stroke-opacity="0.26" stroke-width="3"/>
+    <text x="300" y="1435" fill="#fff" font-size="38" font-weight="700">How syncing works</text>
+    <g font-size="29">
+      <circle cx="330" cy="1535" r="27" fill="#253258"/><text x="330" y="1546" text-anchor="middle" fill="#9dc1ff" font-weight="700">1</text>
+      <text x="390" y="1526" fill="#fff" font-weight="700">Permission comes first</text><text x="390" y="1570" fill="#aeb9d5" font-size="25">Choose exactly what Health can share.</text>
+      <circle cx="330" cy="1670" r="27" fill="#253258"/><text x="330" y="1681" text-anchor="middle" fill="#9dc1ff" font-weight="700">2</text>
+      <text x="390" y="1661" fill="#fff" font-weight="700">Evidence refines estimates</text><text x="390" y="1705" fill="#aeb9d5" font-size="25">Sleep stages can improve candidate boundaries.</text>
+      <circle cx="330" cy="1805" r="27" fill="#253258"/><text x="330" y="1816" text-anchor="middle" fill="#9dc1ff" font-weight="700">3</text>
+      <text x="390" y="1796" fill="#fff" font-weight="700">You confirm before writing</text><text x="390" y="1840" fill="#aeb9d5" font-size="25">Duplicate Health entries are avoided.</text>
+      <circle cx="330" cy="1940" r="27" fill="#253258"/><text x="330" y="1951" text-anchor="middle" fill="#9dc1ff" font-weight="700">4</text>
+      <text x="390" y="1931" fill="#fff" font-weight="700">Disable any time</text><text x="390" y="1975" fill="#aeb9d5" font-size="25">Your Health permissions remain in your control.</text>
+    </g>
+
+    <rect x="280" y="2070" width="760" height="225" rx="38" fill="#12302f" stroke="#4fd8d0" stroke-opacity="0.3" stroke-width="3"/>
+    <path d="M345 2140l46 19v39c0 35-22 61-46 73-24-12-46-38-46-73v-39Z" fill="#205d59"/><path d="M325 2197l15 16 29-38" fill="none" stroke="#67eadc" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
+    <text x="420" y="2168" fill="#eaffff" font-size="34" font-weight="700">Private by design</text>
+    <text x="420" y="2215" fill="#a9d8d5" font-size="26">No account, ads, tracking, or cloud sleep profile.</text>
+    <text x="420" y="2257" fill="#a9d8d5" font-size="26">Health data stays on your devices.</text>
+
+    <text x="660" y="2390" fill="#e5ecff" font-size="31" font-weight="700" text-anchor="middle">Permissions stay in your control</text>
+    <text x="660" y="2435" fill="#8f9bb7" font-size="24" text-anchor="middle">Manage access in iOS Settings or Apple Health.</text>
+    <rect x="210" y="2530" width="900" height="170" fill="#11162a"/><line x1="210" y1="2530" x2="1110" y2="2530" stroke="#303852" stroke-width="3"/>
+    <text x="660" y="2623" fill="#9c89ff" font-size="28" font-weight="700" text-anchor="middle">Settings</text>
+  </g>
+  <rect x="485" y="552" width="350" height="88" rx="44" fill="#010205"/>
+</svg>

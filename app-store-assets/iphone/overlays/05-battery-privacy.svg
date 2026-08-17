@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1320" height="2868" viewBox="0 0 1320 2868">
+  <defs>
+    <linearGradient id="veil" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#020913" stop-opacity="0.98"/><stop offset="0.25" stop-color="#020913" stop-opacity="0.5"/><stop offset="0.58" stop-color="#020913" stop-opacity="0"/><stop offset="1" stop-color="#01060c" stop-opacity="0.78"/></linearGradient>
+    <linearGradient id="case" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#abb4c5"/><stop offset="0.16" stop-color="#303746"/><stop offset="0.73" stop-color="#060810"/><stop offset="1" stop-color="#6e7685"/></linearGradient>
+    <linearGradient id="screen" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0e1c28"/><stop offset="1" stop-color="#071014"/></linearGradient>
+    <linearGradient id="button" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#42d9cc"/><stop offset="1" stop-color="#5c8cff"/></linearGradient>
+    <filter id="shadow" x="-30%" y="-20%" width="160%" height="150%"><feGaussianBlur in="SourceAlpha" stdDeviation="40" result="blur"/><feColorMatrix in="blur" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .65 0"/><feOffset dy="34"/><feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+    <clipPath id="screenClip"><rect x="210" y="530" width="900" height="2170" rx="105"/></clipPath>
+  </defs>
+  <rect width="1320" height="2868" fill="url(#veil)"/>
+  <g font-family="Arial, Helvetica, sans-serif" text-anchor="middle" fill="#fff">
+    <text x="660" y="175" font-size="100" font-weight="700" letter-spacing="-3.5">Smarter data. Lighter battery.</text>
+    <text x="660" y="265" font-size="40" fill="#cbd7f5">No account. No tracking. No continuous sensor loop.</text>
+  </g>
+  <g filter="url(#shadow)"><rect x="165" y="485" width="990" height="2260" rx="156" fill="url(#case)"/><rect x="184" y="504" width="952" height="2222" rx="139" fill="#01030a"/><rect x="210" y="530" width="900" height="2170" rx="105" fill="url(#screen)"/></g>
+  <g clip-path="url(#screenClip)" font-family="Arial, Helvetica, sans-serif">
+    <rect x="210" y="530" width="900" height="2170" fill="url(#screen)"/>
+    <text x="270" y="595" fill="#f8fbff" font-size="27" font-weight="700">9:41</text><g fill="#dce5fb"><rect x="1016" y="567" width="42" height="22" rx="6"/><rect x="1062" y="573" width="5" height="10" rx="2"/></g>
+    <text x="260" y="720" fill="#fff" font-size="52" font-weight="700">Privacy &amp; battery</text>
+    <text x="260" y="775" fill="#9eb0c6" font-size="27">Designed to do less in the background</text>
+
+    <rect x="250" y="835" width="820" height="330" rx="44" fill="#163038" stroke="#4fd8d0" stroke-opacity="0.32" stroke-width="3"/>
+    <circle cx="340" cy="935" r="47" fill="#235c5d"/><path d="M315 936l18 19 35-46" fill="none" stroke="#67eadc" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"/>
+    <text x="420" y="920" fill="#fff" font-size="39" font-weight="700">Battery Optimized Mode</text>
+    <text x="420" y="970" fill="#a8d6d5" font-size="26">Lightweight app lifecycle timestamps</text>
+    <rect x="870" y="1020" width="140" height="74" rx="37" fill="#42cdbf"/><circle cx="973" cy="1057" r="31" fill="#fff"/>
+    <text x="300" y="1090" fill="#79e0d3" font-size="27" font-weight="700">Enabled</text>
+
+    <rect x="250" y="1210" width="820" height="610" rx="44" fill="#172331" stroke="#557086" stroke-opacity="0.3" stroke-width="3"/>
+    <text x="300" y="1295" fill="#fff" font-size="38" font-weight="700">Lightweight by design</text>
+    <g font-size="29">
+      <circle cx="330" cy="1405" r="17" fill="#50d7c7"/><path d="M321 1405l7 8 14-18" fill="none" stroke="#082321" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+      <text x="380" y="1395" fill="#fff" font-weight="700">Records time away from the app</text><text x="380" y="1440" fill="#aebdce" font-size="25">No continuous motion or microphone session.</text>
+      <circle cx="330" cy="1555" r="17" fill="#50d7c7"/><path d="M321 1555l7 8 14-18" fill="none" stroke="#082321" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+      <text x="380" y="1545" fill="#fff" font-weight="700">Finishes when you return</text><text x="380" y="1590" fill="#aebdce" font-size="25">iOS can suspend the app without losing the boundary.</text>
+      <circle cx="330" cy="1705" r="17" fill="#50d7c7"/><path d="M321 1705l7 8 14-18" fill="none" stroke="#082321" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+      <text x="380" y="1695" fill="#fff" font-weight="700">Watch refreshes on demand</text><text x="380" y="1740" fill="#aebdce" font-size="25">Never starts a workout or always-on sensor loop.</text>
+    </g>
+
+    <rect x="250" y="1865" width="820" height="500" rx="44" fill="#172331" stroke="#557086" stroke-opacity="0.3" stroke-width="3"/>
+    <path d="M335 1940l54 22v47c0 43-25 73-54 89-29-16-54-46-54-89v-47Z" fill="#245a62"/><path d="M312 2005l17 18 33-44" fill="none" stroke="#64e2d6" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+    <text x="425" y="1975" fill="#fff" font-size="39" font-weight="700">Your data stays yours</text>
+    <g font-size="28" fill="#d7e6ee"><circle cx="310" cy="2150" r="7" fill="#54d9cd"/><text x="340" y="2160">Stored and analyzed on this device</text><circle cx="310" cy="2220" r="7" fill="#54d9cd"/><text x="340" y="2230">No advertising, tracking, or cloud profile</text><circle cx="310" cy="2290" r="7" fill="#54d9cd"/><text x="340" y="2300">Export JSON or CSV only when you choose</text></g>
+
+    <rect x="400" y="2410" width="520" height="105" rx="53" fill="#173b3b" stroke="#4bd9cd" stroke-opacity="0.48" stroke-width="3"/><text x="660" y="2477" fill="#72e1d7" font-size="33" font-weight="700" text-anchor="middle">Private on device</text>
+    <text x="660" y="2585" fill="#84a6b4" font-size="25" text-anchor="middle">Created by Pierre-Henry Soria</text>
+    <text x="660" y="2630" fill="#64808e" font-size="22" text-anchor="middle">Building the app’s systems since early 2024</text>
+  </g>
+  <rect x="485" y="552" width="350" height="88" rx="44" fill="#010205"/>
+</svg>

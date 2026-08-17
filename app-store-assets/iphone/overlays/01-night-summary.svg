@@ -1,0 +1,84 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1320" height="2868" viewBox="0 0 1320 2868">
+  <defs>
+    <linearGradient id="veil" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#030617" stop-opacity="0.98"/>
+      <stop offset="0.22" stop-color="#030617" stop-opacity="0.48"/>
+      <stop offset="0.52" stop-color="#030617" stop-opacity="0"/>
+      <stop offset="1" stop-color="#02040d" stop-opacity="0.7"/>
+    </linearGradient>
+    <linearGradient id="case" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#abb4c5"/><stop offset="0.16" stop-color="#303746"/>
+      <stop offset="0.73" stop-color="#060810"/><stop offset="1" stop-color="#6e7685"/>
+    </linearGradient>
+    <linearGradient id="screen" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#12172d"/><stop offset="1" stop-color="#080b17"/>
+    </linearGradient>
+    <linearGradient id="button" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#7657ff"/><stop offset="1" stop-color="#43c9ff"/>
+    </linearGradient>
+    <filter id="shadow" x="-30%" y="-20%" width="160%" height="150%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="40" result="blur"/>
+      <feColorMatrix in="blur" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .65 0"/>
+      <feOffset dy="34"/><feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <clipPath id="screenClip"><rect x="210" y="530" width="900" height="2170" rx="105"/></clipPath>
+  </defs>
+  <rect width="1320" height="2868" fill="url(#veil)"/>
+  <g font-family="Arial, Helvetica, sans-serif" text-anchor="middle" fill="#fff">
+    <text x="660" y="175" font-size="100" font-weight="700" letter-spacing="-3.5">Wake up with clarity.</text>
+    <text x="660" y="265" font-size="40" fill="#cbd7f5">A private, editable view of your sleep.</text>
+  </g>
+  <g filter="url(#shadow)">
+    <rect x="165" y="485" width="990" height="2260" rx="156" fill="url(#case)"/>
+    <rect x="184" y="504" width="952" height="2222" rx="139" fill="#01030a"/>
+    <rect x="210" y="530" width="900" height="2170" rx="105" fill="url(#screen)"/>
+  </g>
+  <g clip-path="url(#screenClip)" font-family="Arial, Helvetica, sans-serif">
+    <rect x="210" y="530" width="900" height="2170" fill="url(#screen)"/>
+    <text x="270" y="595" fill="#f8fbff" font-size="27" font-weight="700">9:41</text>
+    <g fill="#dce5fb"><rect x="1016" y="567" width="42" height="22" rx="6"/><rect x="1062" y="573" width="5" height="10" rx="2"/></g>
+    <text x="265" y="700" fill="#fff" font-size="54" font-weight="700">Good morning</text>
+    <text x="265" y="750" fill="#96a3c2" font-size="28">Monday, August 17</text>
+    <circle cx="1035" cy="710" r="36" fill="#222942"/><text x="1035" y="727" fill="#bb86fc" font-size="45" text-anchor="middle">⚙</text>
+
+    <rect x="260" y="805" width="800" height="265" rx="42" fill="#1c2239" stroke="#6676aa" stroke-opacity="0.28" stroke-width="3"/>
+    <text x="305" y="875" fill="#b9c4df" font-size="28">Current Status</text>
+    <text x="1005" y="875" fill="#c7b5ff" font-size="25" text-anchor="end" font-weight="700">Edit</text>
+    <circle cx="325" cy="945" r="14" fill="#68d8b1"/><text x="360" y="960" fill="#fff" font-size="45" font-weight="700">Awake</text>
+    <text x="305" y="1025" fill="#9eabc6" font-size="24">Detection confidence</text>
+    <rect x="570" y="1001" width="360" height="19" rx="10" fill="#303750"/><rect x="570" y="1001" width="295" height="19" rx="10" fill="#63d4ae"/>
+    <text x="1005" y="1025" fill="#72ddb8" font-size="25" text-anchor="end" font-weight="700">82%</text>
+
+    <rect x="260" y="1110" width="800" height="300" rx="42" fill="#1c2239" stroke="#6676aa" stroke-opacity="0.28" stroke-width="3"/>
+    <text x="305" y="1180" fill="#fff" font-size="34" font-weight="700">Today's Sleep</text>
+    <path d="M315 1255h96v54h-96Z M327 1220h42a26 26 0 0 1 26 26v9h-68Z M300 1309h126v22H300Z" fill="none" stroke="#b99cff" stroke-width="8" stroke-linejoin="round"/>
+    <text x="475" y="1312" fill="#fff" font-size="88" font-weight="700" letter-spacing="-3">7h 42m</text>
+    <text x="475" y="1365" fill="#aeb9d5" font-size="25">Duration assessment: <tspan fill="#73e0b5" font-weight="700">Good</tspan></text>
+
+    <rect x="260" y="1460" width="800" height="430" rx="42" fill="#1c2239" stroke="#6676aa" stroke-opacity="0.24" stroke-width="3"/>
+    <circle cx="320" cy="1535" r="25" fill="#332a62"/><path d="M308 1535l9 10 17-23" fill="none" stroke="#bb86fc" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+    <text x="365" y="1548" fill="#fff" font-size="37" font-weight="700">Daily wellness report</text>
+    <g text-anchor="middle">
+      <text x="390" y="1670" fill="#fff" font-size="58" font-weight="700">88%</text>
+      <text x="390" y="1717" fill="#aeb9d5" font-size="24">Timing consistency</text>
+      <text x="660" y="1670" fill="#fff" font-size="58" font-weight="700">91%</text>
+      <text x="660" y="1717" fill="#aeb9d5" font-size="24">Continuity</text>
+      <text x="930" y="1668" fill="#65d6c7" font-size="40" font-weight="700">Steady</text>
+      <text x="930" y="1717" fill="#aeb9d5" font-size="24">Recovery trend</text>
+    </g>
+    <text x="305" y="1808" fill="#dfe7fb" font-size="28">Your timing stayed close to your recent pattern.</text>
+
+    <rect x="295" y="1970" width="730" height="105" rx="53" fill="url(#button)"/>
+    <text x="660" y="2037" fill="#fff" font-size="34" font-weight="700" text-anchor="middle">View sleep history</text>
+    <text x="660" y="2145" fill="#7f8ba7" font-size="23" text-anchor="middle">Illustrative sample data</text>
+
+    <rect x="210" y="2470" width="900" height="230" fill="#11162a"/>
+    <line x1="210" y1="2470" x2="1110" y2="2470" stroke="#303852" stroke-width="3"/>
+    <g text-anchor="middle" font-size="24">
+      <circle cx="380" cy="2550" r="20" fill="#795cff"/><text x="380" y="2600" fill="#bb9cff" font-weight="700">Today</text>
+      <rect x="640" y="2532" width="40" height="34" rx="8" fill="none" stroke="#8f9ab5" stroke-width="4"/><text x="660" y="2600" fill="#8f9ab5">History</text>
+      <path d="M920 2565v-38M950 2565v-62M980 2565v-48" stroke="#8f9ab5" stroke-width="9" stroke-linecap="round"/><text x="950" y="2600" fill="#8f9ab5">Statistics</text>
+    </g>
+  </g>
+  <rect x="485" y="552" width="350" height="88" rx="44" fill="#010205"/>
+</svg>

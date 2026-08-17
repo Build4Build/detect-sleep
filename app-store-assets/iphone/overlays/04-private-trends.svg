@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1320" height="2868" viewBox="0 0 1320 2868">
+  <defs>
+    <linearGradient id="veil" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#030617" stop-opacity="0.98"/><stop offset="0.24" stop-color="#030617" stop-opacity="0.5"/><stop offset="0.58" stop-color="#030617" stop-opacity="0"/><stop offset="1" stop-color="#02040d" stop-opacity="0.75"/></linearGradient>
+    <linearGradient id="case" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#abb4c5"/><stop offset="0.16" stop-color="#303746"/><stop offset="0.73" stop-color="#060810"/><stop offset="1" stop-color="#6e7685"/></linearGradient>
+    <linearGradient id="screen" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#12172d"/><stop offset="1" stop-color="#090b18"/></linearGradient>
+    <linearGradient id="bar" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#7057ff"/><stop offset="1" stop-color="#4fd7ef"/></linearGradient>
+    <filter id="shadow" x="-30%" y="-20%" width="160%" height="150%"><feGaussianBlur in="SourceAlpha" stdDeviation="40" result="blur"/><feColorMatrix in="blur" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .65 0"/><feOffset dy="34"/><feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+    <clipPath id="screenClip"><rect x="210" y="530" width="900" height="2170" rx="105"/></clipPath>
+  </defs>
+  <rect width="1320" height="2868" fill="url(#veil)"/>
+  <g font-family="Arial, Helvetica, sans-serif" text-anchor="middle" fill="#fff">
+    <text x="660" y="175" font-size="100" font-weight="700" letter-spacing="-3.5">See patterns, not guesses.</text>
+    <text x="660" y="265" font-size="40" fill="#cbd7f5">Private history and trends you can trust.</text>
+  </g>
+  <g filter="url(#shadow)"><rect x="165" y="485" width="990" height="2260" rx="156" fill="url(#case)"/><rect x="184" y="504" width="952" height="2222" rx="139" fill="#01030a"/><rect x="210" y="530" width="900" height="2170" rx="105" fill="url(#screen)"/></g>
+  <g clip-path="url(#screenClip)" font-family="Arial, Helvetica, sans-serif">
+    <rect x="210" y="530" width="900" height="2170" fill="url(#screen)"/>
+    <text x="270" y="595" fill="#f8fbff" font-size="27" font-weight="700">9:41</text><g fill="#dce5fb"><rect x="1016" y="567" width="42" height="22" rx="6"/><rect x="1062" y="573" width="5" height="10" rx="2"/></g>
+    <text x="660" y="720" fill="#fff" font-size="51" font-weight="700" text-anchor="middle">Sleep Statistics</text>
+
+    <rect x="250" y="805" width="820" height="240" rx="42" fill="#1c2239" stroke="#6676aa" stroke-opacity="0.28" stroke-width="3"/>
+    <text x="300" y="885" fill="#aeb9d5" font-size="28">Average sleep</text>
+    <text x="300" y="990" fill="#fff" font-size="88" font-weight="700" letter-spacing="-3">7h 28m</text>
+    <rect x="820" y="880" width="190" height="76" rx="38" fill="#173b31"/><path d="M855 925l18-20 18 20 25-31" fill="none" stroke="#69e0b7" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/><text x="940" y="930" fill="#76e1b9" font-size="27" font-weight="700">Steady</text>
+
+    <rect x="250" y="1090" width="820" height="650" rx="42" fill="#1c2239" stroke="#6676aa" stroke-opacity="0.25" stroke-width="3"/>
+    <text x="300" y="1170" fill="#fff" font-size="36" font-weight="700">Sleep duration</text>
+    <text x="1010" y="1170" fill="#94a0bc" font-size="24" text-anchor="end">Last 7 nights</text>
+    <g stroke="#313952" stroke-width="2"><line x1="325" y1="1280" x2="1000" y2="1280"/><line x1="325" y1="1400" x2="1000" y2="1400"/><line x1="325" y1="1520" x2="1000" y2="1520"/></g>
+    <g fill="url(#bar)">
+      <rect x="350" y="1355" width="68" height="245" rx="22"/><rect x="444" y="1315" width="68" height="285" rx="22"/><rect x="538" y="1288" width="68" height="312" rx="22"/><rect x="632" y="1340" width="68" height="260" rx="22"/><rect x="726" y="1260" width="68" height="340" rx="22"/><rect x="820" y="1302" width="68" height="298" rx="22"/><rect x="914" y="1275" width="68" height="325" rx="22"/>
+    </g>
+    <g fill="#9aa6c1" font-size="22" text-anchor="middle"><text x="384" y="1650">M</text><text x="478" y="1650">T</text><text x="572" y="1650">W</text><text x="666" y="1650">T</text><text x="760" y="1650">F</text><text x="854" y="1650">S</text><text x="948" y="1650">S</text></g>
+    <line x1="325" y1="1330" x2="1000" y2="1330" stroke="#65dbc7" stroke-width="4" stroke-dasharray="14 12"/><text x="990" y="1315" fill="#7de2cf" font-size="21" text-anchor="end">7-hour goal</text>
+
+    <g>
+      <rect x="250" y="1790" width="390" height="250" rx="40" fill="#1c2239" stroke="#6676aa" stroke-opacity="0.22" stroke-width="3"/>
+      <text x="300" y="1865" fill="#aeb9d5" font-size="27">Consistency</text><text x="300" y="1960" fill="#fff" font-size="66" font-weight="700">86%</text>
+      <rect x="300" y="1992" width="290" height="16" rx="8" fill="#303750"/><rect x="300" y="1992" width="249" height="16" rx="8" fill="#61d6b5"/>
+      <rect x="680" y="1790" width="390" height="250" rx="40" fill="#1c2239" stroke="#6676aa" stroke-opacity="0.22" stroke-width="3"/>
+      <text x="730" y="1865" fill="#aeb9d5" font-size="27">7h+ nights</text><text x="730" y="1960" fill="#fff" font-size="66" font-weight="700">71%</text>
+      <rect x="730" y="1992" width="290" height="16" rx="8" fill="#303750"/><rect x="730" y="1992" width="207" height="16" rx="8" fill="#8a70ff"/>
+    </g>
+
+    <rect x="250" y="2090" width="820" height="290" rx="42" fill="#1c2239" stroke="#6676aa" stroke-opacity="0.22" stroke-width="3"/>
+    <text x="300" y="2170" fill="#fff" font-size="36" font-weight="700">Your recent pattern</text>
+    <text x="300" y="2250" fill="#cbd5ec" font-size="29">Most nights</text><text x="1010" y="2250" fill="#fff" font-size="31" text-anchor="end" font-weight="700">10:52 PM → 6:24 AM</text>
+    <text x="300" y="2320" fill="#aeb9d5" font-size="25">Review confirmed periods and edit details any time.</text>
+    <text x="660" y="2435" fill="#7f8ba7" font-size="23" text-anchor="middle">Illustrative sample data</text>
+
+    <rect x="210" y="2470" width="900" height="230" fill="#11162a"/><line x1="210" y1="2470" x2="1110" y2="2470" stroke="#303852" stroke-width="3"/>
+    <g text-anchor="middle" font-size="24"><circle cx="380" cy="2550" r="20" fill="#8f9ab5"/><text x="380" y="2600" fill="#8f9ab5">Today</text><rect x="640" y="2532" width="40" height="34" rx="8" fill="none" stroke="#8f9ab5" stroke-width="4"/><text x="660" y="2600" fill="#8f9ab5">History</text><path d="M920 2565v-38M950 2565v-62M980 2565v-48" stroke="#795cff" stroke-width="9" stroke-linecap="round"/><text x="950" y="2600" fill="#bb9cff" font-weight="700">Statistics</text></g>
+  </g>
+  <rect x="485" y="552" width="350" height="88" rx="44" fill="#010205"/>
+</svg>
