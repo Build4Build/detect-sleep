@@ -19,6 +19,10 @@ expo-env.d.ts
 *.key
 *.mobileprovision
 
+# Local signing and store service-account credentials
+credentials.json
+pc-api-key.json
+
 # Metro
 .metro-health-check*
 
