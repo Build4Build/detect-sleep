@@ -1,7 +1,7 @@
 {
   "cli": {
     "version": ">= 7.3.0",
-    "requireCommit": false,
+    "requireCommit": true,
     "appVersionSource": "remote"
   },
   "build": {
@@ -31,10 +31,14 @@
     },
     "production": {
       "autoIncrement": true,
+      "env": {
+        "FASTLANE_XCODEBUILD_SETTINGS_TIMEOUT": "60",
+        "FASTLANE_XCODEBUILD_SETTINGS_RETRIES": "4",
+        "GYM_XCARGS": "CODE_SIGN_IDENTITY=DF910648A6E2D59C87DBCDE44B8ACFB4E6D170D5"
+      },
       "ios": {
         "resourceClass": "medium",
-        "credentialsSource": "remote",
-        "image": "macos-sequoia-15.3-xcode-16.2"
+        "credentialsSource": "remote"
       },
       "android": {
         "buildType": "app-bundle",
@@ -46,8 +50,7 @@
   "submit": {
     "production": {
       "ios": {
-        "ascAppId": "6743064638",
-        "appleTeamId": "$APPLE_TEAM_ID"
+        "ascAppId": "6743064638"
       },
       "android": {
         "serviceAccountKeyPath": "./pc-api-key.json",

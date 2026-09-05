@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>NSHealthShareUsageDescription</key>
+	<string>Sleep Detector reads Apple Watch sleep stages and optional recovery signals to create your private daily sleep report.</string>
+	<key>NSHealthUpdateUsageDescription</key>
+	<string>Sleep Detector may save sleep periods you confirm to Apple Health when Health sync is enabled on the companion iPhone app.</string>
+	<key>WKCompanionAppBundleIdentifier</key>
+	<string>com.sleepdetector.app</string>
+</dict>
+</plist>

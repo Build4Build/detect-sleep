@@ -1,0 +1,12 @@
+{
+  "name": "sleep-intelligence",
+  "version": "0.1.0",
+  "description": "Private on-device Apple Foundation Models bridge for sleep pattern assessment",
+  "main": "src/index.ts",
+  "private": true,
+  "peerDependencies": {
+    "expo": "*",
+    "react": "*",
+    "react-native": "*"
+  }
+}

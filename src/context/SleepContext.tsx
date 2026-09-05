@@ -1,798 +1,995 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import { AppState, AppStateStatus } from 'react-native';
+import React, {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
+import { AppState, AppStateStatus, Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { format } from 'date-fns';
-import { ActivityRecord, SleepStatus, DailySleepSummary, AppSettings } from '../types';
-import { BackgroundActivityService } from '../services/BackgroundActivityService';
+import {
+  ActivityRecord,
+  AppSettings,
+  DailySleepSummary,
+  DailyWellnessCheckIn,
+  DailyWellnessReport,
+  HealthRecoverySnapshot,
+  SleepCandidate,
+  SleepSession,
+  SleepStatus,
+  WatchSleepSnapshot,
+} from '../types';
+import { SleepEntry } from '../types/SleepEntry';
+import { BackgroundActivityService, InactivePeriod } from '../services/BackgroundActivityService';
 import { NotificationService } from '../services/NotificationService';
+import { HealthService } from '../services/HealthService';
+import {
+  buildDailySleepSummaries,
+  buildDailySleepSummariesFromSessions,
+  detectSleepSession,
+} from '../services/SleepDetectionService';
+import {
+  analyzeSleepCandidate,
+  healthSleepOverlapRatio,
+  strongestHealthSleepWindow,
+} from '../services/SleepAnalysisService';
+import {
+  strongestWatchSleepWindow,
+  WatchDataService,
+  watchSleepOverlapRatio,
+} from '../services/WatchDataService';
+import { buildDailyWellnessReport } from '../services/WellnessReportService';
+import {
+  createSleepSession,
+  shouldAttemptHealthSync,
+  updateSessionSyncState,
+  upsertSleepSession,
+} from '../services/SleepSessionService';
 
-// Default settings
 const DEFAULT_SETTINGS: AppSettings = {
-  inactivityThreshold: 30, // Reduced to 30 minutes for more responsive detection
-  useMachineLearning: true, // Enhanced ML-based detection
-  considerTimeOfDay: true, // Consider typical sleep hours
-  sensitivityLevel: 'medium', // Movement detection sensitivity
-  adaptiveThreshold: true, // Adapt threshold based on time and patterns
-  napDetection: true, // Better short nap detection
-  backgroundPersistence: 'aggressive', // Background service persistence level
-  // New advanced options for enhanced control
-  smartWakeupWindow: true, // Enable smart wake-up detection
-  confidenceBasedAdjustment: true, // Dynamic threshold adjustment
-  contextualNotifications: true, // Enhanced notification messages
-  advancedSensorFiltering: true, // Multi-layer sensor filtering
-  batteryOptimizedMode: false, // Full accuracy by default
-  weekendModeEnabled: true, // Different weekend behavior
-  sleepDataValidation: true, // Additional data validation
+  inactivityThreshold: 30,
+  useMachineLearning: true,
+  considerTimeOfDay: true,
+  sensitivityLevel: 'medium',
+  adaptiveThreshold: true,
+  napDetection: true,
+  backgroundPersistence: 'aggressive',
+  smartWakeupWindow: true,
+  confidenceBasedAdjustment: true,
+  contextualNotifications: true,
+  advancedSensorFiltering: true,
+  batteryOptimizedMode: false,
+  weekendModeEnabled: true,
+  sleepDataValidation: true,
 };
 
-// Storage keys
 const ACTIVITY_RECORDS_KEY = 'sleep-tracker-activity-records';
 const DAILY_SUMMARIES_KEY = 'sleep-tracker-daily-summaries';
 const SETTINGS_KEY = 'sleep-tracker-settings';
 const SLEEP_PATTERNS_KEY = 'sleep-tracker-patterns';
+const SLEEP_CANDIDATES_KEY = 'sleep-tracker-candidates';
+const SLEEP_SESSIONS_KEY = 'sleep-tracker-sessions-v1';
+const WELLNESS_REPORTS_KEY = 'sleep-tracker-wellness-reports-v1';
+const WELLNESS_CHECK_INS_KEY = 'sleep-tracker-wellness-check-ins-v1';
+const WELLNESS_REFRESH_INTERVAL_MS = 15 * 60_000;
 
-// Typical sleep hours (used for improved detection)
-const TYPICAL_SLEEP_START_HOUR = 22; // 10 PM
-const TYPICAL_SLEEP_END_HOUR = 8; // 8 AM
+function parseStoredJson<T>(raw: string | null, label: string): T | undefined {
+  if (!raw) return undefined;
+  try {
+    return JSON.parse(raw) as T;
+  } catch (error) {
+    console.warn(`Ignoring unreadable ${label} data:`, error);
+    return undefined;
+  }
+}
 
-// Context interface
+const isFiniteNumber = (value: unknown): value is number =>
+  typeof value === 'number' && Number.isFinite(value);
+
+const SLEEP_SESSION_SOURCES: SleepSession['source'][] = [
+  'app-inactivity',
+  'manual',
+  'apple-watch',
+  'healthkit',
+  'combined',
+];
+
+const validEvidence = (value: unknown): SleepSession['evidence'] => {
+  const kinds: SleepSession['evidence'][number]['kind'][] = [
+    'app-away',
+    'historical-schedule',
+    'healthkit-sleep',
+    'watch-low-motion',
+    'watch-heart-rate',
+    'user-confirmed',
+    'user-edited',
+  ];
+  return (Array.isArray(value) ? value : []).filter(item =>
+    typeof item === 'object' &&
+    item !== null &&
+    kinds.includes(item.kind as SleepSession['evidence'][number]['kind']) &&
+    isFiniteNumber(item.weight) &&
+    typeof item.detail === 'string',
+  ) as SleepSession['evidence'];
+};
+
+const validActivityRecords = (value: unknown): ActivityRecord[] =>
+  (Array.isArray(value) ? value : []).filter((item): item is ActivityRecord =>
+    typeof item === 'object' &&
+    item !== null &&
+    typeof item.id === 'string' &&
+    isFiniteNumber(item.timestamp) &&
+    (item.status === SleepStatus.AWAKE || item.status === SleepStatus.ASLEEP) &&
+    isFiniteNumber(item.confidence),
+  );
+
+const validSleepCandidates = (value: unknown): SleepCandidate[] =>
+  (Array.isArray(value) ? value : []).flatMap(item => {
+    if (
+      typeof item !== 'object' ||
+      item === null ||
+      typeof item.id !== 'string' ||
+      !isFiniteNumber(item.startTime) ||
+      !isFiniteNumber(item.endTime) ||
+      item.endTime <= item.startTime ||
+      !isFiniteNumber(item.confidence) ||
+      !isFiniteNumber(item.createdAt)
+    ) {
+      return [];
+    }
+    return [{
+      ...item,
+      confidence: Math.min(100, Math.max(0, item.confidence)),
+      evidence: validEvidence(item.evidence),
+    } as SleepCandidate];
+  });
+
+const validSleepSessions = (value: unknown): SleepSession[] =>
+  (Array.isArray(value) ? value : []).flatMap(item => {
+    if (
+      typeof item !== 'object' ||
+      item === null ||
+      typeof item.id !== 'string' ||
+      !isFiniteNumber(item.startTime) ||
+      !isFiniteNumber(item.endTime) ||
+      item.endTime <= item.startTime ||
+      !isFiniteNumber(item.confidence)
+    ) {
+      return [];
+    }
+    const session = item as Partial<SleepSession>;
+    const validSyncStates: SleepSession['healthSyncState'][] = [
+      'not-requested',
+      'pending',
+      'synced',
+      'failed',
+    ];
+    return [{
+      ...session,
+      id: item.id,
+      startTime: item.startTime,
+      endTime: item.endTime,
+      confidence: Math.min(100, Math.max(0, item.confidence)),
+      source: SLEEP_SESSION_SOURCES.includes(session.source as SleepSession['source'])
+        ? session.source as SleepSession['source']
+        : 'combined',
+      evidence: validEvidence(session.evidence),
+      userConfirmed: session.userConfirmed !== false,
+      timezone: typeof session.timezone === 'string'
+        ? session.timezone
+        : Intl.DateTimeFormat().resolvedOptions().timeZone,
+      createdAt: isFiniteNumber(session.createdAt) ? session.createdAt : item.startTime,
+      updatedAt: isFiniteNumber(session.updatedAt) ? session.updatedAt : item.endTime,
+      healthSyncState: validSyncStates.includes(session.healthSyncState as SleepSession['healthSyncState'])
+        ? session.healthSyncState as SleepSession['healthSyncState']
+        : 'not-requested',
+    }];
+  });
+
+const validDatedItems = <T extends { date: string }>(value: unknown): T[] =>
+  (Array.isArray(value) ? value : []).filter((item): item is T =>
+    typeof item === 'object' && item !== null && typeof item.date === 'string',
+  );
+
+const normalizedSettings = (value: unknown): AppSettings => {
+  const parsed = typeof value === 'object' && value !== null
+    ? value as Partial<AppSettings>
+    : {};
+  const threshold = Number(parsed.inactivityThreshold);
+  return {
+    ...DEFAULT_SETTINGS,
+    ...parsed,
+    inactivityThreshold: Number.isFinite(threshold)
+      ? Math.min(12 * 60, Math.max(5, threshold))
+      : DEFAULT_SETTINGS.inactivityThreshold,
+    useMachineLearning: typeof parsed.useMachineLearning === 'boolean'
+      ? parsed.useMachineLearning
+      : DEFAULT_SETTINGS.useMachineLearning,
+    contextualNotifications: typeof parsed.contextualNotifications === 'boolean'
+      ? parsed.contextualNotifications
+      : DEFAULT_SETTINGS.contextualNotifications,
+  };
+};
+
 interface SleepContextType {
   currentStatus: SleepStatus;
-  currentConfidence: number; // New: confidence level in current status
+  currentConfidence: number;
   todayRecords: ActivityRecord[];
   dailySummaries: DailySleepSummary[];
+  sleepSessions: SleepSession[];
+  todayWellnessReport: DailyWellnessReport | null;
   settings: AppSettings;
+  pendingSleepCandidate: SleepCandidate | null;
   updateSettings: (newSettings: Partial<AppSettings>) => void;
   exportData: () => Promise<string>;
   getTodaySleepDuration: () => number;
-  manuallySetStatus: (status: SleepStatus) => void; // New: allow manual status setting
+  manuallySetStatus: (status: SleepStatus) => void;
+  confirmSleepCandidate: () => Promise<void>;
+  dismissSleepCandidate: () => Promise<void>;
+  updateSleepCandidateBounds: (startTime: number, endTime: number) => void;
+  syncHealthSessions: (force?: boolean) => Promise<void>;
+  saveWellnessCheckIn: (checkIn: Omit<DailyWellnessCheckIn, 'date' | 'updatedAt'>) => Promise<void>;
+  clearSleepData: () => Promise<void>;
 }
 
-// Create context
 const SleepContext = createContext<SleepContextType | undefined>(undefined);
 
-// Provider component
-export const SleepProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [currentStatus, setCurrentStatus] = useState<SleepStatus>(SleepStatus.AWAKE);
-  const [currentConfidence, setCurrentConfidence] = useState<number>(100);
-  const [activityRecords, setActivityRecords] = useState<ActivityRecord[]>([]);
-  const [dailySummaries, setDailySummaries] = useState<DailySleepSummary[]>([]);
-  const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS);
-  const [settingsLoaded, setSettingsLoaded] = useState<boolean>(false); // Track if settings are loaded
-  const [lastActiveTimestamp, setLastActiveTimestamp] = useState<number>(Date.now());
-  const [backgroundService] = useState(() => BackgroundActivityService.getInstance());
-  const [notificationService] = useState(() => NotificationService.getInstance());
-  const [sleepPatterns, setSleepPatterns] = useState<{
-    typicalSleepStart: number; // hour 0-23
-    typicalSleepEnd: number; // hour 0-23
-    averageSleepDuration: number; // minutes
-  }>({
-    typicalSleepStart: TYPICAL_SLEEP_START_HOUR,
-    typicalSleepEnd: TYPICAL_SLEEP_END_HOUR,
-    averageSleepDuration: 480, // 8 hours default
+const makeRecord = (status: SleepStatus, timestamp: number, confidence: number): ActivityRecord => ({
+  id: `${timestamp}-${status}-${Math.random().toString(36).slice(2, 9)}`,
+  timestamp,
+  status,
+  confidence,
+});
+
+const sleepQuality = (minutes: number): string => {
+  if (minutes >= 480) return 'Excellent';
+  if (minutes >= 420) return 'Good';
+  if (minutes >= 360) return 'Adequate';
+  if (minutes >= 300) return 'Poor';
+  return 'Insufficient';
+};
+
+const historicalSessionsFromRecords = (records: ActivityRecord[]): SleepSession[] => {
+  const sorted = [...records].sort((left, right) => left.timestamp - right.timestamp);
+  const sessions: SleepSession[] = [];
+  let asleep: ActivityRecord | null = null;
+  for (const record of sorted) {
+    if (record.status === SleepStatus.ASLEEP) {
+      asleep = record;
+    } else if (asleep && record.timestamp > asleep.timestamp) {
+      sessions.push({
+        id: `legacy-${asleep.id}-${record.id}`,
+        startTime: asleep.timestamp,
+        endTime: record.timestamp,
+        confidence: Math.round((asleep.confidence + record.confidence) / 2),
+        source: 'combined',
+        evidence: [],
+        userConfirmed: true,
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        createdAt: asleep.timestamp,
+        updatedAt: record.timestamp,
+        healthSyncState: 'not-requested',
+      });
+      asleep = null;
+    }
+  }
+  return sessions;
+};
+
+const reportRangeForDate = (date: string): { start: Date; end: Date } => {
+  const end = new Date(`${date}T12:00:00`);
+  const start = new Date(end);
+  start.setDate(start.getDate() - 1);
+  return { start, end };
+};
+
+const reportDateForTimestamp = (timestamp: number): string => {
+  const wakeDate = new Date(timestamp);
+  if (wakeDate.getHours() >= 12) wakeDate.setDate(wakeDate.getDate() + 1);
+  return format(wakeDate, 'yyyy-MM-dd');
+};
+
+const summaryForReportRange = (
+  sessions: SleepSession[],
+  date: string,
+  start: number,
+  end: number,
+): DailySleepSummary => {
+  const sleepPeriods = sessions.flatMap(session => {
+    if (session.endTime === undefined) return [];
+    const clippedStart = Math.max(start, session.startTime);
+    const clippedEnd = Math.min(end, session.endTime);
+    return clippedEnd > clippedStart
+      ? [{ start: clippedStart, end: clippedEnd, confidence: session.confidence }]
+      : [];
   });
+  return {
+    date,
+    sleepPeriods,
+    totalSleepMinutes: sleepPeriods.reduce(
+      (total, period) => total + (period.end - period.start) / 60_000,
+      0,
+    ),
+  };
+};
 
-  // Load data from storage on mount and initialize background service
-  useEffect(() => {
-    const loadData = async () => {
-      try {
-        // Load activity records
-        const recordsJson = await AsyncStorage.getItem(ACTIVITY_RECORDS_KEY);
-        if (recordsJson) {
-          try {
-            setActivityRecords(JSON.parse(recordsJson));
-          } catch (parseError) {
-            console.error('Failed to parse activity records:', parseError);
-            // Reset to empty array if corrupted
-            setActivityRecords([]);
-          }
-        }
+export const SleepProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [currentStatus, setCurrentStatus] = useState(SleepStatus.AWAKE);
+  const [currentConfidence, setCurrentConfidence] = useState(100);
+  const [activityRecords, setActivityRecords] = useState<ActivityRecord[]>([]);
+  const [sleepCandidates, setSleepCandidates] = useState<SleepCandidate[]>([]);
+  const [sleepSessions, setSleepSessions] = useState<SleepSession[]>([]);
+  const [wellnessReports, setWellnessReports] = useState<DailyWellnessReport[]>([]);
+  const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS);
+  const [settingsLoaded, setSettingsLoaded] = useState(false);
 
-        // Load daily summaries
-        const summariesJson = await AsyncStorage.getItem(DAILY_SUMMARIES_KEY);
-        if (summariesJson) {
-          try {
-            setDailySummaries(JSON.parse(summariesJson));
-          } catch (parseError) {
-            console.error('Failed to parse daily summaries:', parseError);
-            setDailySummaries([]);
-          }
-        }
+  const recordsRef = useRef<ActivityRecord[]>([]);
+  const statusRef = useRef(SleepStatus.AWAKE);
+  const confidenceRef = useRef(100);
+  const settingsRef = useRef<AppSettings>(DEFAULT_SETTINGS);
+  const sessionsRef = useRef<SleepSession[]>([]);
+  const candidatesRef = useRef<SleepCandidate[]>([]);
+  const wellnessReportsRef = useRef<DailyWellnessReport[]>([]);
+  const wellnessCheckInsRef = useRef<DailyWellnessCheckIn[]>([]);
+  const initializedRef = useRef(false);
+  const candidateActionRef = useRef(false);
+  const appStateRef = useRef<AppStateStatus>(AppState.currentState);
+  const lifecycleQueueRef = useRef<Promise<void>>(Promise.resolve());
+  const resumeWorkQueueRef = useRef<Promise<void>>(Promise.resolve());
+  const watchSnapshotsRef = useRef<WatchSleepSnapshot[]>([]);
+  const backgroundService = useMemo(() => BackgroundActivityService.getInstance(), []);
+  const notificationService = useMemo(() => NotificationService.getInstance(), []);
+  const healthService = useMemo(() => HealthService.getInstance(), []);
 
-        // Load settings with better error handling
-        const settingsJson = await AsyncStorage.getItem(SETTINGS_KEY);
-        if (settingsJson) {
-          try {
-            const loadedSettings = JSON.parse(settingsJson);
-            // Merge with defaults to ensure all properties exist
-            const mergedSettings = { ...DEFAULT_SETTINGS, ...loadedSettings };
-            setSettings(mergedSettings);
-            console.log('Settings loaded successfully:', mergedSettings);
-          } catch (parseError) {
-            console.error('Failed to parse settings, using defaults:', parseError);
-            setSettings(DEFAULT_SETTINGS);
-            // Save the default settings
-            await AsyncStorage.setItem(SETTINGS_KEY, JSON.stringify(DEFAULT_SETTINGS));
-          }
-        } else {
-          console.log('No saved settings found, using defaults');
-          setSettings(DEFAULT_SETTINGS);
-          // Save the default settings for next time
-          await AsyncStorage.setItem(SETTINGS_KEY, JSON.stringify(DEFAULT_SETTINGS));
-        }
+  const dailySummaries = useMemo(
+    () => sleepSessions.length > 0
+      ? buildDailySleepSummariesFromSessions(sleepSessions)
+      : buildDailySleepSummaries(activityRecords),
+    [activityRecords, sleepSessions],
+  );
+  const todayDate = format(new Date(), 'yyyy-MM-dd');
+  const todayWellnessReport = useMemo(
+    () => wellnessReports.find(report => report.date === todayDate) ?? null,
+    [todayDate, wellnessReports],
+  );
 
-        // Mark settings as loaded
-        setSettingsLoaded(true);
-
-        // Load sleep patterns
-        const patternsJson = await AsyncStorage.getItem(SLEEP_PATTERNS_KEY);
-        if (patternsJson) {
-          try {
-            setSleepPatterns(JSON.parse(patternsJson));
-          } catch (parseError) {
-            console.error('Failed to parse sleep patterns:', parseError);
-            // Reset to default patterns if corrupted
-            setSleepPatterns({
-              typicalSleepStart: TYPICAL_SLEEP_START_HOUR,
-              typicalSleepEnd: TYPICAL_SLEEP_END_HOUR,
-              averageSleepDuration: 480,
-            });
-          }
-        }
-
-        // Initialize background activity monitoring
-        await backgroundService.startMonitoring();
-        console.log('Background activity monitoring started');
-
-        // Initialize notification service
-        await notificationService.initialize();
-        // Pass app settings to notification service for contextual notifications
-        notificationService.updateAppSettings(settings);
-        console.log('Notification service initialized');
-      } catch (error) {
-        console.error('Failed to load data from storage:', error);
-        // Ensure we have default settings even if storage fails
-        setSettings(DEFAULT_SETTINGS);
-        // Mark settings as loaded even in error case
-        setSettingsLoaded(true);
-      }
-    };
-
-    loadData();
-
-    // Enhanced cleanup function with error handling
-    return () => {
-      console.log('🧹 SleepContext cleanup initiated');
-
-      try {
-        // Try graceful shutdown first
-        backgroundService.stopMonitoring().catch((error) => {
-          console.error('❌ Graceful shutdown failed, trying emergency shutdown:', error);
-          // Fallback to emergency shutdown if graceful fails
-          backgroundService.emergencyShutdown();
-        });
-      } catch (error) {
-        console.error('❌ Critical error during cleanup:', error);
-        // Last resort - emergency shutdown
-        try {
-          backgroundService.emergencyShutdown();
-        } catch (emergencyError) {
-          console.error('❌ Emergency shutdown also failed:', emergencyError);
-        }
-      }
-
-      console.log('✅ SleepContext cleanup completed');
-    };
+  const appendRecords = useCallback(async (records: ActivityRecord[]) => {
+    if (records.length === 0) return;
+    const uniqueRecords = records.filter(record => !recordsRef.current.some(existing =>
+      existing.status === record.status && existing.timestamp === record.timestamp,
+    ));
+    if (uniqueRecords.length > 0) {
+      const next = [...recordsRef.current, ...uniqueRecords]
+        .sort((a, b) => a.timestamp - b.timestamp);
+      recordsRef.current = next;
+      setActivityRecords(next);
+      await AsyncStorage.setItem(ACTIVITY_RECORDS_KEY, JSON.stringify(next));
+    }
+    const latest = records[records.length - 1];
+    statusRef.current = latest.status;
+    confidenceRef.current = latest.confidence;
+    setCurrentStatus(latest.status);
+    setCurrentConfidence(latest.confidence);
   }, []);
 
-  // Save activity records when they change
-  useEffect(() => {
-    if (activityRecords.length > 0) {
-      AsyncStorage.setItem(ACTIVITY_RECORDS_KEY, JSON.stringify(activityRecords));
-      updateDailySummaries();
-    }
-  }, [activityRecords]);
+  const persistSessions = useCallback((sessions: SleepSession[]) => {
+    sessionsRef.current = sessions;
+    setSleepSessions(sessions);
+    return AsyncStorage.setItem(SLEEP_SESSIONS_KEY, JSON.stringify(sessions));
+  }, []);
 
-  // Save daily summaries when they change
-  useEffect(() => {
-    if (dailySummaries.length > 0) {
-      AsyncStorage.setItem(DAILY_SUMMARIES_KEY, JSON.stringify(dailySummaries));
-      // Learn from sleep patterns
-      if (settings.useMachineLearning) {
-        learnSleepPatterns();
+  const persistCandidates = useCallback((candidates: SleepCandidate[]) => {
+    candidatesRef.current = candidates;
+    setSleepCandidates(candidates);
+    return AsyncStorage.setItem(SLEEP_CANDIDATES_KEY, JSON.stringify(candidates));
+  }, []);
+
+  const syncSleepSession = useCallback(async (session: SleepSession) => {
+    try {
+      if (!(await healthService.getSyncEnabled())) return;
+      const pending = updateSessionSyncState(
+        sessionsRef.current,
+        session.id,
+        'pending',
+      );
+      await persistSessions(pending);
+      if (!(await healthService.initialize(false))) {
+        throw new Error('Apple Health sleep write permission is unavailable.');
       }
-    }
-  }, [dailySummaries]);
-
-  // Save settings when they change (but only after initial load)
-  useEffect(() => {
-    if (settingsLoaded) {
-      const saveSettings = async () => {
-        try {
-          await AsyncStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
-          console.log('Settings saved successfully:', settings);
-        } catch (error) {
-          console.error('Failed to save settings:', error);
-        }
-      };
-      saveSettings();
-    }
-  }, [settings, settingsLoaded]);
-
-  // Save sleep patterns when they change
-  useEffect(() => {
-    AsyncStorage.setItem(SLEEP_PATTERNS_KEY, JSON.stringify(sleepPatterns));
-  }, [sleepPatterns]);
-
-  // Learn from sleep data to improve detection
-  const learnSleepPatterns = () => {
-    // Skip if not enough data
-    if (dailySummaries.length < 3) return;
-
-    // Calculate average sleep metrics from the last week
-    const lastWeekSummaries = dailySummaries
-      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-      .slice(0, 7);
-
-    if (lastWeekSummaries.length === 0) return;
-
-    // Calculate average sleep duration
-    const totalSleepMinutes = lastWeekSummaries.reduce(
-      (sum, day) => sum + day.totalSleepMinutes, 0
-    );
-    const averageSleepDuration = totalSleepMinutes / lastWeekSummaries.length;
-
-    // Find typical sleep start and end times
-    let sleepStartHours: number[] = [];
-    let sleepEndHours: number[] = [];
-
-    lastWeekSummaries.forEach(day => {
-      day.sleepPeriods.forEach(period => {
-        const startDate = new Date(period.start);
-        const endDate = new Date(period.end);
-
-        // Record sleep start and end hours
-        sleepStartHours.push(startDate.getHours());
-        sleepEndHours.push(endDate.getHours());
+      await healthService.saveSleepData({
+        id: session.id,
+        startTime: session.startTime,
+        endTime: session.endTime!,
+        isAwake: false,
+        confidence: session.confidence,
+        source: 'Sleep Detector',
       });
+      await persistSessions(
+        updateSessionSyncState(sessionsRef.current, session.id, 'synced'),
+      );
+    } catch (error) {
+      console.error('Unable to sync completed sleep to Apple Health:', error);
+      await persistSessions(
+        updateSessionSyncState(
+          sessionsRef.current,
+          session.id,
+          'failed',
+          error instanceof Error ? error.message : 'Unknown Apple Health error',
+        ),
+      );
+    }
+  }, [healthService, persistSessions]);
+
+  const syncHealthSessions = useCallback(async (force = false) => {
+    if (!(await healthService.getSyncEnabled())) return;
+    const now = Date.now();
+    for (const session of sessionsRef.current) {
+      const eligible = session.endTime !== undefined &&
+        session.userConfirmed &&
+        session.healthSyncState !== 'synced';
+      if (eligible && (force || shouldAttemptHealthSync(session, now))) {
+        await syncSleepSession(session);
+      }
+    }
+  }, [healthService, syncSleepSession]);
+
+  const refreshWellnessReport = useCallback(async (
+    date = format(new Date(), 'yyyy-MM-dd'),
+    force = false,
+  ) => {
+    const existingReport = wellnessReportsRef.current.find(report => report.date === date);
+    const reportAge = existingReport ? Date.now() - existingReport.generatedAt : undefined;
+    if (
+      !force &&
+      existingReport &&
+      reportAge !== undefined &&
+      reportAge >= 0 &&
+      reportAge < WELLNESS_REFRESH_INTERVAL_MS
+    ) {
+      return;
+    }
+    const range = reportRangeForDate(date);
+    const summary = summaryForReportRange(
+      sessionsRef.current,
+      date,
+      range.start.getTime(),
+      range.end.getTime(),
+    );
+    let healthSleepEntries: SleepEntry[] = [];
+    let recovery: HealthRecoverySnapshot | undefined;
+    try {
+      healthSleepEntries = await healthService.getSleepData(range.start, range.end);
+      const asleepHealthEntries = healthSleepEntries.filter(entry =>
+        !entry.isAwake && entry.endTime > entry.startTime,
+      );
+      const sleepStarts = asleepHealthEntries.length > 0
+        ? asleepHealthEntries.map(entry => entry.startTime)
+        : summary.sleepPeriods.map(period => period.start);
+      const sleepEnds = asleepHealthEntries.length > 0
+        ? asleepHealthEntries.map(entry => entry.endTime)
+        : summary.sleepPeriods.map(period => period.end);
+      if (sleepStarts.length > 0 && sleepEnds.length > 0) {
+        const recoveryStart = new Date(Math.min(...sleepStarts));
+        const recoveryEnd = new Date(Math.max(...sleepEnds));
+        recovery = await healthService.getRecoverySnapshot(recoveryStart, recoveryEnd);
+      }
+    } catch (error) {
+      // The deterministic local report remains useful when Health access is
+      // unavailable, denied, or contains no samples.
+      console.warn('Health data was unavailable for the wellness report:', error);
+    }
+    const previousReports = wellnessReportsRef.current.filter(
+      report => report.date !== date,
+    );
+    const report = buildDailyWellnessReport({
+      date,
+      summary,
+      healthSleepEntries,
+      recovery,
+      checkIn: wellnessCheckInsRef.current.find(item => item.date === date),
+      previousReports,
     });
+    const next = [...previousReports, report]
+      .sort((left, right) => left.date.localeCompare(right.date))
+      .slice(-90);
+    wellnessReportsRef.current = next;
+    setWellnessReports(next);
+    await AsyncStorage.setItem(WELLNESS_REPORTS_KEY, JSON.stringify(next));
+  }, [healthService]);
 
-    // Calculate most common sleep start/end hours
-    const typicalSleepStart = sleepStartHours.length > 0
-      ? calculateMostFrequentHour(sleepStartHours)
-      : TYPICAL_SLEEP_START_HOUR;
-
-    const typicalSleepEnd = sleepEndHours.length > 0
-      ? calculateMostFrequentHour(sleepEndHours)
-      : TYPICAL_SLEEP_END_HOUR;
-
-    // Update sleep patterns
-    setSleepPatterns({
-      typicalSleepStart,
-      typicalSleepEnd,
-      averageSleepDuration,
+  const finishSleep = useCallback(async (
+    startTime: number,
+    endTime: number,
+    confidence: number,
+    recordStart = true,
+    source: SleepSession['source'] = 'app-inactivity',
+    evidence: SleepSession['evidence'] = [],
+    userConfirmed = true,
+  ) => {
+    if (endTime <= startTime) return;
+    const durationMinutes = (endTime - startTime) / 60_000;
+    const completedSession = createSleepSession({
+      startTime,
+      endTime,
+      confidence,
+      source,
+      evidence,
+      userConfirmed,
     });
-  };
-
-  // Helper to find most frequent hour
-  const calculateMostFrequentHour = (hours: number[]): number => {
-    const hourCounts = hours.reduce((counts, hour) => {
-      counts[hour] = (counts[hour] || 0) + 1;
-      return counts;
-    }, {} as Record<number, number>);
-
-    let mostFrequentHour = 0;
-    let highestCount = 0;
-
-    Object.entries(hourCounts).forEach(([hour, count]) => {
-      if (count > highestCount) {
-        highestCount = count;
-        mostFrequentHour = parseInt(hour);
+    const nextSessions = upsertSleepSession(
+      sessionsRef.current,
+      completedSession,
+    );
+    await persistSessions(nextSessions);
+    const savedSession = nextSessions.find(item => item.id === completedSession.id)
+      ?? nextSessions.find(item =>
+        item.startTime === completedSession.startTime &&
+        item.endTime === completedSession.endTime,
+      )
+      ?? completedSession;
+    await appendRecords([
+      ...(recordStart ? [makeRecord(SleepStatus.ASLEEP, startTime, confidence)] : []),
+      makeRecord(SleepStatus.AWAKE, endTime, 100),
+    ]);
+    const followUpResults = await Promise.allSettled([
+      syncSleepSession(savedSession),
+      refreshWellnessReport(reportDateForTimestamp(endTime), true),
+      notificationService.notifyWakeDetected(durationMinutes, sleepQuality(durationMinutes)),
+    ]);
+    followUpResults.forEach(result => {
+      if (result.status === 'rejected') {
+        console.warn('A non-critical post-save sleep task failed:', result.reason);
       }
     });
+  }, [appendRecords, notificationService, persistSessions, refreshWellnessReport, syncSleepSession]);
 
-    return mostFrequentHour;
-  };
+  const processInactivePeriod = useCallback(async (
+    period: InactivePeriod | null,
+    effectiveSettings: AppSettings,
+  ) => {
+    if (!period) return;
 
-  // Calculate sleep detection confidence based on multiple factors with adaptive threshold
-  const calculateSleepConfidence = (
-    inactiveTime: number,
-    currentHour: number
-  ): [SleepStatus, number] => {
-    // Base confidence from inactivity
-    let confidence = 0;
-    let status = SleepStatus.AWAKE;
-
-    // Get adaptive threshold based on settings and time of day
-    let effectiveThreshold = settings.inactivityThreshold;
-
-    if (settings.adaptiveThreshold) {
-      // Adjust threshold based on time of day and patterns
-      if (currentHour >= 22 || currentHour <= 6) {
-        // Nighttime - reduce threshold for faster detection
-        effectiveThreshold = Math.max(20, settings.inactivityThreshold - 15);
-      } else if (currentHour >= 13 && currentHour <= 15) {
-        // Typical nap time - slightly reduce threshold
-        effectiveThreshold = Math.max(25, settings.inactivityThreshold - 10);
-      } else if (currentHour >= 7 && currentHour <= 11) {
-        // Morning - increase threshold (less likely to be sleeping)
-        effectiveThreshold = settings.inactivityThreshold + 10;
+    if (statusRef.current === SleepStatus.ASLEEP) {
+      const start = [...recordsRef.current]
+        .reverse()
+        .find(record => record.status === SleepStatus.ASLEEP)?.timestamp;
+      if (start) {
+        await finishSleep(
+          start,
+          period.endTime,
+          confidenceRef.current,
+          false,
+          'manual',
+          [{ kind: 'user-confirmed', weight: 100, detail: 'The user manually started this sleep session.' }],
+        );
       }
+      return;
     }
 
-    // Enhanced nap detection
-    const isNapTimeframe = currentHour >= 12 && currentHour <= 17;
-    const isNightTimeframe = currentHour >= 21 || currentHour <= 6;
-
-    // Determine status based on adaptive threshold
-    if (inactiveTime >= effectiveThreshold) {
-      status = SleepStatus.ASLEEP;
-      // Calculate confidence based on how long past threshold
-      const excessTime = inactiveTime - effectiveThreshold;
-      // More gradual confidence increase over longer periods
-      confidence = 70 + Math.min(30, (excessTime / 60) * 30); // Scale from 70% to 100% over 60 minutes
-
-      // Boost confidence for expected sleep times
-      if (isNightTimeframe) {
-        confidence = Math.min(100, confidence + 15); // Night sleep bonus
-      } else if (isNapTimeframe && settings.napDetection) {
-        confidence = Math.min(100, confidence + 10); // Nap detection bonus
-      }
-    } else {
-      status = SleepStatus.AWAKE;
-      // Higher confidence the more recent the activity
-      const proximityToThreshold = inactiveTime / effectiveThreshold;
-      confidence = 100 - (proximityToThreshold * 35); // Scale from 100% to 65%
-
-      // Reduce confidence if it's expected sleep time but we're awake
-      if (isNightTimeframe && inactiveTime > effectiveThreshold * 0.7) {
-        confidence = Math.max(50, confidence - 20); // Late night activity penalty
-      }
-    }
-
-    // Consider time of day if enabled
-    if (settings.considerTimeOfDay) {
-      const { typicalSleepStart, typicalSleepEnd } = sleepPatterns;
-
-      // Determine if it's typical sleep hours (handle overnight periods)
-      const isNighttime = typicalSleepStart > typicalSleepEnd
-        ? (currentHour >= typicalSleepStart || currentHour < typicalSleepEnd)
-        : (currentHour >= typicalSleepStart && currentHour < typicalSleepEnd);
-
-      // Adjust confidence based on time appropriateness
-      if (status === SleepStatus.ASLEEP) {
-        if (isNighttime) {
-          // Sleeping at night is expected - boost confidence
-          confidence = Math.min(100, confidence + 15);
-        } else {
-          // Sleeping during day - reduce confidence but don't penalize too much (naps are normal)
-          confidence = Math.max(40, confidence - 15);
-        }
-      } else {
-        if (isNighttime && inactiveTime > effectiveThreshold * 0.6) {
-          // Being awake late at night when quite inactive is suspicious
-          confidence = Math.max(45, confidence - 15);
-        } else if (!isNighttime) {
-          // Being awake during day is expected
-          confidence = Math.min(100, confidence + 10);
-        }
-      }
-    }
-
-    // Additional confidence adjustments based on extended inactivity
-    if (status === SleepStatus.ASLEEP) {
-      if (inactiveTime > effectiveThreshold * 3) {
-        // Very long inactivity (3x threshold) strongly suggests sleep
-        confidence = Math.min(100, confidence + 15);
-      } else if (inactiveTime > effectiveThreshold * 2) {
-        // Extended inactivity (2x threshold) suggests sleep
-        confidence = Math.min(100, confidence + 10);
-      }
-    }
-
-    // Ensure minimum confidence levels for decision stability
-    if (status === SleepStatus.ASLEEP && confidence < 60) {
-      confidence = 60; // Minimum 60% confidence for sleep detection
-    } else if (status === SleepStatus.AWAKE && confidence < 70) {
-      confidence = 70; // Minimum 70% confidence for awake detection
-    }
-
-    console.log(`🧠 Adaptive detection: threshold ${effectiveThreshold}min (base: ${settings.inactivityThreshold}min), inactive: ${Math.round(inactiveTime)}min, confidence: ${Math.round(confidence)}%`);
-
-    return [status, Math.round(Math.max(0, Math.min(100, confidence)))];
-  };
-
-  // Calculate sleep quality based on duration
-  const calculateSleepQuality = (sleepDuration: number): string => {
-    if (sleepDuration >= 480) { // 8+ hours
-      return 'Excellent';
-    } else if (sleepDuration >= 420) { // 7+ hours
-      return 'Good';
-    } else if (sleepDuration >= 360) { // 6+ hours
-      return 'Adequate';
-    } else if (sleepDuration >= 300) { // 5+ hours
-      return 'Poor';
-    } else {
-      return 'Insufficient';
-    }
-  };
-
-  // Periodic sleep detection check using background service
-  useEffect(() => {
-    const checkSleepStatus = async () => {
-      try {
-        // Get inactivity duration, excluding the current app check session
-        const inactiveMinutes = await backgroundService.getInactivityDuration(false);
-        const currentHour = new Date().getHours();
-        const now = Date.now();
-
-        // CRITICAL FIX: Check for threshold crossing event from background service
+    const session = detectSleepSession(
+      period.startTime,
+      period.endTime,
+      effectiveSettings.inactivityThreshold,
+    );
+    if (session) {
+      let analysisStart = session.startTime;
+      let analysisEnd = session.endTime;
+      let healthEntries: SleepEntry[] = [];
+      const watchWindow = strongestWatchSleepWindow(
+        watchSnapshotsRef.current,
+        session.startTime,
+        session.endTime,
+      );
+      let verifiedWindow = watchWindow;
+      let independentSleepOverlap = watchSleepOverlapRatio(
+        watchSnapshotsRef.current,
+        session.startTime,
+        session.endTime,
+      );
+      if (Platform.OS === 'ios' && healthService.isAvailable()) {
         try {
-          const thresholdEvent = await AsyncStorage.getItem('SLEEP_THRESHOLD_CROSSED');
-          if (thresholdEvent) {
-            const event = JSON.parse(thresholdEvent);
-            // Process threshold crossing events if we're currently awake and event is recent
-            const eventAge = (now - event.timestamp) / (1000 * 60); // minutes
-
-            if (event.detected && eventAge < 10 && currentStatus === SleepStatus.AWAKE) {
-              // Use the sleep start time calculated by background service if available
-              const sleepStartTime = event.sleepStartTime || (event.timestamp - ((event.inactiveMinutes - settings.inactivityThreshold) * 60 * 1000));
-
-              // Record sleep with accurate start time and high confidence
-              addActivityRecord(SleepStatus.ASLEEP, sleepStartTime, 90);
-
-              // Send sleep detection notification if not already sent
-              if (!event.notificationSent) {
-                await notificationService.notifySleepDetected(event.inactiveMinutes);
-              }
-
-              // Clear the event so we don't process it again
-              await AsyncStorage.removeItem('SLEEP_THRESHOLD_CROSSED');
-              console.log(`✅ Threshold crossing event processed and cleared`);
-
-              return; // Exit early - we've handled the threshold crossing
-            } else if (eventAge >= 10) {
-              // Clean up old events
-              await AsyncStorage.removeItem('SLEEP_THRESHOLD_CROSSED');
-              console.log(`🧹 Cleaned up old threshold event (${Math.round(eventAge)}min old)`);
-            }
+          healthEntries = await healthService.getSleepData(
+            new Date(session.startTime),
+            new Date(session.endTime),
+          );
+          const healthWindow = strongestHealthSleepWindow(
+            healthEntries,
+            session.startTime,
+            session.endTime,
+          );
+          if (!verifiedWindow || (healthWindow?.asleepMinutes ?? 0) > verifiedWindow.asleepMinutes) {
+            verifiedWindow = healthWindow;
           }
-        } catch (thresholdError) {
-          console.error('Error checking threshold crossing event:', thresholdError);
+          independentSleepOverlap = Math.max(
+            independentSleepOverlap,
+            healthSleepOverlapRatio(
+              healthEntries,
+              session.startTime,
+              session.endTime,
+            ),
+          );
+        } catch (error) {
+          console.warn('Apple Health sleep evidence was unavailable:', error);
+        }
+      }
+      if (verifiedWindow) {
+        analysisStart = verifiedWindow.startTime;
+        analysisEnd = verifiedWindow.endTime;
+        independentSleepOverlap = Math.max(
+          watchSleepOverlapRatio(watchSnapshotsRef.current, analysisStart, analysisEnd),
+          healthSleepOverlapRatio(healthEntries, analysisStart, analysisEnd),
+        );
+      }
+      const analysis = await analyzeSleepCandidate({
+        startTime: analysisStart,
+        endTime: analysisEnd,
+        historicalSessions: sessionsRef.current.length > 0
+          ? sessionsRef.current
+          : historicalSessionsFromRecords(recordsRef.current),
+        healthKitOverlapRatio: independentSleepOverlap,
+        allowLocalModel: effectiveSettings.useMachineLearning,
+      });
+      if (analysis.classification === 'unlikely-sleep') return;
+      const candidate: SleepCandidate = {
+        id: `candidate-${analysis.startTime}-${analysis.endTime}`,
+        startTime: analysis.startTime,
+        endTime: analysis.endTime,
+        originalStartTime: session.startTime,
+        originalEndTime: session.endTime,
+        confidence: analysis.confidence,
+        classification: analysis.classification,
+        analysisSource: analysis.source,
+        explanation: analysis.explanation,
+        evidence: analysis.evidence,
+        createdAt: Date.now(),
+      };
+      if (!candidatesRef.current.some(item => item.id === candidate.id)) {
+        await persistCandidates(
+          [...candidatesRef.current, candidate].sort((a, b) => a.startTime - b.startTime),
+        );
+      }
+    }
+  }, [finishSleep, healthService, persistCandidates]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const load = async () => {
+      try {
+        const [
+          recordsJson,
+          settingsJson,
+          candidatesJson,
+          sessionsJson,
+          wellnessReportsJson,
+          wellnessCheckInsJson,
+        ] = await Promise.all([
+          AsyncStorage.getItem(ACTIVITY_RECORDS_KEY),
+          AsyncStorage.getItem(SETTINGS_KEY),
+          AsyncStorage.getItem(SLEEP_CANDIDATES_KEY),
+          AsyncStorage.getItem(SLEEP_SESSIONS_KEY),
+          AsyncStorage.getItem(WELLNESS_REPORTS_KEY),
+          AsyncStorage.getItem(WELLNESS_CHECK_INS_KEY),
+        ]);
+        if (cancelled) return;
+
+        const loadedRecords = validActivityRecords(
+          parseStoredJson<unknown>(recordsJson, 'activity record'),
+        );
+        const loadedSettings = normalizedSettings(
+          parseStoredJson<unknown>(settingsJson, 'settings'),
+        );
+        const loadedCandidates = validSleepCandidates(
+          parseStoredJson<unknown>(candidatesJson, 'sleep candidate'),
+        );
+        const parsedSessions = parseStoredJson<unknown>(sessionsJson, 'sleep session');
+        const loadedSessions = parsedSessions === undefined
+          ? historicalSessionsFromRecords(loadedRecords)
+          : validSleepSessions(parsedSessions);
+        const loadedWellnessReports = validDatedItems<DailyWellnessReport>(
+          parseStoredJson<unknown>(wellnessReportsJson, 'wellness report'),
+        );
+        const loadedWellnessCheckIns = validDatedItems<DailyWellnessCheckIn>(
+          parseStoredJson<unknown>(wellnessCheckInsJson, 'wellness check-in'),
+        );
+        const latest = [...loadedRecords].sort((a, b) => b.timestamp - a.timestamp)[0];
+
+        recordsRef.current = loadedRecords;
+        setActivityRecords(loadedRecords);
+        candidatesRef.current = loadedCandidates;
+        setSleepCandidates(loadedCandidates);
+        sessionsRef.current = loadedSessions;
+        setSleepSessions(loadedSessions);
+        wellnessReportsRef.current = loadedWellnessReports;
+        wellnessCheckInsRef.current = loadedWellnessCheckIns;
+        setWellnessReports(loadedWellnessReports);
+        settingsRef.current = loadedSettings;
+        setSettings(loadedSettings);
+        setSettingsLoaded(true);
+        if (latest) {
+          statusRef.current = latest.status;
+          confidenceRef.current = latest.confidence;
+          setCurrentStatus(latest.status);
+          setCurrentConfidence(latest.confidence);
         }
 
-        // Calculate sleep status and confidence based on inactivity
-        const [detectedStatus, confidence] = calculateSleepConfidence(inactiveMinutes, currentHour);
-
-        // ENHANCED THRESHOLD DETECTION: Immediate sleep recording when threshold is reached
-        if (inactiveMinutes >= settings.inactivityThreshold && currentStatus === SleepStatus.AWAKE) {
-          console.log(`🛌 SLEEP THRESHOLD REACHED: ${Math.round(inactiveMinutes)} minutes >= ${settings.inactivityThreshold} minutes`);
-
-          // Calculate accurate sleep start time (when threshold was reached)
-          const sleepStartTime = now - (settings.inactivityThreshold * 60 * 1000);
-
-          // Record sleep with the correct start time
-          addActivityRecord(SleepStatus.ASLEEP, sleepStartTime, confidence);
-          console.log(`😴 Sleep auto-recorded from foreground check - start: ${new Date(sleepStartTime).toLocaleTimeString()}, current duration: ${Math.round(inactiveMinutes)}min`);
-
-          // Send sleep detection notification
-          await notificationService.notifySleepDetected(inactiveMinutes);
-
-          // Also trigger a force threshold check to ensure background service is in sync
-          try {
-            await backgroundService.forceThresholdCheck();
-          } catch (error) {
-            console.error('Error in force threshold check:', error);
-          }
-
-          return; // Exit early to avoid duplicate processing
+        await backgroundService.startMonitoring();
+        const pendingPeriod = await backgroundService.consumeInactivePeriod(Date.now());
+        await Promise.all([
+          notificationService.initialize(),
+          healthService.initialize(false),
+        ]);
+        try {
+          watchSnapshotsRef.current = await WatchDataService.consumePendingSnapshots();
+        } catch (error) {
+          console.warn('Unable to load Apple Watch sleep evidence:', error);
         }
+        notificationService.updateAppSettings(loadedSettings);
 
-        // FALLBACK: Force threshold check if we're close to threshold (90% of threshold)
-        const closeToThreshold = inactiveMinutes >= (settings.inactivityThreshold * 0.9);
-        if (closeToThreshold && currentStatus === SleepStatus.AWAKE) {
-          console.log(`⚠️ Close to threshold: ${Math.round(inactiveMinutes)}min (${Math.round((inactiveMinutes / settings.inactivityThreshold) * 100)}% of ${settings.inactivityThreshold}min threshold)`);
+        await syncHealthSessions();
+        await refreshWellnessReport();
 
-          // Force a background threshold check
-          try {
-            const thresholdTriggered = await backgroundService.forceThresholdCheck();
-            if (thresholdTriggered) {
-              console.log(`🚨 Force threshold check triggered sleep detection`);
-              return; // Exit to let the event be processed on next cycle
-            }
-          } catch (error) {
-            console.error('Error in force threshold check:', error);
-          }
-        }
-
-        const wakeThreshold = Math.min(15, settings.inactivityThreshold * 0.4); // More responsive wake detection
-        if (inactiveMinutes < wakeThreshold && currentStatus === SleepStatus.ASLEEP) {
-          // Record wake time
-          addActivityRecord(SleepStatus.AWAKE, now, confidence);
-
-          // Calculate sleep duration and quality for wake notification
-          const sleepDuration = getTodaySleepDuration();
-          const sleepQuality = calculateSleepQuality(sleepDuration);
-          await notificationService.notifyWakeDetected(sleepDuration, sleepQuality);
-
-          return; // Exit early
-        }
-
-        // Only update if status changed or confidence changed significantly (>15%)
-        const significantConfidenceChange = Math.abs(confidence - currentConfidence) > 15;
-        const statusChanged = detectedStatus !== currentStatus;
-
-        if (statusChanged || significantConfidenceChange) {
-          if (statusChanged) {
-            setCurrentStatus(detectedStatus);
-            setCurrentConfidence(confidence);
-          } else if (significantConfidenceChange) {
-            setCurrentConfidence(confidence);
-          }
+        await processInactivePeriod(pendingPeriod, loadedSettings);
+        initializedRef.current = true;
+        if (AppState.currentState === 'background') {
+          await backgroundService.recordAppInactive(Date.now());
         }
       } catch (error) {
-        console.error('❌ Error checking sleep status:', error);
+        console.error('Failed to initialize sleep tracking:', error);
+        setSettingsLoaded(true);
+        initializedRef.current = true;
       }
     };
 
-    const interval = setInterval(checkSleepStatus, 30 * 1000);
-
-    // Initial check after a short delay
-    const initialTimeout = setTimeout(checkSleepStatus, 2000);
-
+    load();
     return () => {
-      clearInterval(interval);
-      clearTimeout(initialTimeout);
+      cancelled = true;
+      backgroundService.stopMonitoring().catch(console.error);
     };
-  }, [currentStatus, currentConfidence, settings.inactivityThreshold, settings.considerTimeOfDay]);
-  // Handle app state changes (enhanced with background service integration)
+  }, [backgroundService, healthService, notificationService, processInactivePeriod, refreshWellnessReport, syncHealthSessions]);
+
   useEffect(() => {
-    const handleAppStateChange = async (nextAppState: AppStateStatus) => {
-      const now = Date.now();
-      const currentHour = new Date().getHours();
+    const subscription = AppState.addEventListener('change', nextState => {
+      const previousState = appStateRef.current;
+      const transitionAt = Date.now();
+      appStateRef.current = nextState;
+      if (!initializedRef.current) return;
 
-      if (nextAppState === 'active') {
-        // App became active - record genuine user activity
-        backgroundService.recordUserActivity();
-
-        // Check if there was a pending threshold crossing event that we need to clear
-        const hadThresholdEvent = await backgroundService.hasThresholdCrossingEvent();
-        if (hadThresholdEvent) {
-          console.log('🚨 User became active with pending sleep detection - clearing threshold event');
-          await backgroundService.clearThresholdCrossingEvent();
-        }
-
-        // Get actual inactivity time from background service
-        const inactiveTime = await backgroundService.getInactivityDuration(false);
-        console.log(`📱 App became active after ${Math.round(inactiveTime)} minutes of inactivity`);
-
-        // ENHANCED WAKE DETECTION: More responsive wake detection
-        if (currentStatus === SleepStatus.ASLEEP) {
-          // User was sleeping and just became active - this is a wake event
-          console.log('☀️ WAKE DETECTED: User opened app while sleeping');
-
-          addActivityRecord(SleepStatus.AWAKE, now, 95); // High confidence for active app usage
-
-          // Send wake detection notification with sleep summary
-          const sleepDuration = getTodaySleepDuration();
-          const sleepQuality = calculateSleepQuality(sleepDuration);
-          await notificationService.notifyWakeDetected(sleepDuration, sleepQuality);
-
-        } else if (inactiveTime >= settings.inactivityThreshold) {
-          // If we were inactive for longer than the threshold, we missed the sleep detection
-          console.log(`🛌 MISSED SLEEP DETECTION: App became active after ${Math.round(inactiveTime)}min (threshold: ${settings.inactivityThreshold}min)`);
-
-          const [detectedStatus, confidence] = calculateSleepConfidence(inactiveTime, currentHour);
-
-          if (detectedStatus === SleepStatus.ASLEEP) {
-            // Record retroactive sleep period
-            const fellAsleepAt = now - (inactiveTime * 60 * 1000) + (settings.inactivityThreshold * 60 * 1000);
-            addActivityRecord(SleepStatus.ASLEEP, fellAsleepAt, confidence);
-
-            // Then record that we're now awake
-            addActivityRecord(SleepStatus.AWAKE, now, 95);
-
-            // Send wake notification with sleep summary
-            const sleepDuration = getTodaySleepDuration();
-            const sleepQuality = calculateSleepQuality(sleepDuration);
-            await notificationService.notifyWakeDetected(sleepDuration, sleepQuality);
+      lifecycleQueueRef.current = lifecycleQueueRef.current
+        .then(async () => {
+          if (nextState === 'active' && previousState !== 'active') {
+            const period = await backgroundService.consumeInactivePeriod(transitionAt);
+            // Keep lifecycle persistence independent from HealthKit, Watch, and
+            // model latency so a quick re-background cannot lose its boundary.
+            resumeWorkQueueRef.current = resumeWorkQueueRef.current
+              .then(async () => {
+                try {
+                  watchSnapshotsRef.current = await WatchDataService.consumePendingSnapshots();
+                } catch (error) {
+                  console.warn('Unable to refresh Apple Watch sleep evidence:', error);
+                }
+                await processInactivePeriod(period, settingsRef.current);
+                await syncHealthSessions();
+                await refreshWellnessReport();
+              })
+              .catch(error => {
+                console.error('Failed to refresh foreground sleep data:', error);
+              });
+          } else if (nextState === 'background' && previousState !== 'background') {
+            await backgroundService.recordAppInactive(transitionAt);
           }
-        } else {
-          // Just a normal app activation - record minor activity update
-          console.log(`📱 Normal app activation after ${Math.round(inactiveTime)} minutes`);
-        }
+        })
+        .catch(error => {
+          console.error('Failed to process app activity transition:', error);
+        });
+    });
+    return () => subscription.remove();
+  }, [backgroundService, processInactivePeriod, refreshWellnessReport, syncHealthSessions]);
 
-      } else if (nextAppState === 'background' || nextAppState === 'inactive') {
-        // App went to background - background service will continue monitoring
-        setLastActiveTimestamp(now);
-        console.log('📵 App went to background - background monitoring will continue');
-      }
-    };
+  useEffect(() => {
+    if (!settingsLoaded) return;
+    AsyncStorage.setItem(SETTINGS_KEY, JSON.stringify(settings)).catch(console.error);
+  }, [settings, settingsLoaded]);
 
-    // Subscribe to app state changes
-    const subscription = AppState.addEventListener('change', handleAppStateChange);
+  useEffect(() => {
+    if (!settingsLoaded) return;
+    AsyncStorage.setItem(DAILY_SUMMARIES_KEY, JSON.stringify(dailySummaries)).catch(console.error);
+  }, [dailySummaries, settingsLoaded]);
 
-    // Initial activity record if none exists
-    if (activityRecords.length === 0) {
-      addActivityRecord(SleepStatus.AWAKE);
-    }
-
-    return () => {
-      subscription.remove();
-    };
-  }, [currentStatus, lastActiveTimestamp, settings.inactivityThreshold, settings.considerTimeOfDay]);
-
-  // Add a new activity record
-  const addActivityRecord = (
-    status: SleepStatus,
-    timestamp = Date.now(),
-    confidence = 100
-  ) => {
-    const newRecord: ActivityRecord = {
-      id: `${timestamp}-${Math.random().toString(36).substr(2, 9)}`,
-      timestamp,
-      status,
-      confidence: confidence,
-    };
-
-    setActivityRecords(prev => [...prev, newRecord]);
-    setCurrentStatus(status);
-    setCurrentConfidence(confidence);
+  const updateSettings = (changes: Partial<AppSettings>) => {
+    const updated = { ...settingsRef.current, ...changes };
+    settingsRef.current = updated;
+    setSettings(updated);
+    notificationService.updateAppSettings(updated);
   };
 
-  // Allow manual setting of sleep status
   const manuallySetStatus = async (status: SleepStatus) => {
-    const previousStatus = currentStatus;
-
-    // Add record with high confidence since user manually set it
-    addActivityRecord(status, Date.now(), 100);
-
-    // Also record this as genuine user activity in the background service
-    backgroundService.recordUserActivity();
-
-    // Handle notifications for manual status changes
-    try {
-      if (status === SleepStatus.AWAKE && previousStatus === SleepStatus.ASLEEP) {
-        // User manually marked as awake - send wake notification
-        const sleepDuration = getTodaySleepDuration();
-        const sleepQuality = calculateSleepQuality(sleepDuration);
-        await notificationService.notifyWakeDetected(sleepDuration, sleepQuality);
-        console.log('Wake notification sent for manual status change');
+    if (statusRef.current === status) return;
+    const now = Date.now();
+    if (status === SleepStatus.AWAKE) {
+      const start = [...recordsRef.current]
+        .reverse()
+        .find(record => record.status === SleepStatus.ASLEEP)?.timestamp;
+      if (start) {
+        await finishSleep(
+          start,
+          now,
+          100,
+          false,
+          'manual',
+          [{ kind: 'user-confirmed', weight: 100, detail: 'The user manually marked this sleep session.' }],
+        );
       }
-      // Note: We don't send sleep detection notification for manual sleep setting
-      // since the user is actively using the phone to set the status
-    } catch (error) {
-      console.error('Failed to send notification for manual status change:', error);
+    } else {
+      await appendRecords([makeRecord(SleepStatus.ASLEEP, now, 100)]);
+    }
+    await backgroundService.recordUserActivity(now);
+  };
+
+  const confirmSleepCandidate = async (): Promise<void> => {
+    if (candidateActionRef.current) return;
+    const candidate = candidatesRef.current[0];
+    if (!candidate) return;
+    candidateActionRef.current = true;
+    try {
+      const independentEvidence = candidate.evidence?.some(item =>
+        item.kind === 'healthkit-sleep' ||
+        item.kind === 'watch-low-motion' ||
+        item.kind === 'watch-heart-rate',
+      );
+      await finishSleep(
+        candidate.startTime,
+        candidate.endTime,
+        candidate.confidence,
+        true,
+        independentEvidence ? 'combined' : 'app-inactivity',
+        [
+          ...(candidate.evidence ?? []),
+          { kind: 'user-confirmed', weight: 100, detail: 'The user confirmed this estimated sleep period.' },
+        ],
+      );
+      await persistCandidates(
+        candidatesRef.current.filter(item => item.id !== candidate.id),
+      );
+    } finally {
+      candidateActionRef.current = false;
     }
   };
 
-  // Update daily summaries based on activity records
-  const updateDailySummaries = () => {
-    // Group records by day
-    const recordsByDay: Record<string, ActivityRecord[]> = {};
-
-    activityRecords.forEach(record => {
-      const date = format(record.timestamp, 'yyyy-MM-dd');
-      if (!recordsByDay[date]) {
-        recordsByDay[date] = [];
-      }
-      recordsByDay[date].push(record);
-    });
-
-    // Calculate sleep periods and totals for each day
-    const newSummaries: DailySleepSummary[] = Object.keys(recordsByDay).map(date => {
-      const dayRecords = recordsByDay[date].sort((a, b) => a.timestamp - b.timestamp);
-      const sleepPeriods: { start: number; end: number; confidence: number }[] = [];
-      let totalSleepMinutes = 0;
-
-      // Find sleep periods
-      for (let i = 0; i < dayRecords.length - 1; i++) {
-        if (dayRecords[i].status === SleepStatus.ASLEEP && dayRecords[i + 1].status === SleepStatus.AWAKE) {
-          const start = dayRecords[i].timestamp;
-          const end = dayRecords[i + 1].timestamp;
-          // Average confidence between sleep and wake events
-          const confidence = (dayRecords[i].confidence + dayRecords[i + 1].confidence) / 2;
-
-          sleepPeriods.push({ start, end, confidence });
-
-          // Add to total sleep time (weighted by confidence)
-          const periodMinutes = (end - start) / (1000 * 60);
-          totalSleepMinutes += periodMinutes * (confidence / 100);
-        }
-      }
-
-      return {
-        date,
-        totalSleepMinutes,
-        sleepPeriods,
-      };
-    });
-
-    setDailySummaries(newSummaries);
+  const dismissSleepCandidate = async (): Promise<void> => {
+    if (candidateActionRef.current) return;
+    const candidate = candidatesRef.current[0];
+    if (!candidate) return;
+    candidateActionRef.current = true;
+    try {
+      await persistCandidates(
+        candidatesRef.current.filter(item => item.id !== candidate.id),
+      );
+    } finally {
+      candidateActionRef.current = false;
+    }
   };
 
-  // Update settings and pass to services
-  const updateSettings = (newSettings: Partial<AppSettings>) => {
-    const updatedSettings = { ...settings, ...newSettings };
-    setSettings(updatedSettings);
-
-    // Update notification service settings for contextual notifications
-    notificationService.updateAppSettings(updatedSettings);
+  const updateSleepCandidateBounds = (startTime: number, endTime: number): void => {
+    if (
+      !Number.isFinite(startTime) ||
+      !Number.isFinite(endTime) ||
+      endTime <= startTime ||
+      endTime - startTime > 20 * 60 * 60_000
+    ) return;
+    const next: SleepCandidate[] = candidatesRef.current.map((candidate, index) =>
+      index === 0
+        ? {
+            ...candidate,
+            startTime,
+            endTime,
+            evidence: [
+              ...(candidate.evidence ?? []).filter(item => item.kind !== 'user-edited'),
+              { kind: 'user-edited' as const, weight: 100, detail: 'The user adjusted the estimated sleep boundaries.' },
+            ],
+          }
+        : candidate,
+    );
+    void persistCandidates(next).catch(console.error);
   };
 
-  // Export data as JSON
-  const exportData = async (): Promise<string> => {
-    const data = {
-      activityRecords,
-      dailySummaries,
-      settings,
-      sleepPatterns,
-      exportDate: new Date().toISOString(),
+  const saveWellnessCheckIn = async (
+    checkIn: Omit<DailyWellnessCheckIn, 'date' | 'updatedAt'>,
+  ): Promise<void> => {
+    const item: DailyWellnessCheckIn = {
+      ...checkIn,
+      date: format(new Date(), 'yyyy-MM-dd'),
+      updatedAt: Date.now(),
     };
-
-    return JSON.stringify(data, null, 2);
+    const next = [
+      ...wellnessCheckInsRef.current.filter(existing => existing.date !== item.date),
+      item,
+    ].sort((left, right) => left.date.localeCompare(right.date)).slice(-90);
+    wellnessCheckInsRef.current = next;
+    await AsyncStorage.setItem(WELLNESS_CHECK_INS_KEY, JSON.stringify(next));
+    await refreshWellnessReport(item.date, true);
   };
 
-  // Get today's sleep duration in minutes
+  const clearSleepData = async (): Promise<void> => {
+    recordsRef.current = [];
+    statusRef.current = SleepStatus.AWAKE;
+    confidenceRef.current = 100;
+    setActivityRecords([]);
+    candidatesRef.current = [];
+    setSleepCandidates([]);
+    sessionsRef.current = [];
+    setSleepSessions([]);
+    wellnessReportsRef.current = [];
+    wellnessCheckInsRef.current = [];
+    setWellnessReports([]);
+    setCurrentStatus(SleepStatus.AWAKE);
+    setCurrentConfidence(100);
+    await Promise.all([
+      AsyncStorage.multiRemove([
+        ACTIVITY_RECORDS_KEY,
+        DAILY_SUMMARIES_KEY,
+        SLEEP_PATTERNS_KEY,
+        SLEEP_CANDIDATES_KEY,
+        SLEEP_SESSIONS_KEY,
+        WELLNESS_REPORTS_KEY,
+        WELLNESS_CHECK_INS_KEY,
+      ]),
+      backgroundService.resetTrackingState(),
+      WatchDataService.clear(),
+    ]);
+  };
+
+  const todayRecords = useMemo(() => {
+    const today = format(new Date(), 'yyyy-MM-dd');
+    return activityRecords.filter(record => format(record.timestamp, 'yyyy-MM-dd') === today);
+  }, [activityRecords]);
+
   const getTodaySleepDuration = (): number => {
     const today = format(new Date(), 'yyyy-MM-dd');
-    const todaySummary = dailySummaries.find(summary => summary.date === today);
-    return todaySummary?.totalSleepMinutes || 0;
+    return dailySummaries.find(summary => summary.date === today)?.totalSleepMinutes ?? 0;
   };
 
-  // Get today's activity records
-  const getTodayRecords = (): ActivityRecord[] => {
-    const today = format(new Date(), 'yyyy-MM-dd');
-    return activityRecords.filter(record =>
-      format(record.timestamp, 'yyyy-MM-dd') === today
-    );
-  };
-
-  // Test method to check current sleep detection status (for debugging)
-  const testSleepDetection = async (): Promise<{
-    inactivityMinutes: number;
-    currentHour: number;
-    detectedStatus: SleepStatus;
-    confidence: number;
-    threshold: number;
-  }> => {
-    const inactivityMinutes = await backgroundService.getInactivityDuration(false);
-    const currentHour = new Date().getHours();
-    const [detectedStatus, confidence] = calculateSleepConfidence(inactivityMinutes, currentHour);
-
-    return {
-      inactivityMinutes,
-      currentHour,
-      detectedStatus,
-      confidence,
-      threshold: settings.inactivityThreshold
-    };
-  };
+  const exportData = async (): Promise<string> => JSON.stringify({
+    activityRecords,
+    dailySummaries,
+    sleepCandidates,
+    sleepSessions,
+    wellnessReports,
+    settings,
+    exportDate: new Date().toISOString(),
+  }, null, 2);
 
   return (
-    <SleepContext.Provider
-      value={{
-        currentStatus,
-        currentConfidence,
-        todayRecords: getTodayRecords(),
-        dailySummaries,
-        settings,
-        updateSettings,
-        exportData,
-        getTodaySleepDuration,
-        manuallySetStatus,
-      }}
-    >
+    <SleepContext.Provider value={{
+      currentStatus,
+      currentConfidence,
+      todayRecords,
+      dailySummaries,
+      sleepSessions,
+      todayWellnessReport,
+      settings,
+      pendingSleepCandidate: sleepCandidates[0] ?? null,
+      updateSettings,
+      exportData,
+      getTodaySleepDuration,
+      manuallySetStatus,
+      confirmSleepCandidate,
+      dismissSleepCandidate,
+      updateSleepCandidateBounds,
+      syncHealthSessions,
+      saveWellnessCheckIn,
+      clearSleepData,
+    }}>
       {children}
     </SleepContext.Provider>
   );
 };
 
-// Custom hook to use the sleep context
 export const useSleep = (): SleepContextType => {
   const context = useContext(SleepContext);
-  if (context === undefined) {
-    throw new Error('useSleep must be used within a SleepProvider');
-  }
+  if (!context) throw new Error('useSleep must be used within a SleepProvider');
   return context;
 };

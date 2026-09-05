@@ -2,8 +2,8 @@
 
 // Sleep status enum
 export enum SleepStatus {
-  AWAKE = 'awake',
-  ASLEEP = 'asleep',
+  AWAKE = "awake",
+  ASLEEP = "asleep",
 }
 
 // Activity record interface
@@ -25,15 +25,30 @@ export interface DailySleepSummary {
   }[];
 }
 
+// A heuristic interval that must be reviewed before it becomes health data.
+export interface SleepCandidate {
+  id: string;
+  startTime: number;
+  endTime: number;
+  confidence: number;
+  createdAt: number;
+  originalStartTime?: number;
+  originalEndTime?: number;
+  classification?: "likely-sleep" | "uncertain" | "unlikely-sleep";
+  analysisSource?: "deterministic" | "apple-foundation-model";
+  explanation?: string;
+  evidence?: import("./sleepAnalysis").SleepEvidence[];
+}
+
 // App settings
 export interface AppSettings {
   inactivityThreshold: number; // Minutes of inactivity before considered asleep
   useMachineLearning: boolean; // Whether to use enhanced ML-based detection
   considerTimeOfDay: boolean; // Consider typical sleep hours in detection
-  sensitivityLevel: 'low' | 'medium' | 'high'; // Movement detection sensitivity
+  sensitivityLevel: "low" | "medium" | "high"; // Movement detection sensitivity
   adaptiveThreshold: boolean; // Adapt threshold based on time and patterns
   napDetection: boolean; // Enable enhanced nap detection
-  backgroundPersistence: 'normal' | 'aggressive' | 'maximum'; // Background service persistence
+  backgroundPersistence: "normal" | "aggressive" | "maximum"; // Background service persistence
   // New advanced options for enhanced control
   smartWakeupWindow: boolean; // Enable smart wake-up within a time window
   confidenceBasedAdjustment: boolean; // Adjust thresholds based on detection confidence
@@ -58,4 +73,6 @@ export type MainTabParamList = {
   Today: undefined;
   History: undefined;
   Stats: undefined;
-}; 
+};
+
+export * from "./sleepAnalysis";

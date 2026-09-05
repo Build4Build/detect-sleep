@@ -2,10 +2,11 @@
   "expo": {
     "name": "Sleep Detector",
     "slug": "detect-sleep",
-    "version": "1.1.3",
+    "description": "A privacy-first sleep companion conceived and built by Pierre-Henry Soria, with systems in development since early 2024.",
+    "version": "1.4.1",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "automatic",
     "platforms": [
       "ios",
       "android"
@@ -20,26 +21,25 @@
     ],
     "ios": {
       "supportsTablet": false,
+      "appleTeamId": "2V8LZ2444Y",
       "bundleIdentifier": "com.sleepdetector.app",
-      "buildNumber": "23",
-      "jsEngine": "jsc",
       "infoPlist": {
-        "BGTaskSchedulerPermittedIdentifiers": [
-          "com.sleepdetector.app.sleeprefresh",
-          "com.sleepdetector.app.sleepprocessing",
-          "background-activity-monitor"
-        ],
-        "NSMotionUsageDescription": "We use motion data to more accurately detect when you're asleep or awake by monitoring device movement patterns",
-        "NSHealthShareUsageDescription": "We use Health data to improve sleep detection accuracy and to compare with our detection algorithm",
-        "NSHealthUpdateUsageDescription": "We can write your detected sleep data to Apple Health to consolidate your health information",
-        "NSUserNotificationsUsageDescription": "We send you notifications when sleep is detected and when you wake up with sleep summaries",
+        "NSHumanReadableCopyright": "© 2024–2026 Pierre-Henry Soria",
+        "NSHealthShareUsageDescription": "When you enable Health integration, Sleep Detector reads sleep stages and optional recovery signals such as heart rate variability, resting heart rate, respiratory rate, and wrist temperature to improve your private daily report.",
+        "NSHealthUpdateUsageDescription": "Sleep Detector writes only the sleep periods you confirm to Apple Health when you enable Health sync.",
+        "NSUserNotificationsUsageDescription": "Sleep Detector sends bedtime reminders and optional summaries after you confirm a sleep period.",
         "UISupportedInterfaceOrientations": [
           "UIInterfaceOrientationPortrait"
-        ],
-        "UISupportedInterfaceOrientations~ipad": null
+        ]
       },
       "config": {
         "usesNonExemptEncryption": false
+      },
+      "entitlements": {
+        "com.apple.developer.healthkit": true,
+        "com.apple.security.application-groups": [
+          "group.com.sleepdetector.app"
+        ]
       }
     },
     "android": {
@@ -48,42 +48,32 @@
         "backgroundColor": "#ffffff"
       },
       "package": "com.sleepdetector.app",
-      "versionCode": 22,
+      "versionCode": 23,
       "permissions": [
-        "android.permission.ACTIVITY_RECOGNITION",
-        "android.permission.WAKE_LOCK",
-        "android.permission.RECEIVE_BOOT_COMPLETED",
-        "android.permission.FOREGROUND_SERVICE",
-        "android.permission.VIBRATE",
-        "android.permission.USE_FULL_SCREEN_INTENT"
+        "android.permission.VIBRATE"
       ],
-      "config": {
-        "googleMobileAdsAppId": "ca-app-pub-3940256099942544~3347511713"
-      },
       "blockedPermissions": [
         "android.permission.READ_PHONE_STATE",
         "android.permission.READ_CONTACTS"
       ]
     },
     "plugins": [
-      "expo-task-manager",
-      "expo-background-fetch",
       [
-        "expo-notifications",
+        "@kingstinct/react-native-healthkit",
         {
-          "icon": "./assets/notification-icon.png",
-          "color": "#2196F3"
+          "NSHealthShareUsageDescription": "When you enable Health integration, Sleep Detector reads sleep stages and optional recovery signals such as heart rate variability, resting heart rate, respiratory rate, and wrist temperature to improve your private daily report.",
+          "NSHealthUpdateUsageDescription": "Sleep Detector writes only the sleep periods you confirm to Apple Health when you enable Health sync.",
+          "background": false
         }
       ],
       [
-        "expo-health-connect",
+        "expo-notifications",
         {
-          "healthConnectPermissions": [
-            "READ_SLEEP",
-            "WRITE_SLEEP"
-          ]
+          "icon": "./assets/icon.png",
+          "color": "#2196F3"
         }
-      ]
+      ],
+      "@bacons/apple-targets"
     ],
     "extra": {
       "eas": {

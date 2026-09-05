@@ -2,8 +2,6 @@
 
 # dependencies
 node_modules/
-package-lock.json
-yarn.lock
 
 # Expo
 .expo/
@@ -12,12 +10,18 @@ web-build/
 expo-env.d.ts
 
 # Native
+/ios/
+/android/
 *.orig.*
 *.jks
 *.p8
 *.p12
 *.key
 *.mobileprovision
+
+# Local signing and store service-account credentials
+credentials.json
+pc-api-key.json
 
 # Metro
 .metro-health-check*

@@ -1,307 +1,107 @@
-# Sleep Detector Mobile App 😴
+# Sleep Detector 😴
 
-**Sleep Detector** is a React Native Expo app that automatically tracks your sleep patterns based on phone usage.
+Sleep Detector is a private sleep journal for iPhone with an Apple Watch companion, published by **SimpliXio Pte. Ltd.**
+
+[Download on the App Store](https://apps.apple.com/app/id6743064638) · [GitHub releases](https://github.com/Build4Build/detect-sleep/releases)
+
+## How it works
+
+1. The app saves a timestamp when it goes into the background.
+2. When you reopen it after the configured threshold (30 minutes by default), it evaluates the elapsed interval.
+3. Optional Apple Health records and Apple Watch sleep evidence can refine the estimate.
+4. Review the proposed times, adjust them if needed, then confirm or dismiss the estimate. Confirmed periods can sync to Apple Health when you enable sync and grant permission.
+
+Time away from this app does not prove that the phone was unused or that you were asleep. iOS may suspend background apps, so the estimate is completed when Sleep Detector reopens. There is no continuous sensor or workout session.
+
+Sleep Detector supports personal awareness and journaling. It does not diagnose sleep disorders.
 
 ## Features
 
-- **Automatic Sleep Detection**: The app detects when you're asleep based on phone inactivity
-- **Sleep Statistics**: View detailed statistics about your sleep patterns
-- **Sleep History**: Browse your sleep history with daily summaries
-- **Data Export**: Export your sleep data in JSON or CSV format
-- **Customizable Settings**: Adjust the inactivity threshold to match your habits
+- Editable sleep estimates with confidence and evidence details.
+- Sleep history, duration trends, and daily wellness context.
+- Optional Apple Health access and confirmed-sleep syncing with duplicate protection.
+- Apple Watch duration, stages, and available recovery signals.
+- Local reminders, system appearance support, and JSON/CSV export.
+- No account, advertising, tracking, or developer-operated cloud sleep profile.
 
-## How It Works
+HealthKit and the Watch companion are iOS features. Android project generation is available, but Google Fit integration is not implemented; the iOS release checks do not establish Android production readiness.
 
-The app monitors your phone usage to determine when you're awake or asleep:
+## Development
 
-1. When you use your phone, the app considers you awake
-2. When your phone remains inactive for a set period (default: 45 minutes), the app considers you asleep
-3. The app records these state changes to build a picture of your sleep patterns
+The project uses Expo SDK 55 and React Native 0.83. The installed React Native/Metro packages require **Node.js 20.19.4 or newer**. iOS development also requires macOS, Xcode with the required platform SDKs, and CocoaPods.
 
-## Getting Started
-
-### Prerequisites
-
-- Node.js (v14 or newer)
-- npm
-- Expo CLI
-- iOS or Android device/emulator
-
-### Installation
-
-1. Clone the repository:
-```
-git clone https://github.com/pH-7/detect-sleep.git
+```sh
+git clone https://github.com/Build4Build/detect-sleep.git
 cd detect-sleep
-```
-
-2. Install dependencies:
-```
-npm install
-```
-
-3. Set up environment variables:
-```
-cp .env.example .env
-```
-Then edit `.env` and fill in your `APPLE_TEAM_ID`.
-
-4. Start the Expo development server:
-```
-npx expo start
-```
-
-4. Open the app on your device using the Expo Go app or run it in an emulator.
-
-## Usage
-
-### Today Screen
-
-The Today screen shows your current sleep status and a timeline of your activity for the day. You can see at a glance how much sleep you've gotten so far today.
-
-### History Screen
-
-Browse through your sleep history day by day. See when you fell asleep and woke up, and how much total sleep you got each day.
-
-### Stats Screen
-
-View statistics about your sleep patterns, including:
-- Average sleep duration
-- Sleep consistency
-- Sleep quality metrics
-- Visual charts of your sleep patterns
-
-### Settings
-
-Customize the app to match your habits:
-- Adjust the inactivity threshold (how long before the app considers you asleep)
-- Enable/disable notifications
-- Manage your data
-
-## Testing and Deployment
-
-### Running Tests Locally
-
-1. Test on iOS simulator:
-```bash
+# Use the published source when reproducing the App Store 1.4.1 release.
+git switch --detach v1.4.1
+npm ci
 npm run ios
 ```
 
-2. Test on Android emulator:
-```bash
-npm run android
+For ongoing development, check out the branch you intend to modify instead of a release tag. `npm run ios` generates the native project if absent, builds the app, and starts Metro. After the native app is installed, `npm start` restarts Metro for JavaScript development.
+
+This app needs its own native build: HealthKit, Watch connectivity, and the local Swift module are not included in Expo Go. See Expo's [native development-build guidance](https://docs.expo.dev/develop/development-builds/introduction/).
+
+Signing and EAS project identifiers are defined in [app.json](app.json) and [eas.json](eas.json). The current static app configuration does not read `APPLE_TEAM_ID` from `.env`; setting that variable alone will not change the signing team. Forks must configure their own identifiers and capabilities.
+
+See [local build and signing guidance](LOCAL_BUILD_GUIDE.md).
+
+## Verification
+
+```sh
+npm test -- --runInBand
+npx tsc --noEmit
+npm run lint -- --quiet
+npx expo-doctor
+npx expo export --platform ios
 ```
 
-3. Test on your physical device by scanning the QR code from the Expo Go app after running:
-```bash
-npx expo start
+The export command checks the production JavaScript bundle; it does not produce a signed App Store archive. Expo Doctor and the dependency audit can flag newer patches after a release. Review their output before producing the next build.
+
+Use the [manual testing checklist](TESTING_CHECKLIST.md) for lifecycle, Health permissions, Watch, and physical-device checks. Diagnostics are available through `bash monitor-sleep-detection.sh --help`.
+
+## Production release
+
+Use the existing EAS production profile with an account authorized for this project:
+
+```sh
+npx eas-cli build --platform ios --profile production
+npx eas-cli submit --platform ios --profile production
 ```
 
-## Publishing Your App
+Select the intended build during submission. EAS Submit uploads to App Store Connect; the release still needs the correct build, metadata, privacy declarations, assets, and App Review submission in App Store Connect. EAS manages the remote build number and increments it for production builds. Update the app version in both `app.json` and `package.json` for a new store version.
 
-### Prerequisites
+Keep the signed build associated with its source commit. Publish a GitHub tag only for the reviewed source; do not move a published release tag to later changes.
 
-1. Install EAS CLI:
-```bash
-npm install -g eas-cli
-```
+Current store materials:
 
-2. Log in to your Expo account:
-```bash
-eas login
-```
+- [iPhone screenshots](app-store-assets/iphone/README.md)
+- [Apple Watch screenshots](app-store-assets/watch/README.md)
+- [Store description](app-store-assets/metadata/en-US/description.txt)
+- [Reviewer instructions](app-store-assets/metadata/en-US/review_notes.txt)
+- [1.4.1 release notes](app-store-assets/release-notes/1.4.1.md)
 
-3. Configure EAS Build:
-```bash
-eas build:configure
-```
+## Founder, Creator, and Engineer
 
-### iOS App Store Submission
+**[Pierre-Henry Soria](https://pierrehenry.dev)** conceived Sleep Detector, created the product vision, brought the clarity needed to turn the idea into a useful experience, and designed and built the systems behind the app. He started working on those systems in early **2024** to solve the painful gap between phone inactivity and useful, reviewable sleep insight.
 
-#### 1. Configure EAS Build for iOS
+Pierre-Henry continues to lead the product vision, engineering, privacy model, sleep-analysis architecture, Apple Health integration, and Apple Watch experience.
 
-Create or update `eas.json`:
-```json
-{
-  "cli": {
-    "version": ">= 5.9.1"
-  },
-  "build": {
-    "development": {
-      "developmentClient": true,
-      "distribution": "internal"
-    },
-    "preview": {
-      "distribution": "internal",
-      "ios": {
-        "simulator": true
-      }
-    },
-    "production": {
-      "ios": {
-        "resourceClass": "m-medium"
-      }
-    }
-  },
-  "submit": {
-    "production": {
-      "ios": {
-        "appleId": "your@email.com",
-        "ascAppId": "1234567890",
-        "appleTeamId": "ABCDEFGHIJ"
-      }
-    }
-  }
-}
-```
-
-#### 2. Build for App Store
-
-1. Update version in `app.json`:
-```json
-{
-  "expo": {
-    "version": "1.0.0",
-    "ios": {
-      "buildNumber": "1",
-      "bundleIdentifier": "com.yourcompany.sleepdetector"
-    }
-  }
-}
-```
-
-2. Create production build:
-```bash
-eas build --platform ios --profile production
-```
-
-#### 3. Submit to App Store
-
-1. Submit the build:
-```bash
-eas submit --platform ios --profile production
-```
-
-2. Complete App Store Connect information:
-- App metadata
-- Privacy policy URL
-- Support URL
-- Screenshots
-- App Review Information
-
-### Google Play Store Submission
-
-#### 1. Configure EAS Build for Android
-
-Update `eas.json`:
-```json
-{
-  "build": {
-    "production": {
-      "android": {
-        "buildType": "app-bundle"
-      }
-    }
-  },
-  "submit": {
-    "production": {
-      "android": {
-        "serviceAccountKeyPath": "./path/to/service-account.json",
-        "track": "production"
-      }
-    }
-  }
-}
-```
-
-#### 2. Build for Google Play
-
-1. Update version in `app.json`:
-```json
-{
-  "expo": {
-    "version": "1.0.0",
-    "android": {
-      "versionCode": 1,
-      "package": "me.ph7.sleepdetector"
-    }
-  }
-}
-```
-
-2. Create production build:
-```bash
-eas build --platform android --profile production
-```
-
-#### 3. Submit to Google Play
-
-1. Submit the build:
-```bash
-eas submit --platform android --profile production
-```
-
-2. Complete Play Store listing:
-- Store listing
-- Content rating
-- Pricing & distribution
-- App releases
-
-### Store Assets Requirements
-
-#### iOS App Store
-- App Icon: 1024x1024px
-- Screenshots:
-  - iPhone 6.5" Display: 1242x2688px
-  - iPhone 5.5" Display: 1242x2208px
-  - iPad Pro 12.9": 2048x2732px
-
-#### Google Play Store
-- App Icon: 512x512px
-- Feature Graphic: 1024x500px
-- Screenshots:
-  - Phone: 1080x1920px
-  - 7-inch Tablet: 1200x1920px
-  - 10-inch Tablet: 1920x2560px
-
-### Troubleshooting
-
-1. Build Fails:
-```bash
-# Clear build cache
-eas build:clear
-
-# Try building again
-eas build --platform ios --profile production
-```
-
-2. Submission Fails:
-```bash
-# Check build status
-eas build:list
-
-# View submission logs
-eas submit --platform ios --profile production --verbose
-```
-
-
-## Who Built This Sleep Tracker App?
-
-**Pierre-Henry Soria** — a **super passionate engineer** who loves automating content creation efficiently!
-
-Enthusiast of YouTube, AI, learning, and writing performant code!  ⚡️
-Find me at [pH7.me](https://ph7.me)
+- Website: [pierrehenry.dev](https://pierrehenry.dev)
+- GitHub: [github.com/pH-7](https://github.com/pH-7)
+- LinkedIn: [linkedin.com/in/ph7enry](https://www.linkedin.com/in/ph7enry/)
 
 Enjoying this project? **[Buy me a coffee](https://ko-fi.com/phenry)** (spoiler: I love almond extra-hot flat white coffees).
 
-[![Pierre-Henry Soria](https://s.gravatar.com/avatar/a210fe61253c43c869d71eaed0e90149?s=200)](https://ph7.me "Pierre-Henry Soria’s personal website")
+[![Pierre-Henry Soria](https://s.gravatar.com/avatar/a210fe61253c43c869d71eaed0e90149?s=200)](https://pierrehenry.dev "Pierre-Henry Soria’s personal website")
 
 [![@phenrysay][x-icon]](https://x.com/phenrysay "Follow Me on X") [![YouTube Tech Videos][youtube-icon]](https://www.youtube.com/@pH7Programming "My YouTube Tech Channel") [![pH-7][github-icon]](https://github.com/pH-7 "Follow Me on GitHub") [![BlueSky][bsky-icon]](https://bsky.app/profile/pierrehenry.dev "Follow Me on BlueSky")
 
 
 ## Privacy First!
 
-Your sleep data is always stored locally on your device. The app does not send your data to any servers unless you explicitly use the export feature to share it.
+Sleep records and analysis stay on your devices. Apple Health access and confirmed-sleep sync are optional; exports are shared only when you choose a destination. See the [privacy policy](PRIVACY.md) for details.
 
 ## License
 

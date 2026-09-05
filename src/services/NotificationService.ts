@@ -1,9 +1,7 @@
 import * as Notifications from 'expo-notifications';
-import * as Device from 'expo-device';
 import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const NOTIFICATION_TOKEN_KEY = 'notification-token';
 const NOTIFICATION_SETTINGS_KEY = 'notification-settings';
 
 // Notification settings interface
@@ -15,9 +13,9 @@ interface NotificationSettings {
 }
 
 const DEFAULT_NOTIFICATION_SETTINGS: NotificationSettings = {
-  sleepDetectionEnabled: true,
-  wakeDetectionEnabled: true,
-  sleepRemindersEnabled: true,
+  sleepDetectionEnabled: false,
+  wakeDetectionEnabled: false,
+  sleepRemindersEnabled: false,
   bedtimeReminderHour: 22,
 };
 
@@ -54,9 +52,6 @@ export class NotificationService {
       // Load settings
       await this.loadSettings();
 
-      // Request permissions
-      await this.requestPermissions();
-
       // Set up notification channels for Android
       await this.setupNotificationChannels();
 
@@ -76,12 +71,7 @@ export class NotificationService {
   /**
    * Request notification permissions
    */
-  private async requestPermissions(): Promise<void> {
-    if (!Device.isDevice) {
-      console.log('Must use physical device for notifications');
-      return;
-    }
-
+  public async requestPermissions(): Promise<boolean> {
     const { status: existingStatus } = await Notifications.getPermissionsAsync();
     let finalStatus = existingStatus;
 
@@ -91,18 +81,9 @@ export class NotificationService {
     }
 
     if (finalStatus !== 'granted') {
-      console.log('Failed to get push token for push notification!');
-      return;
+      return false;
     }
-
-    // Get push token for development
-    try {
-      const token = (await Notifications.getExpoPushTokenAsync()).data;
-      await AsyncStorage.setItem(NOTIFICATION_TOKEN_KEY, token);
-      console.log('Push token:', token);
-    } catch (error) {
-      console.error('Failed to get push token:', error);
-    }
+    return true;
   }
 
   /**
@@ -414,7 +395,7 @@ export class NotificationService {
 
       const fullMessage = `${contextualMessage}
 
-Sleep quality: ${sleepQuality} ${qualityEmoji}
+Duration assessment: ${sleepQuality} ${qualityEmoji}
 ${qualityAdvice}`;
 
       await Notifications.scheduleNotificationAsync({
@@ -451,6 +432,7 @@ ${qualityAdvice}`;
    */
   public async scheduleBedtimeReminder(): Promise<void> {
     if (!this.settings.sleepRemindersEnabled) return;
+    if (!(await this.requestPermissions())) return;
 
     try {
       // Cancel existing bedtime reminders
@@ -478,6 +460,7 @@ ${qualityAdvice}`;
       console.log(`✅ Bedtime reminder scheduled for ${reminderHour}:00`);
     } catch (error) {
       console.error('❌ Failed to schedule bedtime reminder:', error);
+      throw error;
     }
   }
 
@@ -486,6 +469,9 @@ ${qualityAdvice}`;
    */
   public async sendTestNotification(): Promise<void> {
     try {
+      if (!(await this.requestPermissions())) {
+        throw new Error('Notification permission was not granted.');
+      }
       const currentHour = new Date().getHours();
       let testTitle = '';
       let testBody = '';
@@ -524,6 +510,7 @@ ${qualityAdvice}`;
       console.log(`✅ Test notification sent: ${testTitle} at ${currentHour}:xx`);
     } catch (error) {
       console.error('❌ Failed to send test notification:', error);
+      throw error;
     }
   }
 

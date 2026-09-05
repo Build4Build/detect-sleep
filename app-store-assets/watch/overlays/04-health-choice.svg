@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="422" height="514" viewBox="0 0 422 514">
+  <defs>
+    <linearGradient id="topVeil" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#10051b" stop-opacity="0.96"/><stop offset="0.3" stop-color="#10051b" stop-opacity="0.44"/><stop offset="0.68" stop-color="#10051b" stop-opacity="0"/></linearGradient>
+    <linearGradient id="case" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#a4adbd"/><stop offset="0.17" stop-color="#272d3b"/><stop offset="0.76" stop-color="#060810"/><stop offset="1" stop-color="#686f7e"/></linearGradient>
+    <linearGradient id="screen" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#23122d"/><stop offset="1" stop-color="#070713"/></linearGradient>
+    <linearGradient id="button" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#7f58ff"/><stop offset="1" stop-color="#c251ff"/></linearGradient>
+    <filter id="shadow" x="-40%" y="-30%" width="180%" height="190%"><feGaussianBlur in="SourceAlpha" stdDeviation="12" result="b"/><feColorMatrix in="b" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .55 0"/><feOffset dy="10"/><feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+    <clipPath id="screenClip"><rect x="84" y="132" width="254" height="312" rx="58"/></clipPath>
+  </defs>
+  <rect width="422" height="240" fill="url(#topVeil)"/>
+  <g font-family="Arial, Helvetica, sans-serif" text-anchor="middle" fill="#fff"><text x="211" y="39" font-size="26" font-weight="700" letter-spacing="-.9">Health access is your choice</text><text x="211" y="68" font-size="12.5" fill="#e1cdf3">Connect only when you decide.</text></g>
+  <g filter="url(#shadow)"><rect x="72" y="120" width="278" height="336" rx="72" fill="url(#case)"/><rect x="79" y="127" width="264" height="322" rx="64" fill="#02030a"/><rect x="84" y="132" width="254" height="312" rx="58" fill="url(#screen)"/><rect x="348" y="226" width="10" height="54" rx="5" fill="#6d7483"/><circle cx="353" cy="208" r="9" fill="#111722" stroke="#89909e" stroke-width="3"/></g>
+  <g clip-path="url(#screenClip)" font-family="Arial, Helvetica, sans-serif" text-anchor="middle">
+    <circle cx="211" cy="206" r="42" fill="#321945"/>
+    <path d="M211 229 C188 210 178 199 178 185 C178 169 196 162 211 178 C226 162 244 169 244 185 C244 199 234 210 211 229Z" fill="#ff5d7a"/>
+    <text x="211" y="276" fill="#fff" font-size="18" font-weight="700">Connect Apple Health</text>
+    <text x="211" y="299" fill="#c6b8d2" font-size="9.5">Use Apple Watch sleep stages for</text>
+    <text x="211" y="313" fill="#c6b8d2" font-size="9.5">more precise, private reports.</text>
+    <rect x="107" y="340" width="208" height="43" rx="21.5" fill="url(#button)"/>
+    <text x="211" y="366" fill="#fff" font-size="11.5" font-weight="700">Allow Health Access</text>
+    <text x="211" y="409" fill="#8f809b" font-size="8.5">Optional. You stay in control.</text>
+  </g>
+</svg>

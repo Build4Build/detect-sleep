@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1320" height="2868" viewBox="0 0 1320 2868">
+  <defs>
+    <linearGradient id="veil" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#030617" stop-opacity="0.98"/><stop offset="0.25" stop-color="#030617" stop-opacity="0.48"/><stop offset="0.58" stop-color="#030617" stop-opacity="0"/><stop offset="1" stop-color="#02040d" stop-opacity="0.72"/></linearGradient>
+    <linearGradient id="case" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#abb4c5"/><stop offset="0.16" stop-color="#303746"/><stop offset="0.73" stop-color="#060810"/><stop offset="1" stop-color="#6e7685"/></linearGradient>
+    <linearGradient id="screen" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#151129"/><stop offset="1" stop-color="#080b17"/></linearGradient>
+    <linearGradient id="button" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#7657ff"/><stop offset="1" stop-color="#43c9ff"/></linearGradient>
+    <filter id="shadow" x="-30%" y="-20%" width="160%" height="150%"><feGaussianBlur in="SourceAlpha" stdDeviation="40" result="blur"/><feColorMatrix in="blur" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .65 0"/><feOffset dy="34"/><feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+    <clipPath id="screenClip"><rect x="210" y="530" width="900" height="2170" rx="105"/></clipPath>
+  </defs>
+  <rect width="1320" height="2868" fill="url(#veil)"/>
+  <g font-family="Arial, Helvetica, sans-serif" text-anchor="middle" fill="#fff">
+    <text x="660" y="175" font-size="100" font-weight="700" letter-spacing="-3.5">Review before you save.</text>
+    <text x="660" y="265" font-size="40" fill="#cbd7f5">Every estimate stays under your control.</text>
+  </g>
+  <g filter="url(#shadow)"><rect x="165" y="485" width="990" height="2260" rx="156" fill="url(#case)"/><rect x="184" y="504" width="952" height="2222" rx="139" fill="#01030a"/><rect x="210" y="530" width="900" height="2170" rx="105" fill="url(#screen)"/></g>
+  <g clip-path="url(#screenClip)" font-family="Arial, Helvetica, sans-serif">
+    <rect x="210" y="530" width="900" height="2170" fill="url(#screen)"/>
+    <text x="270" y="595" fill="#f8fbff" font-size="27" font-weight="700">9:41</text><g fill="#dce5fb"><rect x="1016" y="567" width="42" height="22" rx="6"/><rect x="1062" y="573" width="5" height="10" rx="2"/></g>
+    <text x="260" y="720" fill="#fff" font-size="52" font-weight="700">Today</text>
+    <text x="260" y="770" fill="#96a3c2" font-size="27">One estimate is ready for review</text>
+
+    <rect x="250" y="830" width="820" height="1260" rx="48" fill="#1d2239" stroke="#755eff" stroke-opacity="0.56" stroke-width="4"/>
+    <circle cx="330" cy="920" r="40" fill="#342b69"/><path d="M330 886a35 35 0 1 0 30 52 29 29 0 0 1-30-52Z" fill="#b99cff"/>
+    <text x="390" y="922" fill="#fff" font-size="40" font-weight="700">Probable sleep detected</text>
+    <text x="300" y="1005" fill="#b5c0d9" font-size="27">You were away from Sleep Detector long enough</text>
+    <text x="300" y="1045" fill="#b5c0d9" font-size="27">to suggest sleep. Nothing is saved yet.</text>
+
+    <rect x="300" y="1110" width="720" height="250" rx="34" fill="#12182c"/>
+    <text x="660" y="1200" fill="#fff" font-size="48" font-weight="700" text-anchor="middle">10:48 PM – 6:31 AM</text>
+    <text x="660" y="1288" fill="#cbbcff" font-size="70" font-weight="700" text-anchor="middle">7h 43m</text>
+    <rect x="485" y="1320" width="350" height="5" rx="3" fill="#755eff"/>
+
+    <rect x="300" y="1410" width="720" height="155" rx="30" fill="#152d31" stroke="#4fd8d0" stroke-opacity="0.35" stroke-width="3"/>
+    <circle cx="355" cy="1488" r="24" fill="#225a57"/><path d="M342 1488l10 11 18-24" fill="none" stroke="#62e5d7" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+    <text x="405" y="1478" fill="#e8ffff" font-size="30" font-weight="700">78% confidence</text>
+    <text x="405" y="1524" fill="#9cd6d1" font-size="25">Apple Health overlap refined this estimate</text>
+
+    <text x="300" y="1645" fill="#fff" font-size="31" font-weight="700">Adjust boundaries</text>
+    <g font-size="26">
+      <text x="305" y="1725" fill="#b9c4df">Sleep start</text>
+      <rect x="680" y="1675" width="145" height="75" rx="22" fill="#292f49"/><text x="752" y="1724" text-anchor="middle" fill="#d9e1f5" font-weight="700">−15m</text>
+      <rect x="850" y="1675" width="145" height="75" rx="22" fill="#292f49"/><text x="922" y="1724" text-anchor="middle" fill="#d9e1f5" font-weight="700">+15m</text>
+      <text x="305" y="1828" fill="#b9c4df">Wake time</text>
+      <rect x="680" y="1778" width="145" height="75" rx="22" fill="#292f49"/><text x="752" y="1827" text-anchor="middle" fill="#d9e1f5" font-weight="700">−15m</text>
+      <rect x="850" y="1778" width="145" height="75" rx="22" fill="#292f49"/><text x="922" y="1827" text-anchor="middle" fill="#d9e1f5" font-weight="700">+15m</text>
+    </g>
+
+    <rect x="300" y="1920" width="320" height="100" rx="50" fill="#292f49"/><text x="460" y="1982" fill="#d8e0f3" font-size="31" font-weight="700" text-anchor="middle">Not sleep</text>
+    <rect x="645" y="1920" width="375" height="100" rx="50" fill="url(#button)"/><text x="833" y="1982" fill="#fff" font-size="31" font-weight="700" text-anchor="middle">Confirm sleep</text>
+
+    <rect x="280" y="2165" width="760" height="175" rx="34" fill="#151b30"/>
+    <circle cx="345" cy="2253" r="28" fill="#332a62"/><path d="M345 2237v33M330 2253h30" stroke="#bb9cff" stroke-width="6" stroke-linecap="round"/>
+    <text x="400" y="2238" fill="#fff" font-size="29" font-weight="700">Your decision comes first</text>
+    <text x="400" y="2286" fill="#aeb9d5" font-size="25">Edit, confirm, or dismiss every estimate.</text>
+
+    <rect x="210" y="2470" width="900" height="230" fill="#11162a"/><line x1="210" y1="2470" x2="1110" y2="2470" stroke="#303852" stroke-width="3"/>
+    <g text-anchor="middle" font-size="24"><circle cx="380" cy="2550" r="20" fill="#795cff"/><text x="380" y="2600" fill="#bb9cff" font-weight="700">Today</text><rect x="640" y="2532" width="40" height="34" rx="8" fill="none" stroke="#8f9ab5" stroke-width="4"/><text x="660" y="2600" fill="#8f9ab5">History</text><path d="M920 2565v-38M950 2565v-62M980 2565v-48" stroke="#8f9ab5" stroke-width="9" stroke-linecap="round"/><text x="950" y="2600" fill="#8f9ab5">Statistics</text></g>
+  </g>
+  <rect x="485" y="552" width="350" height="88" rx="44" fill="#010205"/>
+</svg>

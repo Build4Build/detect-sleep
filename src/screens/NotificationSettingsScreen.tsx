@@ -14,9 +14,9 @@ interface NotificationSettings {
 export const NotificationSettingsScreen = () => {
   const { colors } = useTheme();
   const [settings, setSettings] = useState<NotificationSettings>({
-    sleepDetectionEnabled: true,
-    wakeDetectionEnabled: true,
-    sleepRemindersEnabled: true,
+    sleepDetectionEnabled: false,
+    wakeDetectionEnabled: false,
+    sleepRemindersEnabled: false,
     bedtimeReminderHour: 22,
   });
   const [notificationService] = useState(() => NotificationService.getInstance());
@@ -38,9 +38,13 @@ export const NotificationSettingsScreen = () => {
   };
 
   const updateSetting = async (key: keyof NotificationSettings, value: any) => {
+    const previousSettings = settings;
     try {
+      if (value === true && !(await notificationService.requestPermissions())) {
+        Alert.alert('Permission Needed', 'Enable notifications in iOS Settings to use this option.');
+        return;
+      }
       const newSettings = { ...settings, [key]: value };
-      setSettings(newSettings);
       await notificationService.updateSettings({ [key]: value });
 
       // Handle special cases
@@ -51,8 +55,11 @@ export const NotificationSettingsScreen = () => {
           await notificationService.cancelBedtimeReminder();
         }
       }
+      setSettings(newSettings);
     } catch (error) {
       console.error('Failed to update notification setting:', error);
+      await notificationService.updateSettings(previousSettings).catch(console.error);
+      setSettings(previousSettings);
       Alert.alert('Error', 'Failed to update notification settings');
     }
   };
@@ -95,33 +102,15 @@ export const NotificationSettingsScreen = () => {
       </View>
 
       <View style={themedStyles.section}>
-        <Text style={themedStyles.sectionTitle}>Sleep Detection</Text>
-        
-        <View style={themedStyles.settingRow}>
-          <View style={themedStyles.settingInfo}>
-            <Ionicons name="moon-outline" size={24} color={colors.primary} />
-            <View style={themedStyles.settingText}>
-              <Text style={themedStyles.settingLabel}>Sleep Detection Alerts</Text>
-              <Text style={themedStyles.settingDescription}>
-                Get notified when inactivity-based sleep is detected
-              </Text>
-            </View>
-          </View>
-          <Switch
-            value={settings.sleepDetectionEnabled}
-            onValueChange={(value) => updateSetting('sleepDetectionEnabled', value)}
-            trackColor={{ false: colors.border, true: colors.primary + '40' }}
-            thumbColor={settings.sleepDetectionEnabled ? colors.primary : colors.textSecondary}
-          />
-        </View>
+        <Text style={themedStyles.sectionTitle}>Sleep Summaries</Text>
 
         <View style={themedStyles.settingRow}>
           <View style={themedStyles.settingInfo}>
             <Ionicons name="sunny-outline" size={24} color={colors.primary} />
             <View style={themedStyles.settingText}>
-              <Text style={themedStyles.settingLabel}>Wake Detection Alerts</Text>
+              <Text style={themedStyles.settingLabel}>Confirmed Sleep Summary</Text>
               <Text style={themedStyles.settingDescription}>
-                Get a summary when you wake up with sleep duration and quality
+                Get a duration summary after you confirm a sleep period
               </Text>
             </View>
           </View>
@@ -183,10 +172,7 @@ export const NotificationSettingsScreen = () => {
       <View style={themedStyles.infoSection}>
         <Text style={themedStyles.infoTitle}>ℹ️ About Notifications</Text>
         <Text style={themedStyles.infoText}>
-          • Sleep detection notifications are sent when you've been inactive for your set threshold
-        </Text>
-        <Text style={themedStyles.infoText}>
-          • Wake notifications include your sleep duration and quality assessment
+          • Summary notifications are sent only after you confirm a sleep estimate
         </Text>
         <Text style={themedStyles.infoText}>
           • Bedtime reminders help maintain consistent sleep schedules

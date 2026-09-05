@@ -21,7 +21,6 @@ const SLEEP_TIPS = [
   "Avoid large meals and beverages late at night",
   "Try relaxation techniques like deep breathing",
   "Limit daytime naps to 30 minutes or less",
-  "Try mouth taping to promote nasal breathing during sleep",
   "Consider using blackout curtains to block light",
   "Use sleep masks or earplugs to reduce light and noise",
   "If you can't sleep, get up and do something relaxing",
@@ -36,7 +35,13 @@ const TodayScreen = () => {
     currentConfidence, 
     todayRecords, 
     getTodaySleepDuration,
-    manuallySetStatus
+    manuallySetStatus,
+    pendingSleepCandidate,
+    confirmSleepCandidate,
+    dismissSleepCandidate,
+    updateSleepCandidateBounds,
+    todayWellnessReport,
+    saveWellnessCheckIn,
   } = useSleep();
   const { colors, isDarkMode } = useTheme();
   const [dailyTip, setDailyTip] = useState('');
@@ -81,7 +86,9 @@ const TodayScreen = () => {
   
   // Get sleep quality assessment
   const getSleepQualityText = () => {
-    if (sleepDuration >= 480) { // 8+ hours
+    if (sleepDuration <= 0) {
+      return { text: 'No data yet', color: colors.textSecondary };
+    } else if (sleepDuration >= 480) { // 8+ hours
       return { text: 'Excellent', color: '#4CAF50' };
     } else if (sleepDuration >= 420) { // 7+ hours
       return { text: 'Good', color: '#8BC34A' };
@@ -117,6 +124,23 @@ const TodayScreen = () => {
   };
   
   const sleepQuality = getSleepQualityText();
+
+  const savedLevel = (value?: number): 1 | 2 | 3 | 4 | 5 | undefined =>
+    value === 1 || value === 2 || value === 3 || value === 4 || value === 5
+      ? value
+      : undefined;
+
+  const saveCheckInLevel = (
+    kind: 'stress' | 'anxiety',
+    level: 1 | 2 | 3 | 4 | 5,
+  ) => saveWellnessCheckIn({
+    stressLevel: kind === 'stress'
+      ? level
+      : savedLevel(todayWellnessReport?.selfReportedStress),
+    anxietyLevel: kind === 'anxiety'
+      ? level
+      : savedLevel(todayWellnessReport?.selfReportedAnxiety),
+  });
   
   // Get color for confidence level
   const getConfidenceColor = (confidence: number) => {
@@ -186,6 +210,79 @@ const TodayScreen = () => {
           </Text>
         </View>
       </TouchableOpacity>
+
+      {pendingSleepCandidate && (
+        <View style={themedStyles.candidateCard}>
+          <View style={themedStyles.candidateHeader}>
+            <Ionicons name="moon-outline" size={24} color={colors.primary} />
+            <Text style={themedStyles.cardTitle}>Probable sleep detected</Text>
+          </View>
+          <Text style={themedStyles.candidateDescription}>
+            You were away from Sleep Detector for long enough to suggest sleep. Confirm this estimate before it is saved or sent to Apple Health.
+          </Text>
+          <Text style={themedStyles.candidateTime}>
+            {formatTime(pendingSleepCandidate.startTime)} – {formatTime(pendingSleepCandidate.endTime)}
+          </Text>
+          <Text style={themedStyles.candidateDuration}>
+            {formatDuration((pendingSleepCandidate.endTime - pendingSleepCandidate.startTime) / 60_000)}
+          </Text>
+          <Text style={themedStyles.candidateEvidence}>
+            {pendingSleepCandidate.confidence}% confidence · {pendingSleepCandidate.explanation ?? 'Review the estimate before saving it.'}
+          </Text>
+          <View style={themedStyles.boundaryEditor}>
+            <View style={themedStyles.boundaryRow}>
+              <Text style={themedStyles.boundaryLabel}>Sleep start</Text>
+              <TouchableOpacity
+                style={themedStyles.boundaryButton}
+                onPress={() => updateSleepCandidateBounds(
+                  pendingSleepCandidate.startTime - 15 * 60_000,
+                  pendingSleepCandidate.endTime,
+                )}
+              >
+                <Text style={themedStyles.boundaryButtonText}>−15m</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={themedStyles.boundaryButton}
+                onPress={() => updateSleepCandidateBounds(
+                  pendingSleepCandidate.startTime + 15 * 60_000,
+                  pendingSleepCandidate.endTime,
+                )}
+              >
+                <Text style={themedStyles.boundaryButtonText}>+15m</Text>
+              </TouchableOpacity>
+            </View>
+            <View style={themedStyles.boundaryRow}>
+              <Text style={themedStyles.boundaryLabel}>Wake time</Text>
+              <TouchableOpacity
+                style={themedStyles.boundaryButton}
+                onPress={() => updateSleepCandidateBounds(
+                  pendingSleepCandidate.startTime,
+                  pendingSleepCandidate.endTime - 15 * 60_000,
+                )}
+              >
+                <Text style={themedStyles.boundaryButtonText}>−15m</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={themedStyles.boundaryButton}
+                onPress={() => updateSleepCandidateBounds(
+                  pendingSleepCandidate.startTime,
+                  pendingSleepCandidate.endTime + 15 * 60_000,
+                )}
+              >
+                <Text style={themedStyles.boundaryButtonText}>+15m</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+          <View style={themedStyles.candidateActions}>
+            <TouchableOpacity style={themedStyles.dismissCandidateButton} onPress={dismissSleepCandidate}>
+              <Text style={themedStyles.dismissCandidateText}>Not sleep</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={themedStyles.confirmCandidateButton} onPress={confirmSleepCandidate}>
+              <Text style={themedStyles.confirmCandidateText}>Confirm sleep</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
       
       <View style={themedStyles.sleepCard}>
         <Text style={themedStyles.cardTitle}>Today's Sleep</Text>
@@ -194,7 +291,7 @@ const TodayScreen = () => {
           <View style={themedStyles.sleepDataContainer}>
             <Text style={themedStyles.sleepDuration}>{formatDuration(sleepDuration)}</Text>
             <View style={themedStyles.qualityContainer}>
-              <Text style={themedStyles.qualityLabel}>Quality:</Text>
+              <Text style={themedStyles.qualityLabel}>Duration assessment:</Text>
               <Text style={[themedStyles.qualityValue, { color: sleepQuality.color }]}>
                 {sleepQuality.text}
               </Text>
@@ -202,6 +299,96 @@ const TodayScreen = () => {
           </View>
         </View>
       </View>
+
+      {todayWellnessReport && (
+        <View style={themedStyles.wellnessCard}>
+          <View style={themedStyles.candidateHeader}>
+            <Ionicons name="pulse-outline" size={24} color={colors.primary} />
+            <Text style={themedStyles.cardTitle}>Daily wellness report</Text>
+          </View>
+          <View style={themedStyles.wellnessMetrics}>
+            <View style={themedStyles.wellnessMetric}>
+              <Text style={themedStyles.wellnessMetricValue}>
+                {todayWellnessReport.sleepConsistencyScore}%
+              </Text>
+              <Text style={themedStyles.wellnessMetricLabel}>Timing consistency</Text>
+            </View>
+            <View style={themedStyles.wellnessMetric}>
+              <Text style={themedStyles.wellnessMetricValue}>
+                {todayWellnessReport.sleepContinuityScore !== undefined
+                  ? `${todayWellnessReport.sleepContinuityScore}%`
+                  : '—'}
+              </Text>
+              <Text style={themedStyles.wellnessMetricLabel}>Continuity</Text>
+            </View>
+            <View style={themedStyles.wellnessMetric}>
+              <Text style={themedStyles.wellnessMetricValue}>
+                {todayWellnessReport.recoverySignal === 'limited-data'
+                  ? 'Learning'
+                  : todayWellnessReport.recoverySignal.replace('-', ' ')}
+              </Text>
+              <Text style={themedStyles.wellnessMetricLabel}>Recovery trend</Text>
+            </View>
+          </View>
+
+          {(todayWellnessReport.heartRateVariabilityMs !== undefined ||
+            todayWellnessReport.restingHeartRate !== undefined) && (
+            <Text style={themedStyles.wellnessSignals}>
+              {todayWellnessReport.heartRateVariabilityMs !== undefined
+                ? `HRV ${Math.round(todayWellnessReport.heartRateVariabilityMs)} ms`
+                : ''}
+              {todayWellnessReport.heartRateVariabilityMs !== undefined &&
+              todayWellnessReport.restingHeartRate !== undefined
+                ? ' · '
+                : ''}
+              {todayWellnessReport.restingHeartRate !== undefined
+                ? `Resting HR ${Math.round(todayWellnessReport.restingHeartRate)} bpm`
+                : ''}
+            </Text>
+          )}
+
+          {todayWellnessReport.observations.map(observation => (
+            <Text key={observation} style={themedStyles.wellnessObservation}>
+              • {observation}
+            </Text>
+          ))}
+
+          <Text style={themedStyles.checkInTitle}>Optional daily check-in</Text>
+          {(['stress', 'anxiety'] as const).map(kind => {
+            const selected = kind === 'stress'
+              ? todayWellnessReport.selfReportedStress
+              : todayWellnessReport.selfReportedAnxiety;
+            return (
+              <View key={kind} style={themedStyles.checkInRow}>
+                <Text style={themedStyles.checkInLabel}>
+                  {kind === 'stress' ? 'Stress' : 'Anxiety'}
+                </Text>
+                {([1, 2, 3, 4, 5] as const).map(level => (
+                  <TouchableOpacity
+                    key={level}
+                    accessibilityLabel={`${kind} level ${level} of 5`}
+                    style={[
+                      themedStyles.checkInButton,
+                      selected === level && themedStyles.checkInButtonSelected,
+                    ]}
+                    onPress={() => saveCheckInLevel(kind, level)}
+                  >
+                    <Text style={[
+                      themedStyles.checkInButtonText,
+                      selected === level && themedStyles.checkInButtonTextSelected,
+                    ]}>
+                      {level}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            );
+          })}
+          <Text style={themedStyles.wellnessDisclaimer}>
+            Wellness trends only. Correlations do not show cause and are not a medical diagnosis.
+          </Text>
+        </View>
+      )}
       
       <View style={themedStyles.activityCard}>
         <Text style={themedStyles.cardTitle}>Activity Timeline</Text>
@@ -302,6 +489,102 @@ const createThemedStyles = (colors: any) => StyleSheet.create({
     shadowRadius: 4,
     elevation: 2,
   },
+  candidateCard: {
+    backgroundColor: colors.card,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.primary,
+    marginHorizontal: 16,
+    marginBottom: 16,
+    padding: 16,
+  },
+  candidateHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  candidateDescription: {
+    color: colors.textSecondary,
+    lineHeight: 20,
+    marginBottom: 12,
+  },
+  candidateTime: {
+    color: colors.text,
+    fontSize: 18,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  candidateDuration: {
+    color: colors.primary,
+    fontSize: 16,
+    fontWeight: '600',
+    marginTop: 4,
+    textAlign: 'center',
+  },
+  candidateEvidence: {
+    color: colors.textSecondary,
+    fontSize: 13,
+    lineHeight: 18,
+    marginTop: 10,
+  },
+  boundaryEditor: {
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: colors.border,
+    marginTop: 12,
+    paddingTop: 8,
+  },
+  boundaryRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 8,
+  },
+  boundaryLabel: {
+    color: colors.text,
+    flex: 1,
+    fontWeight: '600',
+  },
+  boundaryButton: {
+    borderColor: colors.border,
+    borderRadius: 8,
+    borderWidth: 1,
+    minWidth: 58,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+  },
+  boundaryButtonText: {
+    color: colors.primary,
+    fontWeight: '700',
+    textAlign: 'center',
+  },
+  candidateActions: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 16,
+  },
+  dismissCandidateButton: {
+    flex: 1,
+    borderColor: colors.border,
+    borderRadius: 8,
+    borderWidth: 1,
+    paddingVertical: 12,
+  },
+  dismissCandidateText: {
+    color: colors.text,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  confirmCandidateButton: {
+    flex: 1,
+    backgroundColor: colors.primary,
+    borderRadius: 8,
+    paddingVertical: 12,
+  },
+  confirmCandidateText: {
+    color: '#fff',
+    fontWeight: '600',
+    textAlign: 'center',
+  },
   statusHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -372,6 +655,89 @@ const createThemedStyles = (colors: any) => StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 2,
+  },
+  wellnessCard: {
+    backgroundColor: colors.card,
+    borderRadius: 12,
+    marginHorizontal: 16,
+    marginBottom: 16,
+    padding: 16,
+  },
+  wellnessMetrics: {
+    flexDirection: 'row',
+    gap: 8,
+    marginVertical: 12,
+  },
+  wellnessMetric: {
+    backgroundColor: colors.surface,
+    borderRadius: 8,
+    flex: 1,
+    minHeight: 70,
+    padding: 8,
+  },
+  wellnessMetricValue: {
+    color: colors.primary,
+    fontSize: 15,
+    fontWeight: '700',
+    textTransform: 'capitalize',
+  },
+  wellnessMetricLabel: {
+    color: colors.textSecondary,
+    fontSize: 11,
+    lineHeight: 14,
+    marginTop: 4,
+  },
+  wellnessSignals: {
+    color: colors.text,
+    fontWeight: '600',
+    marginBottom: 8,
+  },
+  wellnessObservation: {
+    color: colors.textSecondary,
+    lineHeight: 19,
+    marginTop: 4,
+  },
+  checkInTitle: {
+    color: colors.text,
+    fontSize: 15,
+    fontWeight: '700',
+    marginTop: 16,
+  },
+  checkInRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 7,
+    marginTop: 10,
+  },
+  checkInLabel: {
+    color: colors.text,
+    flex: 1,
+  },
+  checkInButton: {
+    alignItems: 'center',
+    borderColor: colors.border,
+    borderRadius: 16,
+    borderWidth: 1,
+    height: 32,
+    justifyContent: 'center',
+    width: 32,
+  },
+  checkInButtonSelected: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
+  },
+  checkInButtonText: {
+    color: colors.text,
+    fontWeight: '600',
+  },
+  checkInButtonTextSelected: {
+    color: '#fff',
+  },
+  wellnessDisclaimer: {
+    color: colors.textSecondary,
+    fontSize: 11,
+    lineHeight: 15,
+    marginTop: 14,
   },
   cardTitle: {
     fontSize: 18,
@@ -522,4 +888,4 @@ const createThemedStyles = (colors: any) => StyleSheet.create({
   }
 });
 
-export default TodayScreen; 
+export default TodayScreen;

@@ -1,0 +1,34 @@
+Understand when you may have slept—even if you forgot to start a timer.
+
+Sleep Detector notices how long the app has been away. When you return after a long interval, it creates an editable sleep estimate for review. App-away time alone is not treated as proof of sleep: low-confidence estimates always wait for your confirmation.
+
+For more context, optionally connect Apple Health and the Apple Watch companion. Sleep stages and selected recovery signals can refine a candidate; only periods you confirm are written back to Health when sync is enabled.
+
+REVIEW BEFORE SAVING
+
+• Inspect estimated start and end times
+• See confidence and evidence details
+• Edit, confirm, or dismiss each estimate
+• Review history, trends, and daily wellness context
+
+APPLE WATCH + HEALTH
+
+• View last night's duration and stages on your wrist
+• Refresh on demand—no continuous sensor workout
+• Read Health data only after permission
+• Write only confirmed sleep periods
+• Avoid duplicate Health entries
+
+PRIVATE BY DESIGN
+
+• No account
+• No advertising or tracking
+• No cloud sleep profile
+• On-device storage and analysis
+• User-initiated JSON and CSV export
+
+BATTERY CONSCIOUS
+
+Sleep Detector records lightweight app lifecycle timestamps instead of running a continuous background sensor session. iOS may suspend apps; the estimate is completed when Sleep Detector is reopened.
+
+Sleep Detector supports awareness and journaling. It is not a medical device and does not diagnose sleep disorders. Results depend on available evidence and user confirmation.

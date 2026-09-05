@@ -3,7 +3,7 @@ import { SleepEntry } from '../types/SleepEntry';
 import { HealthService } from './HealthService';
 
 // Create a singleton instance of our health service
-const healthService = new HealthService();
+const healthService = HealthService.getInstance();
 
 // Storage key for sleep data
 const SLEEP_DATA_KEY = '@SleepDetector:sleepData';
@@ -61,13 +61,8 @@ export class SleepTrackerService {
    * Set whether health sync is enabled
    */
   public async setHealthSyncEnabled(enabled: boolean): Promise<void> {
-    this.healthSyncEnabled = enabled;
-    await AsyncStorage.setItem(HEALTH_SYNC_ENABLED_KEY, enabled.toString());
-    
-    // Initialize health service if enabling
-    if (enabled) {
-      await healthService.initialize();
-    }
+    this.healthSyncEnabled = await healthService.setSyncEnabled(enabled);
+    await AsyncStorage.setItem(HEALTH_SYNC_ENABLED_KEY, this.healthSyncEnabled.toString());
   }
 
   /**
@@ -220,4 +215,4 @@ export class SleepTrackerService {
     this.sleepData = [];
     await this.saveSleepData();
   }
-} 
+}

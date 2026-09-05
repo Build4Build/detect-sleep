@@ -1,0 +1,14 @@
+Sleep Detector does not run a continuous background sensor session. It records lightweight app lifecycle timestamps and creates an editable estimate after the app returns from an inactivity interval.
+
+Suggested review flow:
+1. Open Settings and set the inactivity threshold to 5 minutes.
+2. Put the app in the background for more than 5 minutes.
+3. Reopen the app. A candidate is shown for review and can be edited, confirmed, or dismissed.
+
+App-only inactivity is low-confidence evidence and always requires confirmation. If Apple Health or Apple Watch sleep samples overlap the interval, they can refine its boundaries and confidence.
+
+Apple Health is optional. To test it, open Settings > Health Integration and enable the switch. The permission sheet requests sleep stages plus optional recovery signals. Only confirmed sleep periods are written, and only when Health sync is enabled.
+
+The Apple Watch companion refreshes Health data on demand and does not start a workout or continuous sensor session. If the test account has no Health sleep samples, the Watch app shows an empty state.
+
+No account or login is required. The app contains no ads or tracking, keeps its sleep data on device, and is not a medical device.

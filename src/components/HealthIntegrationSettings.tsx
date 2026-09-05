@@ -1,211 +1,101 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, Switch, StyleSheet, TouchableOpacity, Alert } from 'react-native';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Alert, AppState, StyleSheet, Switch, Text, View } from 'react-native';
 import { HealthService } from '../services/HealthService';
 import { useTheme } from '../context/ThemeContext';
-
-// Create a singleton instance of our health service
-const healthService = new HealthService();
+import { useSleep } from '../context/SleepContext';
 
 interface HealthIntegrationSettingsProps {
   onStatusChange?: (connected: boolean) => void;
 }
 
-/**
- * Component for managing health integration settings
- */
 const HealthIntegrationSettings: React.FC<HealthIntegrationSettingsProps> = ({ onStatusChange }) => {
-  const [isAvailable, setIsAvailable] = useState<boolean>(false);
-  const [isConnected, setIsConnected] = useState<boolean>(false);
-  const [syncEnabled, setSyncEnabled] = useState<boolean>(false);
-  const [loading, setLoading] = useState<boolean>(true);
+  const healthService = useMemo(() => HealthService.getInstance(), []);
+  const { syncHealthSessions } = useSleep();
   const { colors } = useTheme();
+  const styles = createStyles(colors);
+  const [available, setAvailable] = useState(false);
+  const [enabled, setEnabled] = useState(false);
+  const [loading, setLoading] = useState(true);
   const serviceName = healthService.getServiceName();
 
-  // Create themed styles
-  const themedStyles = createThemedStyles(colors);
-
-  // Initialize on component mount
   useEffect(() => {
-    checkHealthServiceStatus();
-  }, []);
+    const load = async () => {
+      const isAvailable = healthService.isAvailable();
+      setAvailable(isAvailable);
+      const authorized = isAvailable ? await healthService.initialize(false) : false;
+      const syncEnabled = isAvailable && await healthService.getSyncEnabled();
+      setEnabled(syncEnabled && authorized);
+      setLoading(false);
+    };
+    load().catch(error => {
+      console.error('Unable to load health integration:', error);
+      setLoading(false);
+    });
+    const subscription = AppState.addEventListener('change', state => {
+      if (state === 'active') load().catch(console.error);
+    });
+    return () => subscription.remove();
+  }, [healthService]);
 
-  /**
-   * Check the status of the health service
-   */
-  const checkHealthServiceStatus = async () => {
+  const changeSync = async (value: boolean) => {
     setLoading(true);
-    
-    // Check if health services are available
-    const available = healthService.isAvailable();
-    setIsAvailable(available);
-    
-    if (available) {
-      // Try to initialize if available
-      const initialized = await healthService.initialize();
-      setIsConnected(initialized && healthService.hasRequiredPermissions());
-      
-      // If we had a status change callback, call it
-      if (onStatusChange) {
-        onStatusChange(initialized && healthService.hasRequiredPermissions());
-      }
-    }
-    
-    setLoading(false);
-  };
-
-  /**
-   * Handle connect button press
-   */
-  const handleConnect = async () => {
     try {
-      setLoading(true);
-      const success = await healthService.initialize();
-      setIsConnected(success);
-      
-      if (onStatusChange) {
-        onStatusChange(success);
-      }
-      
+      const success = await healthService.setSyncEnabled(value);
       if (!success) {
         Alert.alert(
-          'Connection Failed',
-          `Unable to connect to ${serviceName}. Please check your permissions and try again.`
+          'Apple Health Permission Needed',
+          'Allow Sleep Detector to write Sleep Analysis in the Health permission sheet, then try again.',
         );
+        return;
       }
+      setEnabled(value);
+      onStatusChange?.(value);
+      if (value) await syncHealthSessions(true);
     } catch (error) {
-      console.error('Failed to connect to health service:', error);
-      Alert.alert(
-        'Connection Error',
-        `Error connecting to ${serviceName}: ${error instanceof Error ? error.message : 'Unknown error'}`
-      );
+      console.error('Unable to update health sync:', error);
+      Alert.alert('Health Sync Error', `Could not update ${serviceName}: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setLoading(false);
     }
   };
 
-  /**
-   * Handle sync toggle change
-   */
-  const handleSyncToggle = (value: boolean) => {
-    setSyncEnabled(value);
-    
-    // Here you would enable/disable syncing in your app's logic
-    // For example, storing the preference in AsyncStorage
-  };
-
-  /**
-   * Render the appropriate connection status
-   */
-  const renderConnectionStatus = () => {
-    if (!isAvailable) {
-      return (
-        <Text style={themedStyles.notAvailableText}>
-          {serviceName} integration is not available on this device.
-        </Text>
-      );
-    }
-
-    if (isConnected) {
-      return (
-        <View style={themedStyles.connectedContainer}>
-          <Text style={themedStyles.connectedText}>
-            {`Connected to ${serviceName}`}
-          </Text>
-          <View style={themedStyles.settingRow}>
-            <Text style={themedStyles.settingText}>Import sleep data</Text>
-            <Switch
-              value={syncEnabled}
-              onValueChange={handleSyncToggle}
-              disabled={loading}
-              trackColor={{ false: colors.border, true: colors.primary + '80' }}
-              thumbColor={syncEnabled ? colors.primary : colors.surface}
-            />
-          </View>
-          <View style={themedStyles.settingRow}>
-            <Text style={themedStyles.settingText}>Export sleep data</Text>
-            <Switch
-              value={syncEnabled}
-              onValueChange={handleSyncToggle}
-              disabled={loading}
-              trackColor={{ false: colors.border, true: colors.primary + '80' }}
-              thumbColor={syncEnabled ? colors.primary : colors.surface}
-            />
-          </View>
-        </View>
-      );
-    }
-
-    return (
-      <TouchableOpacity
-        style={themedStyles.connectButton}
-        onPress={handleConnect}
-        disabled={loading}
-      >
-        <Text style={themedStyles.connectButtonText}>
-          {loading ? 'Connecting...' : `Connect to ${serviceName}`}
-        </Text>
-      </TouchableOpacity>
-    );
-  };
-
   return (
-    <View style={themedStyles.container}>
-      <Text style={themedStyles.title}>{serviceName} Integration</Text>
-      {renderConnectionStatus()}
+    <View style={styles.container}>
+      <Text style={styles.title}>{serviceName} Integration</Text>
+      {!available ? (
+        <Text style={styles.secondary}>{serviceName} is not available on this device.</Text>
+      ) : (
+        <>
+          <View style={styles.row}>
+            <View style={styles.copy}>
+              <Text style={styles.label}>Sync detected sleep</Text>
+              <Text style={styles.secondary}>
+                Write confirmed sleep periods, and read sleep stages plus optional recovery signals for private on-device insights.
+              </Text>
+            </View>
+            <Switch
+              value={enabled}
+              onValueChange={changeSync}
+              disabled={loading}
+              trackColor={{ false: colors.border, true: `${colors.primary}80` }}
+              thumbColor={enabled ? colors.primary : colors.surface}
+            />
+          </View>
+          <Text style={styles.status}>{loading ? 'Checking permissions…' : enabled ? 'Sync enabled' : 'Sync disabled'}</Text>
+        </>
+      )}
     </View>
   );
 };
 
-// Create themed styles function
-const createThemedStyles = (colors: any) => StyleSheet.create({
-  container: {
-    padding: 16,
-    backgroundColor: colors.card,
-    borderRadius: 8,
-    marginBottom: 16,
-  },
-  title: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 12,
-    color: colors.text,
-  },
-  connectButton: {
-    backgroundColor: colors.primary,
-    padding: 12,
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  connectButtonText: {
-    color: '#fff',
-    fontWeight: '600',
-    fontSize: 16,
-  },
-  notAvailableText: {
-    color: colors.textSecondary,
-    fontStyle: 'italic',
-    textAlign: 'center',
-  },
-  connectedContainer: {
-    marginTop: 8,
-  },
-  connectedText: {
-    color: colors.success,
-    fontWeight: '600',
-    marginBottom: 16,
-  },
-  settingRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 8,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.border,
-  },
-  settingText: {
-    fontSize: 16,
-    color: colors.text,
-  },
+const createStyles = (colors: any) => StyleSheet.create({
+  container: { padding: 16, backgroundColor: colors.card, borderRadius: 8, marginBottom: 16 },
+  title: { fontSize: 18, fontWeight: 'bold', marginBottom: 12, color: colors.text },
+  row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  copy: { flex: 1, paddingRight: 12 },
+  label: { fontSize: 16, color: colors.text, fontWeight: '600' },
+  secondary: { color: colors.textSecondary, marginTop: 4 },
+  status: { color: colors.success, marginTop: 12, fontWeight: '600' },
 });
 
-export default HealthIntegrationSettings; 
+export default HealthIntegrationSettings;

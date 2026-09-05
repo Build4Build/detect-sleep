@@ -94,9 +94,8 @@ interface ThemeProviderProps {
 export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
   const [themeMode, setThemeModeState] = useState<ThemeMode>('auto');
   const [systemColorScheme, setSystemColorScheme] = useState<ColorSchemeName>(
-    Appearance.getColorScheme()
+    Appearance.getColorScheme() ?? 'unspecified'
   );
-  const [forceUpdate, setForceUpdate] = useState(0); // <--- add force update state
 
   // Load saved theme preference
   useEffect(() => {
@@ -118,7 +117,6 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
   useEffect(() => {
     const subscription = Appearance.addChangeListener(({ colorScheme }) => {
       setSystemColorScheme(colorScheme);
-      setForceUpdate((f) => f + 1); // <--- force re-render on system change
     });
     return () => subscription?.remove();
   }, []);
@@ -136,7 +134,6 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
     try {
       setThemeModeState(mode);
       await AsyncStorage.setItem(THEME_STORAGE_KEY, mode);
-      setForceUpdate((f) => f + 1); // <--- force re-render on theme change
       console.log(`Theme mode saved and applied: ${mode}`);
     } catch (error) {
       console.error('Failed to save theme preference:', error);
@@ -153,8 +150,7 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
         setThemeMode,
       }}
     >
-      {/* force update children on theme change */}
-      <React.Fragment key={forceUpdate}>{children}</React.Fragment>
+      {children}
     </ThemeContext.Provider>
   );
 };

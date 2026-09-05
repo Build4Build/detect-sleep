@@ -4,8 +4,7 @@ import { BarChart } from 'react-native-chart-kit';
 
 import { useSleep } from '../context/SleepContext';
 import { useTheme } from '../context/ThemeContext';
-import { formatDuration } from '../utils/dateUtils';
-import { getPastWeekDates, getPastMonthDates, getDayOfWeek } from '../utils/dateUtils';
+import { formatDuration, getPastWeekDates, getPastMonthDates, getDayOfWeek } from '../utils/dateUtils';
 
 const { width } = Dimensions.get('window');
 
@@ -24,8 +23,6 @@ const StatsScreen = () => {
 
   // Update chart data when time range or daily summaries change
   useEffect(() => {
-    if (dailySummaries.length === 0) return;
-
     // Get date range based on selected time range
     const dateRange = timeRange === 'week' ? getPastWeekDates() : getPastMonthDates();
 
@@ -75,6 +72,7 @@ const StatsScreen = () => {
     const filteredSummaries = dailySummaries.filter(
       summary => dateRange.includes(summary.date)
     );
+    if (filteredSummaries.length === 0) return { consistency: 0, efficiency: 0 };
 
     // Calculate sleep consistency (lower standard deviation is better)
     const sleepDurations = filteredSummaries.map(s => s.totalSleepMinutes / 60);
@@ -124,9 +122,6 @@ const StatsScreen = () => {
     style: {
       borderRadius: 8,
     },
-    propsForLabels: {
-      fontSize: timeRange === 'week' ? 12 : 10, // Smaller font for month view
-    },
     formatXLabel: (value: string) => {
       // For month view, ensure we don't show overlapping labels
       if (timeRange === 'month' && value === '') {
@@ -147,6 +142,9 @@ const StatsScreen = () => {
       )
     }]
   };
+  const hasSleepData = enhancedChartData.datasets[0].data.some(
+    (hours: number) => hours > 0,
+  );
 
   return (
     <ScrollView style={themedStyles.container}>
@@ -180,7 +178,7 @@ const StatsScreen = () => {
 
       <View style={themedStyles.card}>
         <Text style={themedStyles.cardTitle}>Sleep Duration</Text>
-        {enhancedChartData.datasets[0].data.length > 0 ? (
+        {hasSleepData ? (
           <View>
             <BarChart
               data={enhancedChartData}
@@ -240,7 +238,7 @@ const StatsScreen = () => {
         </View>
 
         <View style={themedStyles.metricCard}>
-          <Text style={themedStyles.metricTitle}>Efficiency</Text>
+          <Text style={themedStyles.metricTitle}>7h+ nights</Text>
           <View style={themedStyles.progressContainer}>
             <View
               style={[
@@ -268,7 +266,7 @@ const StatsScreen = () => {
               • Have a sleep consistency of {Math.round(metrics.consistency)}%
             </Text>
             <Text style={themedStyles.patternText}>
-              • Achieve good sleep {Math.round(metrics.efficiency)}% of the time
+              • Reach 7+ hours on {Math.round(metrics.efficiency)}% of recorded nights
             </Text>
           </View>
         ) : (

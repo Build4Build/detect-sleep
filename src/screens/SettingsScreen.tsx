@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Switch, TouchableOpacity, Alert, ScrollView, Modal, FlatList, Linking } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import Constants from 'expo-constants';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../types';
@@ -46,9 +47,12 @@ const THEME_OPTIONS = [
   { label: 'Dark', value: 'dark' as ThemeMode },
 ];
 
+// Keep unfinished controls out of production until they affect the detector.
+const SHOW_EXPERIMENTAL_DETECTION_SETTINGS = false;
+
 const SettingsScreen = () => {
   const navigation = useNavigation<SettingsScreenNavigationProp>();
-  const { settings, updateSettings } = useSleep();
+  const { settings, updateSettings, clearSleepData } = useSleep();
   const { themeMode, setThemeMode, colors, isDarkMode } = useTheme();
   const [useMachineLearning, setUseMachineLearning] = useState(settings.useMachineLearning);
   const [considerTimeOfDay, setConsiderTimeOfDay] = useState(settings.considerTimeOfDay);
@@ -72,6 +76,7 @@ const SettingsScreen = () => {
 
   // Create themed styles
   const themedStyles = createThemedStyles(colors);
+  const appVersion = Constants.expoConfig?.version ?? '1.4.1';
 
   // Sync local state with context settings when they change
   useEffect(() => {
@@ -79,8 +84,8 @@ const SettingsScreen = () => {
     if (!settingsInitialized ||
       useMachineLearning !== settings.useMachineLearning ||
       considerTimeOfDay !== settings.considerTimeOfDay ||
-      adaptiveThreshold !== (settings.adaptiveThreshold || true) ||
-      napDetection !== (settings.napDetection || true) ||
+      adaptiveThreshold !== (settings.adaptiveThreshold ?? true) ||
+      napDetection !== (settings.napDetection ?? true) ||
       smartWakeupWindow !== (settings.smartWakeupWindow ?? true) ||
       confidenceBasedAdjustment !== (settings.confidenceBasedAdjustment ?? true) ||
       contextualNotifications !== (settings.contextualNotifications ?? true) ||
@@ -91,8 +96,8 @@ const SettingsScreen = () => {
 
       setUseMachineLearning(settings.useMachineLearning);
       setConsiderTimeOfDay(settings.considerTimeOfDay);
-      setAdaptiveThreshold(settings.adaptiveThreshold || true);
-      setNapDetection(settings.napDetection || true);
+      setAdaptiveThreshold(settings.adaptiveThreshold ?? true);
+      setNapDetection(settings.napDetection ?? true);
       // New advanced settings synchronization
       setSmartWakeupWindow(settings.smartWakeupWindow ?? true);
       setConfidenceBasedAdjustment(settings.confidenceBasedAdjustment ?? true);
@@ -254,12 +259,7 @@ const SettingsScreen = () => {
           style: 'destructive',
           onPress: async () => {
             try {
-              // Only clear sleep-related data, not settings
-              await AsyncStorage.multiRemove([
-                'sleep-tracker-activity-records',
-                'sleep-tracker-daily-summaries',
-                'sleep-tracker-patterns'
-              ]);
+              await clearSleepData();
               Alert.alert('Success', 'All sleep data has been reset.');
             } catch (error) {
               console.error('Error resetting data:', error);
@@ -298,8 +298,17 @@ const SettingsScreen = () => {
     );
   };
 
+  const openExternalLink = async (url: string): Promise<void> => {
+    try {
+      await Linking.openURL(url);
+    } catch (error) {
+      console.error('Unable to open external link:', error);
+      Alert.alert('Unable to Open Link', 'Please try again when your device can open web links.');
+    }
+  };
+
   const openMealSnapApp = (): void => {
-    Linking.openURL('https://apps.apple.com/app/mealsnap-ai-food-log-tracker/id6475162854');
+    void openExternalLink('https://apps.apple.com/app/mealsnap-ai-food-log-tracker/id6475162854');
   };
 
   return (
@@ -313,7 +322,7 @@ const SettingsScreen = () => {
           <View>
             <Text style={themedStyles.settingLabel}>Inactivity Threshold</Text>
             <Text style={themedStyles.settingDescription}>
-              Base inactivity time before considered asleep
+              Time away before a probable sleep candidate is created for your confirmation
             </Text>
           </View>
           <View style={themedStyles.dropdownValueContainer}>
@@ -322,7 +331,7 @@ const SettingsScreen = () => {
           </View>
         </TouchableOpacity>
 
-        <TouchableOpacity
+        {SHOW_EXPERIMENTAL_DETECTION_SETTINGS && <TouchableOpacity
           style={themedStyles.dropdownButton}
           onPress={() => setShowSensitivityModal(true)}
         >
@@ -336,9 +345,9 @@ const SettingsScreen = () => {
             <Text style={themedStyles.dropdownValue}>{currentSensitivityOption.label}</Text>
             <Ionicons name="chevron-down" size={20} color={colors.primary} />
           </View>
-        </TouchableOpacity>
+        </TouchableOpacity>}
 
-        <TouchableOpacity
+        {SHOW_EXPERIMENTAL_DETECTION_SETTINGS && <TouchableOpacity
           style={themedStyles.dropdownButton}
           onPress={() => setShowPersistenceModal(true)}
         >
@@ -352,10 +361,10 @@ const SettingsScreen = () => {
             <Text style={themedStyles.dropdownValue}>{currentPersistenceOption.label}</Text>
             <Ionicons name="chevron-down" size={20} color={colors.primary} />
           </View>
-        </TouchableOpacity>
+        </TouchableOpacity>}
       </View>
 
-      <View style={themedStyles.section}>
+      {SHOW_EXPERIMENTAL_DETECTION_SETTINGS && <View style={themedStyles.section}>
         <Text style={themedStyles.sectionTitle}>Adaptive Detection</Text>
         <View style={themedStyles.settingItem}>
           <View style={themedStyles.switchContainer}>
@@ -386,9 +395,9 @@ const SettingsScreen = () => {
             Optimized detection for short afternoon naps and unusual sleep times
           </Text>
         </View>
-      </View>
+      </View>}
 
-      <View style={themedStyles.section}>
+      {SHOW_EXPERIMENTAL_DETECTION_SETTINGS && <View style={themedStyles.section}>
         <Text style={themedStyles.sectionTitle}>Accuracy Settings</Text>
         <View style={themedStyles.settingItem}>
           <View style={themedStyles.switchContainer}>
@@ -419,9 +428,9 @@ const SettingsScreen = () => {
             Factor in typical sleep hours for better detection
           </Text>
         </View>
-      </View>
+      </View>}
 
-      <View style={themedStyles.section}>
+      {SHOW_EXPERIMENTAL_DETECTION_SETTINGS && <View style={themedStyles.section}>
         <Text style={themedStyles.sectionTitle}>Advanced Settings</Text>
         <View style={themedStyles.settingItem}>
           <View style={themedStyles.switchContainer}>
@@ -482,9 +491,9 @@ const SettingsScreen = () => {
             Use enhanced multi-layer sensor filtering for better accuracy
           </Text>
         </View>
-      </View>
+      </View>}
 
-      <View style={themedStyles.section}>
+      {SHOW_EXPERIMENTAL_DETECTION_SETTINGS && <View style={themedStyles.section}>
         <Text style={themedStyles.sectionTitle}>Power & Lifestyle</Text>
         <View style={themedStyles.settingItem}>
           <View style={themedStyles.switchContainer}>
@@ -530,7 +539,7 @@ const SettingsScreen = () => {
             Validate and clean sleep data for improved reliability
           </Text>
         </View>
-      </View>
+      </View>}
 
       <View style={themedStyles.section}>
         <Text style={themedStyles.sectionTitle}>Appearance</Text>
@@ -580,7 +589,7 @@ const SettingsScreen = () => {
         </TouchableOpacity>
       </View>
 
-      <View style={themedStyles.section}>
+      {__DEV__ && <View style={themedStyles.section}>
         <Text style={themedStyles.sectionTitle}>Debug & Monitoring</Text>
         <TouchableOpacity
           style={themedStyles.dataButton}
@@ -601,16 +610,64 @@ const SettingsScreen = () => {
             <BackgroundMonitorDebug />
           </View>
         )}
-      </View>
+      </View>}
 
       <View style={themedStyles.section}>
         <Text style={themedStyles.sectionTitle}>About</Text>
         <View style={themedStyles.aboutContainer}>
           <Text style={themedStyles.appName}>Sleep Detector</Text>
-          <Text style={themedStyles.appVersion}>Version 1.0.0</Text>
+          <Text style={themedStyles.appVersion}>Version {appVersion}</Text>
           <Text style={themedStyles.description}>
-            Track your sleep patterns based on phone usage.
+            Review probable sleep periods estimated from time away from Sleep Detector.
           </Text>
+          <View style={themedStyles.creatorCard}>
+            <View style={themedStyles.creatorHeader}>
+              <View style={themedStyles.creatorIcon}>
+                <Ionicons name="sparkles" size={22} color={colors.primary} />
+              </View>
+              <View style={themedStyles.creatorIdentity}>
+                <Text style={themedStyles.creatorRole}>FOUNDER · PRODUCT VISION · ENGINEERING</Text>
+                <Text style={themedStyles.creatorName}>Pierre-Henry Soria</Text>
+              </View>
+            </View>
+            <Text style={themedStyles.creatorStory}>
+              Pierre-Henry conceived the idea, brought its vision and clarity, and designed and built
+              the systems behind Sleep Detector to solve the painful gap between phone inactivity and
+              useful, reviewable sleep insight.
+            </Text>
+            <Text style={themedStyles.creatorSince}>
+              Building the app’s systems since early 2024.
+            </Text>
+            <View style={themedStyles.creatorLinks}>
+              <TouchableOpacity
+                accessibilityRole="link"
+                accessibilityLabel="Open Pierre-Henry Soria’s website"
+                style={themedStyles.creatorLink}
+                onPress={() => void openExternalLink('https://pierrehenry.dev')}
+              >
+                <Ionicons name="globe-outline" size={16} color={colors.primary} />
+                <Text style={themedStyles.creatorLinkText}>Website</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                accessibilityRole="link"
+                accessibilityLabel="Open Pierre-Henry Soria’s GitHub profile"
+                style={themedStyles.creatorLink}
+                onPress={() => void openExternalLink('https://github.com/pH-7')}
+              >
+                <Ionicons name="logo-github" size={16} color={colors.primary} />
+                <Text style={themedStyles.creatorLinkText}>GitHub</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                accessibilityRole="link"
+                accessibilityLabel="Open Pierre-Henry Soria’s LinkedIn profile"
+                style={themedStyles.creatorLink}
+                onPress={() => void openExternalLink('https://www.linkedin.com/in/ph7enry/')}
+              >
+                <Ionicons name="logo-linkedin" size={16} color={colors.primary} />
+                <Text style={themedStyles.creatorLinkText}>LinkedIn</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
           <Text style={[themedStyles.description, themedStyles.mealSnapLink]} onPress={openMealSnapApp}>
             MealSnap helps with your eating habits
           </Text>
@@ -759,7 +816,7 @@ const SettingsScreen = () => {
             />
 
             <Text style={themedStyles.modalDescription}>
-              This is how long your phone needs to be inactive before Sleep Detector considers you asleep.
+              This is how long you must be away from Sleep Detector before it creates a probable sleep period for review.
             </Text>
           </View>
         </View>
@@ -917,6 +974,81 @@ const createThemedStyles = (colors: any) => StyleSheet.create({
     color: colors.textSecondary,
     marginTop: 8,
     textAlign: 'center',
+  },
+  creatorCard: {
+    alignSelf: 'stretch',
+    marginTop: 18,
+    padding: 16,
+    borderRadius: 16,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.primary + '35',
+  },
+  creatorHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  creatorIcon: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.primary + '18',
+    marginRight: 12,
+  },
+  creatorIdentity: {
+    flex: 1,
+  },
+  creatorRole: {
+    fontSize: 10,
+    lineHeight: 14,
+    letterSpacing: 0.7,
+    fontWeight: '700',
+    color: colors.primary,
+  },
+  creatorName: {
+    marginTop: 2,
+    fontSize: 19,
+    fontWeight: '700',
+    color: colors.text,
+  },
+  creatorStory: {
+    marginTop: 14,
+    fontSize: 13,
+    lineHeight: 19,
+    color: colors.textSecondary,
+  },
+  creatorSince: {
+    marginTop: 10,
+    fontSize: 13,
+    fontWeight: '600',
+    color: colors.text,
+  },
+  creatorLinks: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginTop: 14,
+    marginHorizontal: -4,
+  },
+  creatorLink: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    minWidth: 88,
+    flexGrow: 1,
+    paddingHorizontal: 10,
+    paddingVertical: 9,
+    marginHorizontal: 4,
+    marginBottom: 8,
+    borderRadius: 10,
+    backgroundColor: colors.primary + '12',
+  },
+  creatorLinkText: {
+    marginLeft: 6,
+    fontSize: 12,
+    fontWeight: '600',
+    color: colors.primary,
   },
   dropdownButton: {
     flexDirection: 'row',

@@ -22,13 +22,9 @@ export class GoogleFitService {
     }
 
     try {
-      // For now, we'll mock this since expo-health-connect is not fully implemented
-      // In a real implementation, you would use:
-      // await initialize();
-      // await requestPermission([{ accessType: 'read', recordType: 'Sleep' }]);
-      
-      console.log('Google Fit initialized successfully');
-      this.hasPermission = true;
+      // Android sync is intentionally unavailable until the Health Connect
+      // permission, read, write, and deduplication flow is implemented.
+      this.hasPermission = false;
       return Promise.resolve();
     } catch (error) {
       console.error('Failed to initialize Google Fit:', error);
@@ -42,7 +38,7 @@ export class GoogleFitService {
    * @returns Boolean indicating if Google Fit is available
    */
   public isAvailable(): boolean {
-    return Platform.OS === 'android';
+    return false;
   }
 
   /**
@@ -92,19 +88,10 @@ export class GoogleFitService {
     }
 
     try {
-      // In a real implementation, you would save sleep data to Google Fit
-      // For example:
-      // await sleep.write({
-      //   startTime: new Date(sleepEntry.startTime),
-      //   endTime: new Date(sleepEntry.endTime),
-      //   stage: sleepEntry.isAwake ? 'awake' : 'sleep'
-      // });
-      
-      console.log('Saving sleep data to Google Fit:', sleepEntry);
-      return Promise.resolve();
+      throw new Error('Android Health Connect sync is not implemented.');
     } catch (error) {
       console.error('Error saving sleep data to Google Fit:', error);
       return Promise.reject(error);
     }
   }
-} 
+}

@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="422" height="514" viewBox="0 0 422 514">
+  <defs>
+    <linearGradient id="topVeil" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#04101c" stop-opacity="0.96"/><stop offset="0.32" stop-color="#04101c" stop-opacity="0.42"/><stop offset="0.68" stop-color="#04101c" stop-opacity="0"/></linearGradient>
+    <linearGradient id="case" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#a4adbd"/><stop offset="0.17" stop-color="#272d3b"/><stop offset="0.76" stop-color="#060810"/><stop offset="1" stop-color="#686f7e"/></linearGradient>
+    <linearGradient id="screen" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0d2030"/><stop offset="1" stop-color="#050813"/></linearGradient>
+    <linearGradient id="hrv" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2db8d5"/><stop offset="1" stop-color="#6a58ff"/></linearGradient>
+    <filter id="shadow" x="-40%" y="-30%" width="180%" height="190%"><feGaussianBlur in="SourceAlpha" stdDeviation="12" result="b"/><feColorMatrix in="b" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .55 0"/><feOffset dy="10"/><feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+    <clipPath id="screenClip"><rect x="84" y="132" width="254" height="312" rx="58"/></clipPath>
+  </defs>
+  <rect width="422" height="240" fill="url(#topVeil)"/>
+  <g font-family="Arial, Helvetica, sans-serif" text-anchor="middle" fill="#fff"><text x="211" y="40" font-size="29" font-weight="700" letter-spacing="-1">Recovery, in context</text><text x="211" y="68" font-size="12.5" fill="#c8e5f3">Wellness signals—never a diagnosis.</text></g>
+  <g filter="url(#shadow)"><rect x="72" y="120" width="278" height="336" rx="72" fill="url(#case)"/><rect x="79" y="127" width="264" height="322" rx="64" fill="#02030a"/><rect x="84" y="132" width="254" height="312" rx="58" fill="url(#screen)"/><rect x="348" y="226" width="10" height="54" rx="5" fill="#6d7483"/><circle cx="353" cy="208" r="9" fill="#111722" stroke="#89909e" stroke-width="3"/></g>
+  <g clip-path="url(#screenClip)" font-family="Arial, Helvetica, sans-serif">
+    <text x="106" y="160" fill="#fff" font-size="12" font-weight="700">Recovery signals</text>
+    <text x="106" y="180" fill="#91a6c2" font-size="9.5">From your recorded sleep window</text>
+    <rect x="98" y="197" width="226" height="78" rx="17" fill="url(#hrv)" opacity="0.96"/>
+    <text x="116" y="221" fill="#ddf8ff" font-size="10" font-weight="700">HRV</text>
+    <text x="116" y="255" fill="#fff" font-size="30" font-weight="700">54 ms</text>
+    <path d="M221 246 C235 228 244 260 257 239 S281 224 305 236" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" opacity="0.88"/>
+    <rect x="98" y="286" width="226" height="54" rx="15" fill="#141b2c" stroke="#5087a4" stroke-opacity="0.35"/>
+    <circle cx="118" cy="313" r="7" fill="#ff6f8e"/>
+    <text x="136" y="310" fill="#9cabc5" font-size="9.5">Resting heart rate</text>
+    <text x="136" y="327" fill="#fff" font-size="15" font-weight="700">58 bpm</text>
+    <rect x="98" y="353" width="226" height="58" rx="14" fill="#0f1524"/>
+    <text x="211" y="373" fill="#9fabbe" font-size="8.2" text-anchor="middle">Recovery signals are wellness</text>
+    <text x="211" y="386" fill="#9fabbe" font-size="8.2" text-anchor="middle">observations, not a stress or</text>
+    <text x="211" y="399" fill="#9fabbe" font-size="8.2" text-anchor="middle">anxiety diagnosis.</text>
+    <text x="211" y="428" fill="#8390ad" font-size="8.5" text-anchor="middle">Fictional sample data</text>
+  </g>
+</svg>
