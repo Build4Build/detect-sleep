@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { BackgroundActivityService } from '../services/BackgroundActivityService';
 import { useSleep } from '../context/SleepContext';
@@ -23,7 +23,7 @@ export const BackgroundMonitorDebug: React.FC = () => {
   const { colors } = useTheme();
 
   // Create themed styles
-  const themedStyles = createThemedStyles(colors);
+  const themedStyles = useMemo(() => createThemedStyles(colors), [colors]);
 
   useEffect(() => {
     const updateStatus = async () => {

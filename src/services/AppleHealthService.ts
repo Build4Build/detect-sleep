@@ -16,6 +16,8 @@ const SLEEP_TYPE = 'HKCategoryTypeIdentifierSleepAnalysis' as const;
 const RESTING_HEART_RATE_TYPE = 'HKQuantityTypeIdentifierRestingHeartRate' as const;
 const HRV_TYPE = 'HKQuantityTypeIdentifierHeartRateVariabilitySDNN' as const;
 const RESPIRATORY_RATE_TYPE = 'HKQuantityTypeIdentifierRespiratoryRate' as const;
+// Session id formats this app has used as HKSyncIdentifier values.
+const SLEEP_DETECTOR_ID_PREFIXES = ['sleep-', 'legacy-', 'detected-'];
 const WRIST_TEMPERATURE_TYPE = 'HKQuantityTypeIdentifierAppleSleepingWristTemperature' as const;
 
 /** Apple HealthKit adapter for reading and writing sleep analysis samples. */
@@ -143,7 +145,7 @@ export class AppleHealthService {
     const alreadySynced = existing.some(sample => {
       const syncIdentifier = sample.metadata?.HKSyncIdentifier;
       const isSleepDetectorSample = typeof syncIdentifier === 'string'
-        && syncIdentifier.startsWith('detected-');
+        && SLEEP_DETECTOR_ID_PREFIXES.some(prefix => syncIdentifier.startsWith(prefix));
       const coversEntry = sample.startDate.getTime() <= sleepEntry.startTime
         && sample.endDate.getTime() >= sleepEntry.endTime;
 

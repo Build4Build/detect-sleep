@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { View, Text, StyleSheet, Switch, TouchableOpacity, Alert, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
@@ -22,7 +22,7 @@ export const NotificationSettingsScreen = () => {
   const [notificationService] = useState(() => NotificationService.getInstance());
 
   // Create themed styles
-  const themedStyles = createThemedStyles(colors);
+  const themedStyles = useMemo(() => createThemedStyles(colors), [colors]);
 
   useEffect(() => {
     loadSettings();

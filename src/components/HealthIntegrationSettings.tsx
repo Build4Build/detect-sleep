@@ -12,7 +12,7 @@ const HealthIntegrationSettings: React.FC<HealthIntegrationSettingsProps> = ({ o
   const healthService = useMemo(() => HealthService.getInstance(), []);
   const { syncHealthSessions } = useSleep();
   const { colors } = useTheme();
-  const styles = createStyles(colors);
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const [available, setAvailable] = useState(false);
   const [enabled, setEnabled] = useState(false);
   const [loading, setLoading] = useState(true);

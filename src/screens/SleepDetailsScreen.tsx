@@ -1,10 +1,11 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { RouteProp } from '@react-navigation/native';
 import { RootStackParamList } from '../types';
 import { useSleep } from '../context/SleepContext';
 import { useTheme } from '../context/ThemeContext';
 import { formatTime, formatDuration, formatDate } from '../utils/dateUtils';
+import { sleepQualityForMinutes } from '../utils/sleepQuality';
 import { parseISO } from 'date-fns';
 
 type SleepDetailsScreenRouteProp = RouteProp<RootStackParamList, 'SleepDetails'>;
@@ -19,7 +20,7 @@ const SleepDetailsScreen = ({ route }: SleepDetailsScreenProps) => {
   const { colors } = useTheme();
   
   // Create themed styles
-  const themedStyles = createThemedStyles(colors);
+  const themedStyles = useMemo(() => createThemedStyles(colors), [colors]);
 
   // Find the sleep summary for the selected date
   const sleepSummary = dailySummaries.find(summary => summary.date === date);
@@ -88,53 +89,15 @@ const SleepDetailsScreen = ({ route }: SleepDetailsScreenProps) => {
 
 // Helper function to get sleep quality information
 const getSleepQualityInfo = (totalSleepMinutes: number, colors: any) => {
-  // Determine sleep quality based on total sleep time
-  if (totalSleepMinutes >= 480) { // 8 hours or more
-    return (
-      <>
-        <Text style={[{ fontSize: 24, fontWeight: 'bold', marginBottom: 8 }, { color: colors.success }]}>Excellent</Text>
-        <Text style={{ fontSize: 14, color: colors.textSecondary, textAlign: 'center', lineHeight: 20 }}>
-          You got 8+ hours of sleep, which is optimal for most adults.
-        </Text>
-      </>
-    );
-  } else if (totalSleepMinutes >= 420) { // 7 hours
-    return (
-      <>
-        <Text style={[{ fontSize: 24, fontWeight: 'bold', marginBottom: 8 }, { color: '#8BC34A' }]}>Good</Text>
-        <Text style={{ fontSize: 14, color: colors.textSecondary, textAlign: 'center', lineHeight: 20 }}>
-          You got 7+ hours of sleep, which is recommended for adults.
-        </Text>
-      </>
-    );
-  } else if (totalSleepMinutes >= 360) { // 6 hours
-    return (
-      <>
-        <Text style={[{ fontSize: 24, fontWeight: 'bold', marginBottom: 8 }, { color: colors.warning }]}>Fair</Text>
-        <Text style={{ fontSize: 14, color: colors.textSecondary, textAlign: 'center', lineHeight: 20 }}>
-          You got 6+ hours of sleep, which is adequate but not optimal.
-        </Text>
-      </>
-    );
-  } else if (totalSleepMinutes >= 300) { // 5 hours
-    return (
-      <>
-        <Text style={[{ fontSize: 24, fontWeight: 'bold', marginBottom: 8 }, { color: '#FF9800' }]}>Poor</Text>
-        <Text style={{ fontSize: 14, color: colors.textSecondary, textAlign: 'center', lineHeight: 20 }}>
-          You got 5+ hours of sleep, which is below recommended levels.
-        </Text>
-      </>
-    );
-  } else {
-    return (
-      <>
-        <Text style={[{ fontSize: 24, fontWeight: 'bold', marginBottom: 8 }, { color: colors.error }]}>Very Poor</Text>
-        <Text style={{ fontSize: 14, color: colors.textSecondary, textAlign: 'center', lineHeight: 20 }}>
-          You got less than 5 hours of sleep, which is insufficient for most adults.
-        </Text>
-      </>
-    );
-  }
+  const quality = sleepQualityForMinutes(totalSleepMinutes);
+  return (
+    <>
+      <Text style={{ fontSize: 24, fontWeight: 'bold', marginBottom: 8, color: quality.color }}>{quality.label}</Text>
+      <Text style={{ fontSize: 14, color: colors.textSecondary, textAlign: 'center', lineHeight: 20 }}>
+        {quality.description}
+      </Text>
+    </>
+  );
 };
 
 const createThemedStyles = (colors: any) => StyleSheet.create({

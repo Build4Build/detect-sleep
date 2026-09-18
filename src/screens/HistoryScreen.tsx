@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -17,7 +17,7 @@ const HistoryScreen = () => {
   const [timeRange, setTimeRange] = useState<'week' | 'month' | 'all'>('week');
   
   // Create themed styles
-  const themedStyles = createThemedStyles(colors);
+  const themedStyles = useMemo(() => createThemedStyles(colors), [colors]);
   
   // Filter summaries based on selected time range
   const filteredSummaries = () => {
