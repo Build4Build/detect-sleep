@@ -966,6 +966,7 @@ export const SleepProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     settingsRef.current = DEFAULT_SETTINGS;
     setSettings(DEFAULT_SETTINGS);
     notificationService.updateAppSettings(DEFAULT_SETTINGS);
+    await notificationService.resetToDefaults();
     await AsyncStorage.clear();
   }, [clearSleepData, healthService, notificationService]);
 

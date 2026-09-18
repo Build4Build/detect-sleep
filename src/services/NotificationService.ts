@@ -526,6 +526,12 @@ ${qualityAdvice}`;
     }
   }
 
+  /** Returns preferences to defaults and removes anything already scheduled. */
+  public async resetToDefaults(): Promise<void> {
+    this.settings = DEFAULT_NOTIFICATION_SETTINGS;
+    await this.cancelAllNotifications();
+  }
+
   /**
    * Cancel all scheduled notifications
    */
