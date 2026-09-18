@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import { View, Text, StyleSheet, ScrollView, Dimensions, TouchableOpacity } from 'react-native';
 import { BarChart } from 'react-native-chart-kit';
 
@@ -12,30 +12,24 @@ const StatsScreen = () => {
   const { dailySummaries } = useSleep();
   const { colors, isDarkMode } = useTheme();
   const [timeRange, setTimeRange] = useState<'week' | 'month'>('week');
-  const [averageSleep, setAverageSleep] = useState<number>(0);
-  const [chartData, setChartData] = useState<any>({
-    labels: [],
-    datasets: [{ data: [] }],
-  });
 
   // Create themed styles
-  const themedStyles = createThemedStyles(colors);
+  const themedStyles = useMemo(() => createThemedStyles(colors), [colors]);
 
-  // Update chart data when time range or daily summaries change
-  useEffect(() => {
+  // Derive chart data when time range or daily summaries change
+  const { averageSleep, chartData } = useMemo(() => {
     // Get date range based on selected time range
     const dateRange = timeRange === 'week' ? getPastWeekDates() : getPastMonthDates();
+    const minutesByDate = new Map(
+      dailySummaries.map(summary => [summary.date, summary.totalSleepMinutes]),
+    );
 
     // Map sleep data to dates
-    const sleepData = dateRange.map(date => {
-      const summary = dailySummaries.find(s => s.date === date);
-      return summary ? summary.totalSleepMinutes / 60 : 0; // Convert to hours
-    });
+    const sleepData = dateRange.map(date => (minutesByDate.get(date) ?? 0) / 60);
 
     // Calculate average sleep
     const totalSleep = sleepData.reduce((sum, hours) => sum + hours, 0);
     const avg = totalSleep / sleepData.filter(h => h > 0).length || 0;
-    setAverageSleep(avg * 60); // Store in minutes for formatting
 
     // Format labels based on time range
     const labels = dateRange.map((date, index) => {
@@ -54,11 +48,10 @@ const StatsScreen = () => {
       }
     });
 
-    // Update chart data
-    setChartData({
-      labels,
-      datasets: [{ data: sleepData }],
-    });
+    return {
+      averageSleep: avg * 60, // Minutes, for formatting
+      chartData: { labels, datasets: [{ data: sleepData }] },
+    };
   }, [timeRange, dailySummaries]);
 
   // Calculate sleep quality metrics

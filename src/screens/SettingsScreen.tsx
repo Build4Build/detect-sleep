@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { View, Text, StyleSheet, Switch, TouchableOpacity, Alert, ScrollView, Modal, FlatList, Linking } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Constants from 'expo-constants';
@@ -7,7 +7,6 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../types';
 import { useSleep } from '../context/SleepContext';
 import { useTheme, ThemeMode } from '../context/ThemeContext';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import HealthIntegrationSettings from '../components/HealthIntegrationSettings';
 import BackgroundMonitorDebug from '../components/BackgroundMonitorDebug';
 
@@ -52,7 +51,7 @@ const SHOW_EXPERIMENTAL_DETECTION_SETTINGS = false;
 
 const SettingsScreen = () => {
   const navigation = useNavigation<SettingsScreenNavigationProp>();
-  const { settings, updateSettings, clearSleepData } = useSleep();
+  const { settings, updateSettings, clearSleepData, clearAllData: clearAllStoredData } = useSleep();
   const { themeMode, setThemeMode, colors, isDarkMode } = useTheme();
   const [useMachineLearning, setUseMachineLearning] = useState(settings.useMachineLearning);
   const [considerTimeOfDay, setConsiderTimeOfDay] = useState(settings.considerTimeOfDay);
@@ -75,7 +74,7 @@ const SettingsScreen = () => {
   const [settingsInitialized, setSettingsInitialized] = useState(false);
 
   // Create themed styles
-  const themedStyles = createThemedStyles(colors);
+  const themedStyles = useMemo(() => createThemedStyles(colors), [colors]);
   const appVersion = Constants.expoConfig?.version ?? '1.4.1';
 
   // Sync local state with context settings when they change
@@ -107,7 +106,6 @@ const SettingsScreen = () => {
       setWeekendModeEnabled(settings.weekendModeEnabled ?? true);
       setSleepDataValidation(settings.sleepDataValidation ?? true);
       setSettingsInitialized(true);
-      console.log('Settings Screen synchronized with context:', settings);
     }
   }, [
     settings.useMachineLearning,
@@ -286,7 +284,7 @@ const SettingsScreen = () => {
           style: 'destructive',
           onPress: async () => {
             try {
-              await AsyncStorage.clear();
+              await clearAllStoredData();
               Alert.alert('Success', 'All data has been cleared. Please restart the app.');
             } catch (error) {
               console.error('Error clearing data:', error);

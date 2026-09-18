@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -7,6 +7,7 @@ import { RootStackParamList, SleepStatus } from '../types';
 import { useSleep } from '../context/SleepContext';
 import { useTheme } from '../context/ThemeContext';
 import { formatTime, formatDuration } from '../utils/dateUtils';
+import { sleepQualityForMinutes } from '../utils/sleepQuality';
 
 type TodayScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -48,7 +49,7 @@ const TodayScreen = () => {
   const [greeting, setGreeting] = useState('');
   
   // Create themed styles
-  const themedStyles = createThemedStyles(colors);
+  const themedStyles = useMemo(() => createThemedStyles(colors), [colors]);
   
   // Calculate sleep duration for today
   const sleepDuration = getTodaySleepDuration();
@@ -88,17 +89,9 @@ const TodayScreen = () => {
   const getSleepQualityText = () => {
     if (sleepDuration <= 0) {
       return { text: 'No data yet', color: colors.textSecondary };
-    } else if (sleepDuration >= 480) { // 8+ hours
-      return { text: 'Excellent', color: '#4CAF50' };
-    } else if (sleepDuration >= 420) { // 7+ hours
-      return { text: 'Good', color: '#8BC34A' };
-    } else if (sleepDuration >= 360) { // 6+ hours
-      return { text: 'Adequate', color: '#FFC107' };
-    } else if (sleepDuration >= 300) { // 5+ hours
-      return { text: 'Poor', color: '#FF9800' };
-    } else {
-      return { text: 'Insufficient', color: '#F44336' };
     }
+    const quality = sleepQualityForMinutes(sleepDuration);
+    return { text: quality.label, color: quality.color };
   };
   
   // Handle manual status override

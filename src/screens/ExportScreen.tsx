@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Share, Alert, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSleep } from '../context/SleepContext';
@@ -11,7 +11,7 @@ const ExportScreen = () => {
   const [loading, setLoading] = useState(false);
 
   // Create themed styles
-  const themedStyles = createThemedStyles(colors);
+  const themedStyles = useMemo(() => createThemedStyles(colors), [colors]);
 
   // Export data as JSON
   const handleExportJson = async () => {

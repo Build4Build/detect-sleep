@@ -169,6 +169,9 @@ export class BackgroundActivityService {
   }
 
   private async logActivity(activity: ActivityData): Promise<void> {
+    // Only the development debug monitor reads this log; release builds skip
+    // the read-modify-write on every lifecycle transition.
+    if (!__DEV__) return;
     try {
       const raw = await AsyncStorage.getItem(ACTIVITY_LOG_KEY);
       const log: ActivityData[] = raw ? JSON.parse(raw) : [];

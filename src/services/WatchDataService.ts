@@ -22,37 +22,42 @@ function isOptionalFinite(value: unknown): value is number | undefined {
   );
 }
 
+function validWatchSleepSnapshot(input: unknown): WatchSleepSnapshot | null {
+  if (typeof input !== "object" || input === null) return null;
+  const value = input as Partial<WatchSleepSnapshot>;
+  if (
+    value.schemaVersion !== 1 ||
+    typeof value.id !== "string" ||
+    typeof value.generatedAt !== "number" ||
+    typeof value.sleepStart !== "number" ||
+    typeof value.sleepEnd !== "number" ||
+    typeof value.totalSleepMinutes !== "number" ||
+    typeof value.awakeMinutes !== "number" ||
+    typeof value.coreMinutes !== "number" ||
+    typeof value.deepMinutes !== "number" ||
+    typeof value.remMinutes !== "number" ||
+    typeof value.unspecifiedMinutes !== "number" ||
+    value.source !== "apple-watch-healthkit" ||
+    !isOptionalFinite(value.restingHeartRate) ||
+    !isOptionalFinite(value.heartRateVariabilityMs) ||
+    !isOptionalFinite(value.respiratoryRate) ||
+    !isOptionalFinite(value.wristTemperatureCelsius) ||
+    !Number.isFinite(value.generatedAt) ||
+    !Number.isFinite(value.sleepStart) ||
+    !Number.isFinite(value.sleepEnd) ||
+    value.sleepEnd <= value.sleepStart ||
+    value.totalSleepMinutes < 0
+  ) {
+    return null;
+  }
+  return value as WatchSleepSnapshot;
+}
+
 export function parseWatchSleepSnapshot(
   payload: string,
 ): WatchSleepSnapshot | null {
   try {
-    const value = JSON.parse(payload) as Partial<WatchSleepSnapshot>;
-    if (
-      value.schemaVersion !== 1 ||
-      typeof value.id !== "string" ||
-      typeof value.generatedAt !== "number" ||
-      typeof value.sleepStart !== "number" ||
-      typeof value.sleepEnd !== "number" ||
-      typeof value.totalSleepMinutes !== "number" ||
-      typeof value.awakeMinutes !== "number" ||
-      typeof value.coreMinutes !== "number" ||
-      typeof value.deepMinutes !== "number" ||
-      typeof value.remMinutes !== "number" ||
-      typeof value.unspecifiedMinutes !== "number" ||
-      value.source !== "apple-watch-healthkit" ||
-      !isOptionalFinite(value.restingHeartRate) ||
-      !isOptionalFinite(value.heartRateVariabilityMs) ||
-      !isOptionalFinite(value.respiratoryRate) ||
-      !isOptionalFinite(value.wristTemperatureCelsius) ||
-      !Number.isFinite(value.generatedAt) ||
-      !Number.isFinite(value.sleepStart) ||
-      !Number.isFinite(value.sleepEnd) ||
-      value.sleepEnd <= value.sleepStart ||
-      value.totalSleepMinutes < 0
-    ) {
-      return null;
-    }
-    return value as WatchSleepSnapshot;
+    return validWatchSleepSnapshot(JSON.parse(payload));
   } catch {
     return null;
   }
@@ -124,12 +129,14 @@ export const WatchDataService = {
   async consumePendingSnapshots(): Promise<WatchSleepSnapshot[]> {
     const stored = await AsyncStorage.getItem(WATCH_SNAPSHOTS_KEY);
     let existing: WatchSleepSnapshot[] = [];
+    let storedCount = 0;
     if (stored) {
       try {
         const parsed = JSON.parse(stored);
         if (Array.isArray(parsed)) {
+          storedCount = parsed.length;
           existing = parsed
-            .map((value) => parseWatchSleepSnapshot(JSON.stringify(value)))
+            .map(validWatchSleepSnapshot)
             .filter((value): value is WatchSleepSnapshot => Boolean(value));
         }
       } catch {
@@ -147,7 +154,10 @@ export const WatchDataService = {
     const merged = [...byId.values()]
       .sort((left, right) => left.sleepStart - right.sleepStart)
       .slice(-60);
-    await AsyncStorage.setItem(WATCH_SNAPSHOTS_KEY, JSON.stringify(merged));
+    // Most foreground events deliver nothing new; skip the redundant rewrite.
+    if (incoming.length > 0 || merged.length !== storedCount) {
+      await AsyncStorage.setItem(WATCH_SNAPSHOTS_KEY, JSON.stringify(merged));
+    }
     return merged;
   },
 
