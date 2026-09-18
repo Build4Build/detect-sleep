@@ -970,8 +970,12 @@ export const SleepProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   }, [clearSleepData, healthService, notificationService]);
 
   const todayRecords = useMemo(() => {
-    const dayStart = new Date(`${todayDate}T00:00:00`).getTime();
-    const dayEnd = dayStart + 24 * 60 * 60_000;
+    const start = new Date(`${todayDate}T00:00:00`);
+    const end = new Date(start);
+    // Calendar arithmetic keeps 23- and 25-hour daylight-saving days correct.
+    end.setDate(end.getDate() + 1);
+    const dayStart = start.getTime();
+    const dayEnd = end.getTime();
     return activityRecords.filter(
       record => record.timestamp >= dayStart && record.timestamp < dayEnd,
     );
