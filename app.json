@@ -3,7 +3,7 @@
     "name": "Sleep Detector",
     "slug": "detect-sleep",
     "description": "A privacy-first sleep companion conceived and built by Pierre-Henry Soria, with systems in development since early 2024.",
-    "version": "1.4.1",
+    "version": "1.4.2",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",

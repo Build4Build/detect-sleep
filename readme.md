@@ -80,6 +80,7 @@ Current store materials:
 - [Apple Watch screenshots](app-store-assets/watch/README.md)
 - [Store description](app-store-assets/metadata/en-US/description.txt)
 - [Reviewer instructions](app-store-assets/metadata/en-US/review_notes.txt)
+- [1.4.2 release notes](app-store-assets/release-notes/1.4.2.md)
 - [1.4.1 release notes](app-store-assets/release-notes/1.4.1.md)
 
 ## Founder, Creator, and Engineer
