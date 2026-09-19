@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useMemo } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -8,6 +8,8 @@ import { useSleep } from '../context/SleepContext';
 import { useTheme } from '../context/ThemeContext';
 import { formatTime, formatDuration } from '../utils/dateUtils';
 import { sleepQualityForMinutes } from '../utils/sleepQuality';
+import { isValidCandidateWindow } from '../services/SleepSessionService';
+import { getDayOfYear } from 'date-fns';
 
 type TodayScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -45,9 +47,6 @@ const TodayScreen = () => {
     saveWellnessCheckIn,
   } = useSleep();
   const { colors, isDarkMode } = useTheme();
-  const [dailyTip, setDailyTip] = useState('');
-  const [greeting, setGreeting] = useState('');
-  
   // Create themed styles
   const themedStyles = useMemo(() => createThemedStyles(colors), [colors]);
   
@@ -63,22 +62,15 @@ const TodayScreen = () => {
     day: 'numeric',
   });
   
-  // Set greeting based on time of day
-  useEffect(() => {
-    const hour = new Date().getHours();
-    
-    if (hour >= 5 && hour < 12) {
-      setGreeting('Good morning');
-    } else if (hour >= 12 && hour < 18) {
-      setGreeting('Good afternoon');
-    } else {
-      setGreeting('Good evening');
-    }
-    
-    // Get a random sleep tip
-    const randomIndex = Math.floor(Math.random() * SLEEP_TIPS.length);
-    setDailyTip(SLEEP_TIPS[randomIndex]);
-  }, []);
+  // Derived on every render so neither goes stale while the app stays open.
+  const hour = today.getHours();
+  const greeting = hour >= 5 && hour < 12
+    ? 'Good morning'
+    : hour >= 12 && hour < 18
+      ? 'Good afternoon'
+      : 'Good evening';
+  // One tip per calendar day, so "Daily Sleep Tip" means what it says.
+  const dailyTip = SLEEP_TIPS[getDayOfYear(today) % SLEEP_TIPS.length];
   
   // Navigate to settings
   const goToSettings = () => {
@@ -208,7 +200,11 @@ const TodayScreen = () => {
         <View style={themedStyles.candidateCard}>
           <View style={themedStyles.candidateHeader}>
             <Ionicons name="moon-outline" size={24} color={colors.primary} />
-            <Text style={themedStyles.cardTitle}>Probable sleep detected</Text>
+            <Text style={themedStyles.cardTitle}>
+              {pendingSleepCandidate.classification === 'likely-sleep'
+                ? 'Probable sleep detected'
+                : 'Possible sleep — please review'}
+            </Text>
           </View>
           <Text style={themedStyles.candidateDescription}>
             You were away from Sleep Detector for long enough to suggest sleep. Confirm this estimate before it is saved or sent to Apple Health.
@@ -226,7 +222,11 @@ const TodayScreen = () => {
             <View style={themedStyles.boundaryRow}>
               <Text style={themedStyles.boundaryLabel}>Sleep start</Text>
               <TouchableOpacity
-                style={themedStyles.boundaryButton}
+                style={[
+                  themedStyles.boundaryButton,
+                  !isValidCandidateWindow(pendingSleepCandidate.startTime - 15 * 60_000, pendingSleepCandidate.endTime) && themedStyles.boundaryButtonDisabled,
+                ]}
+                disabled={!isValidCandidateWindow(pendingSleepCandidate.startTime - 15 * 60_000, pendingSleepCandidate.endTime)}
                 onPress={() => updateSleepCandidateBounds(
                   pendingSleepCandidate.startTime - 15 * 60_000,
                   pendingSleepCandidate.endTime,
@@ -235,7 +235,11 @@ const TodayScreen = () => {
                 <Text style={themedStyles.boundaryButtonText}>−15m</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={themedStyles.boundaryButton}
+                style={[
+                  themedStyles.boundaryButton,
+                  !isValidCandidateWindow(pendingSleepCandidate.startTime + 15 * 60_000, pendingSleepCandidate.endTime) && themedStyles.boundaryButtonDisabled,
+                ]}
+                disabled={!isValidCandidateWindow(pendingSleepCandidate.startTime + 15 * 60_000, pendingSleepCandidate.endTime)}
                 onPress={() => updateSleepCandidateBounds(
                   pendingSleepCandidate.startTime + 15 * 60_000,
                   pendingSleepCandidate.endTime,
@@ -247,7 +251,11 @@ const TodayScreen = () => {
             <View style={themedStyles.boundaryRow}>
               <Text style={themedStyles.boundaryLabel}>Wake time</Text>
               <TouchableOpacity
-                style={themedStyles.boundaryButton}
+                style={[
+                  themedStyles.boundaryButton,
+                  !isValidCandidateWindow(pendingSleepCandidate.startTime, pendingSleepCandidate.endTime - 15 * 60_000) && themedStyles.boundaryButtonDisabled,
+                ]}
+                disabled={!isValidCandidateWindow(pendingSleepCandidate.startTime, pendingSleepCandidate.endTime - 15 * 60_000)}
                 onPress={() => updateSleepCandidateBounds(
                   pendingSleepCandidate.startTime,
                   pendingSleepCandidate.endTime - 15 * 60_000,
@@ -256,7 +264,11 @@ const TodayScreen = () => {
                 <Text style={themedStyles.boundaryButtonText}>−15m</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={themedStyles.boundaryButton}
+                style={[
+                  themedStyles.boundaryButton,
+                  !isValidCandidateWindow(pendingSleepCandidate.startTime, pendingSleepCandidate.endTime + 15 * 60_000) && themedStyles.boundaryButtonDisabled,
+                ]}
+                disabled={!isValidCandidateWindow(pendingSleepCandidate.startTime, pendingSleepCandidate.endTime + 15 * 60_000)}
                 onPress={() => updateSleepCandidateBounds(
                   pendingSleepCandidate.startTime,
                   pendingSleepCandidate.endTime + 15 * 60_000,
@@ -544,6 +556,9 @@ const createThemedStyles = (colors: any) => StyleSheet.create({
     minWidth: 58,
     paddingHorizontal: 10,
     paddingVertical: 8,
+  },
+  boundaryButtonDisabled: {
+    opacity: 0.35,
   },
   boundaryButtonText: {
     color: colors.primary,
