@@ -9,7 +9,7 @@
   "homepage": "https://pierrehenry.dev",
   "repository": {
     "type": "git",
-    "url": "https://github.com/pH-7/detect-sleep.git"
+    "url": "https://github.com/Build4Build/detect-sleep.git"
   },
   "main": "index.ts",
   "scripts": {
@@ -69,7 +69,10 @@
     "typescript": "~5.9.2"
   },
   "jest": {
-    "preset": "jest-expo"
+    "preset": "jest-expo",
+    "modulePathIgnorePatterns": [
+      "<rootDir>/.claude/"
+    ]
   },
   "eslintConfig": {
     "extends": "universe/native"

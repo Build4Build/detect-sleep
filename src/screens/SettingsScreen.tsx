@@ -285,7 +285,7 @@ const SettingsScreen = () => {
           onPress: async () => {
             try {
               await clearAllStoredData();
-              Alert.alert('Success', 'All data has been cleared. Please restart the app.');
+              Alert.alert('Success', 'All sleep data and settings have been cleared.');
             } catch (error) {
               console.error('Error clearing data:', error);
               Alert.alert('Error', 'Failed to clear data. Please try again.');

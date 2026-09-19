@@ -8,7 +8,8 @@ import { exportDataToJson, exportDataToCsv } from '../services/exportService';
 const ExportScreen = () => {
   const { exportData, dailySummaries } = useSleep();
   const { colors } = useTheme();
-  const [loading, setLoading] = useState(false);
+  const [exporting, setExporting] = useState<'json' | 'csv' | null>(null);
+  const loading = exporting !== null;
 
   // Create themed styles
   const themedStyles = useMemo(() => createThemedStyles(colors), [colors]);
@@ -16,29 +17,29 @@ const ExportScreen = () => {
   // Export data as JSON
   const handleExportJson = async () => {
     try {
-      setLoading(true);
+      setExporting('json');
       const jsonData = await exportData();
       await exportDataToJson(jsonData);
-      setLoading(false);
+      setExporting(null);
     } catch (error) {
       console.error('Error exporting JSON data:', error);
       Alert.alert('Export Error', 'Failed to export data. Please try again.');
-      setLoading(false);
+      setExporting(null);
     }
   };
   
   // Export data as CSV
   const handleExportCsv = async () => {
     try {
-      setLoading(true);
+      setExporting('csv');
       const jsonData = await exportData();
       const parsedData = JSON.parse(jsonData);
       await exportDataToCsv(parsedData.dailySummaries, parsedData.activityRecords);
-      setLoading(false);
+      setExporting(null);
     } catch (error) {
       console.error('Error exporting CSV data:', error);
       Alert.alert('Export Error', 'Failed to export data. Please try again.');
-      setLoading(false);
+      setExporting(null);
     }
   };
   
@@ -68,7 +69,7 @@ const ExportScreen = () => {
               Complete data in JSON format for backup or analysis
             </Text>
           </View>
-          {loading ? (
+          {exporting === 'json' ? (
             <ActivityIndicator size="small" color="#6200ee" />
           ) : (
             <Ionicons name="chevron-forward" size={20} color="#999" />
@@ -91,7 +92,7 @@ const ExportScreen = () => {
               Spreadsheet format for easy viewing in Excel or Google Sheets
             </Text>
           </View>
-          {loading ? (
+          {exporting === 'csv' ? (
             <ActivityIndicator size="small" color="#6200ee" />
           ) : (
             <Ionicons name="chevron-forward" size={20} color="#999" />

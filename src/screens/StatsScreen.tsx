@@ -16,7 +16,10 @@ const StatsScreen = () => {
   // Create themed styles
   const themedStyles = useMemo(() => createThemedStyles(colors), [colors]);
 
-  // Derive chart data when time range or daily summaries change
+  // Recomputed each render; cheap, and it changes the memo key at midnight.
+  const dayKey = getPastWeekDates()[6];
+
+  // Derive chart data when time range, daily summaries or the day change
   const { averageSleep, chartData } = useMemo(() => {
     // Get date range based on selected time range
     const dateRange = timeRange === 'week' ? getPastWeekDates() : getPastMonthDates();
@@ -52,7 +55,7 @@ const StatsScreen = () => {
       averageSleep: avg * 60, // Minutes, for formatting
       chartData: { labels, datasets: [{ data: sleepData }] },
     };
-  }, [timeRange, dailySummaries]);
+  }, [timeRange, dailySummaries, dayKey]);
 
   // Calculate sleep quality metrics
   const calculateSleepMetrics = () => {

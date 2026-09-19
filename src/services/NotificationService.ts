@@ -472,24 +472,8 @@ ${qualityAdvice}`;
       if (!(await this.requestPermissions())) {
         throw new Error('Notification permission was not granted.');
       }
-      const currentHour = new Date().getHours();
-      let testTitle = '';
-      let testBody = '';
-
-      // Test with current time context - demonstrates the fix
-      if (currentHour >= 5 && currentHour < 12) {
-        testTitle = '🌅 Good Morning Test!';
-        testBody = 'This is a test notification sent during morning hours.';
-      } else if (currentHour >= 12 && currentHour < 17) {
-        testTitle = '☀️ Good Afternoon Test!';
-        testBody = 'This is a test notification sent during afternoon hours. Note: NO "Good Morning" message!';
-      } else if (currentHour >= 17 && currentHour < 22) {
-        testTitle = '🌆 Good Evening Test!';
-        testBody = 'This is a test notification sent during evening hours. Note: NO "Good Morning" message!';
-      } else {
-        testTitle = '🌙 Night Test';
-        testBody = 'This is a test notification sent during nighttime hours. Note: NO "Good Morning" message!';
-      }
+      const testTitle = '🔔 Sleep Detector';
+      const testBody = 'Notifications are working. You can turn sleep summaries and bedtime reminders on or off in Settings.';
 
       await Notifications.scheduleNotificationAsync({
         content: {
@@ -497,7 +481,6 @@ ${qualityAdvice}`;
           body: testBody,
           data: {
             type: 'test',
-            testTime: currentHour,
             timestamp: Date.now(),
           },
           sound: true,
@@ -507,7 +490,6 @@ ${qualityAdvice}`;
         identifier: 'test-notification',
       });
 
-      console.log(`✅ Test notification sent: ${testTitle} at ${currentHour}:xx`);
     } catch (error) {
       console.error('❌ Failed to send test notification:', error);
       throw error;
