@@ -11,6 +11,14 @@ import { LocalSleepIntelligence } from "./local/LocalSleepIntelligence";
 const MINUTE = 60_000;
 const MAX_CANDIDATE_MINUTES = 20 * 60;
 const MAX_SLEEP_STAGE_GAP = 90 * MINUTE;
+const DEFAULT_NIGHT_MINUTES = 8 * 60;
+const SHORTEST_NIGHT_MINUTES = 3 * 60;
+const LONGEST_NIGHT_MINUTES = 14 * 60;
+
+/** A clipped long absence must still look like a night to be worth reviewing. */
+export const LONG_ABSENCE_MIN_CONFIDENCE = 40;
+/** The specific night is a guess, so its displayed confidence stays low. */
+export const LONG_ABSENCE_MAX_CONFIDENCE = 30;
 
 export interface SleepAnalysisInput {
   startTime: number;
@@ -161,6 +169,36 @@ export function healthSleepOverlapRatio(
     covered += currentEnd - currentStart;
   }
   return clamp(covered / (endTime - startTime), 0, 1);
+}
+
+/**
+ * Several days away from the app cannot be one sleep. Without independent
+ * evidence, keep only the most recent night so the estimate stays reviewable
+ * instead of offering a multi-day "sleep" to confirm.
+ */
+export function clipLongAbsence(
+  startTime: number,
+  endTime: number,
+  historicalSessions: SleepSession[] = [],
+): { startTime: number; endTime: number; clipped: boolean } {
+  if (
+    !Number.isFinite(startTime) ||
+    !Number.isFinite(endTime) ||
+    endTime - startTime <= MAX_CANDIDATE_MINUTES * MINUTE
+  ) {
+    return { startTime, endTime, clipped: false };
+  }
+  const nights = historicalSessions
+    .filter((session) => session.endTime !== undefined && session.endTime > session.startTime)
+    .sort((left, right) => (right.endTime ?? 0) - (left.endTime ?? 0))
+    .slice(0, 28)
+    .map((session) => (session.endTime! - session.startTime) / MINUTE)
+    .filter((minutes) => minutes >= SHORTEST_NIGHT_MINUTES && minutes <= LONGEST_NIGHT_MINUTES)
+    .sort((left, right) => left - right);
+  const typicalMinutes = nights.length >= 3
+    ? nights[Math.floor(nights.length / 2)]
+    : DEFAULT_NIGHT_MINUTES;
+  return { startTime: endTime - typicalMinutes * MINUTE, endTime, clipped: true };
 }
 
 export function buildSleepAnalysisFeatures(

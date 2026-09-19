@@ -33,7 +33,10 @@ import {
 } from '../services/SleepDetectionService';
 import {
   analyzeSleepCandidate,
+  clipLongAbsence,
   healthSleepOverlapRatio,
+  LONG_ABSENCE_MAX_CONFIDENCE,
+  LONG_ABSENCE_MIN_CONFIDENCE,
   strongestHealthSleepWindow,
 } from '../services/SleepAnalysisService';
 import {
@@ -44,6 +47,7 @@ import {
 import { buildDailyWellnessReport } from '../services/WellnessReportService';
 import {
   createSleepSession,
+  isValidCandidateWindow,
   shouldAttemptHealthSync,
   updateSessionSyncState,
   upsertSleepSession,
@@ -620,26 +624,39 @@ export const SleepProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           healthSleepOverlapRatio(healthEntries, analysisStart, analysisEnd),
         );
       }
+      const historicalSessions = sessionsRef.current.length > 0
+        ? sessionsRef.current
+        : historicalSessionsFromRecords(recordsRef.current);
+      let longAbsence = false;
+      if (!verifiedWindow) {
+        const recentNight = clipLongAbsence(analysisStart, analysisEnd, historicalSessions);
+        analysisStart = recentNight.startTime;
+        analysisEnd = recentNight.endTime;
+        longAbsence = recentNight.clipped;
+      }
       const analysis = await analyzeSleepCandidate({
         startTime: analysisStart,
         endTime: analysisEnd,
-        historicalSessions: sessionsRef.current.length > 0
-          ? sessionsRef.current
-          : historicalSessionsFromRecords(recordsRef.current),
+        historicalSessions,
         healthKitOverlapRatio: independentSleepOverlap,
         allowLocalModel: effectiveSettings.useMachineLearning,
       });
       if (analysis.classification === 'unlikely-sleep') return;
+      if (longAbsence && analysis.confidence < LONG_ABSENCE_MIN_CONFIDENCE) return;
       const candidate: SleepCandidate = {
         id: `candidate-${analysis.startTime}-${analysis.endTime}`,
         startTime: analysis.startTime,
         endTime: analysis.endTime,
         originalStartTime: session.startTime,
         originalEndTime: session.endTime,
-        confidence: analysis.confidence,
-        classification: analysis.classification,
+        confidence: longAbsence
+          ? Math.min(analysis.confidence, LONG_ABSENCE_MAX_CONFIDENCE)
+          : analysis.confidence,
+        classification: longAbsence ? 'uncertain' : analysis.classification,
         analysisSource: analysis.source,
-        explanation: analysis.explanation,
+        explanation: longAbsence
+          ? 'Sleep Detector was not opened for more than a day, so this is only a rough guess at the most recent night. Adjust the times or dismiss it.'
+          : analysis.explanation,
         evidence: analysis.evidence,
         createdAt: Date.now(),
       };
@@ -891,12 +908,7 @@ export const SleepProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   }, [persistCandidates]);
 
   const updateSleepCandidateBounds = useCallback((startTime: number, endTime: number): void => {
-    if (
-      !Number.isFinite(startTime) ||
-      !Number.isFinite(endTime) ||
-      endTime <= startTime ||
-      endTime - startTime > 20 * 60 * 60_000
-    ) return;
+    if (!isValidCandidateWindow(startTime, endTime)) return;
     const next: SleepCandidate[] = candidatesRef.current.map((candidate, index) =>
       index === 0
         ? {

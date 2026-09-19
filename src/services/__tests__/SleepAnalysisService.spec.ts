@@ -11,6 +11,7 @@ jest.mock("../local/LocalSleepIntelligence", () => ({
 import {
   applyLocalModelAssessment,
   buildSleepAnalysisFeatures,
+  clipLongAbsence,
   deterministicSleepAnalysis,
   healthSleepOverlapRatio,
   strongestHealthSleepWindow,
@@ -119,5 +120,37 @@ describe("SleepAnalysisService", () => {
       { id: "brief", startTime: 0, endTime: 29 * 60_000, source: "Watch", confidence: 95, isAwake: false },
     ];
     expect(strongestHealthSleepWindow(entries, 0, 8 * 60 * 60_000)).toBeNull();
+  });
+  it("leaves ordinary absences untouched", () => {
+    const start = localTimestamp(2026, 9, 10, 23);
+    const end = localTimestamp(2026, 9, 11, 7);
+    expect(clipLongAbsence(start, end)).toEqual({ startTime: start, endTime: end, clipped: false });
+  });
+
+  it("clips a multi-day absence to the most recent typical night", () => {
+    const history = Array.from({ length: 5 }, (_, index) => ({
+      id: `night-${index}`,
+      startTime: localTimestamp(2026, 9, 1 + index, 23),
+      endTime: localTimestamp(2026, 9, 2 + index, 6),
+      confidence: 80,
+      source: "manual" as const,
+      evidence: [],
+      userConfirmed: true,
+      timezone: "UTC",
+      createdAt: 0,
+      updatedAt: 0,
+      healthSyncState: "not-requested" as const,
+    }));
+    const start = localTimestamp(2026, 9, 10, 23);
+    const end = localTimestamp(2026, 9, 13, 7);
+
+    // Seven-hour nights in the history, so seven hours before the return.
+    expect(clipLongAbsence(start, end, history)).toEqual({
+      startTime: end - 7 * 60 * 60_000,
+      endTime: end,
+      clipped: true,
+    });
+    // With no usable history it falls back to eight hours.
+    expect(clipLongAbsence(start, end).startTime).toBe(end - 8 * 60 * 60_000);
   });
 });

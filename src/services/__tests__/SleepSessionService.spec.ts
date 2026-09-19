@@ -1,11 +1,23 @@
 import {
   createSleepSession,
+  isValidCandidateWindow,
   shouldAttemptHealthSync,
   updateSessionSyncState,
   upsertSleepSession,
 } from '../SleepSessionService';
 
 describe('SleepSessionService', () => {
+  it('accepts only reviewable candidate windows', () => {
+    const hour = 60 * 60_000;
+    const now = 100 * hour;
+    expect(isValidCandidateWindow(now - 9 * hour, now - hour, now)).toBe(true);
+    expect(isValidCandidateWindow(now - hour, now - hour, now)).toBe(false);
+    expect(isValidCandidateWindow(now - 21 * hour, now - 30 * 60_000, now)).toBe(false);
+    // Nudging the wake time past the present must not be saved.
+    expect(isValidCandidateWindow(now - 8 * hour, now + 15 * 60_000, now)).toBe(false);
+    expect(isValidCandidateWindow(Number.NaN, now, now)).toBe(false);
+  });
+
   it('rejects invalid completed sessions', () => {
     expect(() =>
       createSleepSession({
