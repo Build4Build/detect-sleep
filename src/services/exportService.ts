@@ -7,7 +7,7 @@ export const exportDataToJson = async (data: string): Promise<void> => {
   try {
     // Create filename with current date
     const fileName = `sleep-data-${format(new Date(), 'yyyy-MM-dd-HHmmss')}.json`;
-    const file = new File(Paths.document, fileName);
+    const file = new File(Paths.cache, fileName);
     
     // Write data to file
     file.write(data);
@@ -44,12 +44,12 @@ export const exportDataToCsv = async (
         )
         .join('; ');
       
-      csvContent += `${summary.date},${summary.totalSleepMinutes},"${sleepPeriodsStr}"\n`;
+      csvContent += `${summary.date},${Math.round(summary.totalSleepMinutes)},"${sleepPeriodsStr}"\n`;
     });
     
     // Create filename with current date
     const fileName = `sleep-data-${format(new Date(), 'yyyy-MM-dd-HHmmss')}.csv`;
-    const file = new File(Paths.document, fileName);
+    const file = new File(Paths.cache, fileName);
     
     // Write data to file
     file.write(csvContent);

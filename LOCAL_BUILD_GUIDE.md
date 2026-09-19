@@ -41,4 +41,6 @@ This is a compilation check, not an installable App Store archive. Follow the pr
 - A Keychain prompt asks for the password of the named keychain. This can differ from the current macOS login password, for example after a password change. Inspect the named keychain in Keychain Access; do not repeatedly revoke valid distribution certificates to solve a local unlock problem.
 - Keep API keys, certificates, provisioning profiles, passwords, and `credentials.json` outside Git. Never paste their contents into public build logs or issues.
 
+If `pod install` stops with `Unicode Normalization not appropriate for ASCII-8BIT`, the shell has no UTF-8 locale: run `export LANG=en_US.UTF-8` and retry. When compiling by hand, do not pass `-sdk iphonesimulator`; it forces the iPhone SDK onto the Watch target, whose watchOS icon then fails to compile.
+
 For environment failures, record the command, Xcode version, Node version, and the first useful error. Rebuild after native dependency or config-plugin changes; restarting Metro alone does not update native code.

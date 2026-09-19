@@ -4,6 +4,24 @@ const MINUTE = 60_000;
 const PENDING_SYNC_RETRY_MS = 15 * MINUTE;
 const FAILED_SYNC_RETRY_MS = 6 * 60 * MINUTE;
 
+export const MAX_CANDIDATE_DURATION_MS = 20 * 60 * MINUTE;
+
+/** Shared by the editor buttons and the store so rejected edits are never silent. */
+export function isValidCandidateWindow(
+  startTime: number,
+  endTime: number,
+  now = Date.now(),
+): boolean {
+  return (
+    Number.isFinite(startTime) &&
+    Number.isFinite(endTime) &&
+    endTime > startTime &&
+    endTime - startTime <= MAX_CANDIDATE_DURATION_MS &&
+    // A wake time in the future would save, and sync, sleep that has not happened.
+    endTime <= now
+  );
+}
+
 const uniqueEvidence = (items: SleepEvidence[]): SleepEvidence[] => {
   const seen = new Set<string>();
   return items.filter(item => {

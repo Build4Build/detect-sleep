@@ -75,7 +75,7 @@ const SettingsScreen = () => {
 
   // Create themed styles
   const themedStyles = useMemo(() => createThemedStyles(colors), [colors]);
-  const appVersion = Constants.expoConfig?.version ?? '1.4.2';
+  const appVersion = Constants.expoConfig?.version ?? '1.4.3';
 
   // Sync local state with context settings when they change
   useEffect(() => {
@@ -285,7 +285,7 @@ const SettingsScreen = () => {
           onPress: async () => {
             try {
               await clearAllStoredData();
-              Alert.alert('Success', 'All data has been cleared. Please restart the app.');
+              Alert.alert('Success', 'All sleep data and settings have been cleared.');
             } catch (error) {
               console.error('Error clearing data:', error);
               Alert.alert('Error', 'Failed to clear data. Please try again.');
@@ -1122,177 +1122,6 @@ const createThemedStyles = (colors: any) => StyleSheet.create({
     fontWeight: 'bold',
     textDecorationLine: 'underline',
     color: colors.primary,
-  },
-  debugContainer: {
-    marginTop: 16,
-    borderRadius: 8,
-    overflow: 'hidden',
-    height: 400,
-  },
-});
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f5f5f5',
-    padding: 16,
-  },
-  scrollContent: {
-    paddingBottom: 40,
-  },
-  section: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 16,
-  },
-  settingItem: {
-    marginBottom: 8,
-  },
-  settingLabel: {
-    fontSize: 16,
-    fontWeight: '500',
-    color: '#333',
-  },
-  settingValue: {
-    fontSize: 16,
-    fontWeight: '500',
-    color: '#6200ee',
-  },
-  settingDescription: {
-    fontSize: 14,
-    color: '#666',
-    marginHorizontal: 4,
-  },
-  switchContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  dataButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 12,
-    borderRadius: 8,
-    marginBottom: 12,
-    backgroundColor: '#f0f0f0',
-  },
-  deleteButton: {
-    backgroundColor: '#f44336',
-  },
-  buttonText: {
-    fontWeight: '600',
-    fontSize: 16,
-    marginLeft: 8,
-    color: '#fff',
-  },
-  aboutContainer: {
-    alignItems: 'center',
-    padding: 8,
-  },
-  appName: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333',
-  },
-  appVersion: {
-    fontSize: 14,
-    color: '#666',
-    marginTop: 4,
-  },
-  description: {
-    fontSize: 14,
-    color: '#666',
-    marginTop: 8,
-    textAlign: 'center',
-  },
-  dropdownButton: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 12,
-  },
-  dropdownValueContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    maxWidth: '35%',
-  },
-  dropdownValue: {
-    fontSize: 16,
-    fontWeight: '500',
-    color: '#6200ee',
-    marginRight: 4,
-    flexShrink: 1,
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'flex-end',
-  },
-  modalContent: {
-    backgroundColor: '#fff',
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
-    padding: 20,
-    maxHeight: '70%',
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333',
-  },
-  thresholdOption: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 16,
-  },
-  selectedOption: {
-    backgroundColor: '#f0e6ff',
-    borderRadius: 8,
-    paddingHorizontal: 8,
-  },
-  thresholdOptionText: {
-    fontSize: 16,
-    color: '#333',
-  },
-  selectedOptionText: {
-    fontWeight: '600',
-    color: '#6200ee',
-  },
-  separator: {
-    height: 1,
-    backgroundColor: '#e0e0e0',
-  },
-  modalDescription: {
-    fontSize: 14,
-    color: '#666',
-    marginTop: 16,
-    fontStyle: 'italic',
-  },
-  mealSnapLink: {
-    fontWeight: 'bold',
-    textDecorationLine: 'underline',
-    color: '#6200ee',
   },
   debugContainer: {
     marginTop: 16,

@@ -149,9 +149,17 @@ export const WatchDataService = {
     const incoming = payloads
       .map(parseWatchSleepSnapshot)
       .filter((value): value is WatchSleepSnapshot => Boolean(value));
-    const byId = new Map(existing.map((snapshot) => [snapshot.id, snapshot]));
-    incoming.forEach((snapshot) => byId.set(snapshot.id, snapshot));
-    const merged = [...byId.values()]
+    // The Watch assigns a new random id on every refresh, so the same night
+    // would otherwise accumulate and push older nights out of the 60 kept.
+    const byNight = new Map<string, WatchSleepSnapshot>();
+    [...existing, ...incoming].forEach((snapshot) => {
+      const key = `${snapshot.sleepStart}-${snapshot.sleepEnd}`;
+      const current = byNight.get(key);
+      if (!current || snapshot.generatedAt >= current.generatedAt) {
+        byNight.set(key, snapshot);
+      }
+    });
+    const merged = [...byNight.values()]
       .sort((left, right) => left.sleepStart - right.sleepStart)
       .slice(-60);
     // Most foreground events deliver nothing new; skip the redundant rewrite.

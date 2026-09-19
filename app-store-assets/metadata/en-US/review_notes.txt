@@ -1,9 +1,12 @@
 Sleep Detector does not run a continuous background sensor session. It records lightweight app lifecycle timestamps and creates an editable estimate after the app returns from an inactivity interval.
 
-Suggested review flow:
-1. Open Settings and set the inactivity threshold to 5 minutes.
-2. Put the app in the background for more than 5 minutes.
-3. Reopen the app. A candidate is shown for review and can be edited, confirmed, or dismissed.
+Quickest way to see the core flow (about one minute):
+1. On the Today tab, tap Edit on the Current Status card and choose "I'm Asleep".
+2. Wait a minute, then tap Edit again and choose "I'm Awake" (or background the app and reopen it).
+3. The sleep period is saved and appears under Today's Sleep, History, and Stats.
+
+Automatic estimates:
+The smallest inactivity threshold in Settings is 20 minutes, and short daytime absences are intentionally ignored because they are unlikely to be sleep. A review card ("Probable sleep detected" or "Possible sleep — please review") with time adjustments, "Confirm sleep", and "Not sleep" typically appears after the app has been in the background for about 90 minutes at any time of day, or for more than 20 minutes when you return in the morning (4 am to 1 pm local time).
 
 App-only inactivity is low-confidence evidence and always requires confirmation. If Apple Health or Apple Watch sleep samples overlap the interval, they can refine its boundaries and confidence.
 

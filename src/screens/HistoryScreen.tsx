@@ -58,6 +58,9 @@ const HistoryScreen = () => {
       <TouchableOpacity 
         style={themedStyles.dayItem}
         onPress={() => viewSleepDetails(item.date)}
+        accessibilityRole="button"
+        accessibilityLabel={`${format(date, 'EEEE, MMMM d')}, ${formatDuration(item.totalSleepMinutes)} of sleep`}
+        accessibilityHint="Shows the details for this day"
       >
         <View style={themedStyles.dayHeader}>
           <View style={themedStyles.dayInfo}>
@@ -91,6 +94,8 @@ const HistoryScreen = () => {
         <TouchableOpacity
           style={[themedStyles.filterButton, timeRange === 'week' && themedStyles.activeFilter]}
           onPress={() => setTimeRange('week')}
+          accessibilityRole="button"
+          accessibilityState={{ selected: timeRange === 'week' }}
         >
           <Text style={[themedStyles.filterText, timeRange === 'week' && themedStyles.activeFilterText]}>
             Week
@@ -100,6 +105,8 @@ const HistoryScreen = () => {
         <TouchableOpacity
           style={[themedStyles.filterButton, timeRange === 'month' && themedStyles.activeFilter]}
           onPress={() => setTimeRange('month')}
+          accessibilityRole="button"
+          accessibilityState={{ selected: timeRange === 'month' }}
         >
           <Text style={[themedStyles.filterText, timeRange === 'month' && themedStyles.activeFilterText]}>
             Month
@@ -109,6 +116,8 @@ const HistoryScreen = () => {
         <TouchableOpacity
           style={[themedStyles.filterButton, timeRange === 'all' && themedStyles.activeFilter]}
           onPress={() => setTimeRange('all')}
+          accessibilityRole="button"
+          accessibilityState={{ selected: timeRange === 'all' }}
         >
           <Text style={[themedStyles.filterText, timeRange === 'all' && themedStyles.activeFilterText]}>
             All

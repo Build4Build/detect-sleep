@@ -1,6 +1,6 @@
 {
   "name": "detect-sleep",
-  "version": "1.4.2",
+  "version": "1.4.3",
   "description": "A privacy-first sleep companion conceived and built by Pierre-Henry Soria.",
   "author": {
     "name": "Pierre-Henry Soria",
@@ -9,7 +9,7 @@
   "homepage": "https://pierrehenry.dev",
   "repository": {
     "type": "git",
-    "url": "https://github.com/pH-7/detect-sleep.git"
+    "url": "https://github.com/Build4Build/detect-sleep.git"
   },
   "main": "index.ts",
   "scripts": {
@@ -69,7 +69,10 @@
     "typescript": "~5.9.2"
   },
   "jest": {
-    "preset": "jest-expo"
+    "preset": "jest-expo",
+    "modulePathIgnorePatterns": [
+      "<rootDir>/.claude/"
+    ]
   },
   "eslintConfig": {
     "extends": "universe/native"
