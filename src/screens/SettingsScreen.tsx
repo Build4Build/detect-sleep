@@ -75,7 +75,7 @@ const SettingsScreen = () => {
 
   // Create themed styles
   const themedStyles = useMemo(() => createThemedStyles(colors), [colors]);
-  const appVersion = Constants.expoConfig?.version ?? '1.4.2';
+  const appVersion = Constants.expoConfig?.version ?? '1.4.3';
 
   // Sync local state with context settings when they change
   useEffect(() => {
