@@ -17,6 +17,15 @@ export interface WellnessReportInput {
   now?: number;
 }
 
+/** "6 hr 58 min" reads naturally; "418 minutes" makes the reader do arithmetic. */
+const formatSleepLength = (minutes: number): string => {
+  const rounded = Math.round(minutes);
+  const hours = Math.floor(rounded / 60);
+  const remainder = rounded % 60;
+  if (hours === 0) return `${remainder} min`;
+  return remainder === 0 ? `${hours} hr` : `${hours} hr ${remainder} min`;
+};
+
 const clamp = (value: number, minimum: number, maximum: number): number =>
   Math.min(maximum, Math.max(minimum, value));
 
@@ -251,13 +260,13 @@ export function buildDailyWellnessReport(
   if (sleepMinutes > 0) {
     observations.push(
       sleepMinutes >= 420
-        ? `Recorded sleep was ${Math.round(sleepMinutes)} minutes.`
-        : `Recorded sleep was ${Math.round(sleepMinutes)} minutes, below the general seven-hour reference used for this wellness summary.`,
+        ? `Recorded sleep was ${formatSleepLength(sleepMinutes)}.`
+        : `Recorded sleep was ${formatSleepLength(sleepMinutes)}, below the general seven-hour reference used for this wellness summary.`,
     );
   }
   if (recoverySignal === "below-usual") {
     observations.push(
-      "One or more recovery signals were below the user’s recent baseline; many factors can affect these measurements.",
+      "One or more recovery signals were below your recent baseline; many factors can affect these measurements.",
     );
   }
 
