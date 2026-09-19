@@ -5,6 +5,7 @@ import { BarChart } from 'react-native-chart-kit';
 import { useSleep } from '../context/SleepContext';
 import { useTheme } from '../context/ThemeContext';
 import { formatDuration, getPastWeekDates, getPastMonthDates, getDayOfWeek } from '../utils/dateUtils';
+import { SLEEP_QUALITY_LEVELS, sleepQualityForMinutes } from '../utils/sleepQuality';
 
 const { width } = Dimensions.get('window');
 
@@ -91,10 +92,12 @@ const StatsScreen = () => {
   const metrics = calculateSleepMetrics();
 
   // Get custom colors based on sleep quality
-  const getBarColor = (value: number, opacity = 1) => {
-    if (value >= 8) return `rgba(76, 175, 80, ${opacity})`; // Good sleep (green)
-    if (value >= 6) return `rgba(255, 193, 7, ${opacity})`; // Medium sleep (yellow)
-    return `rgba(244, 67, 54, ${opacity})`; // Poor sleep (red)
+  const getBarColor = (hours: number, opacity = 1) => {
+    // Same scale as the Today and details screens, so a night never reads as
+    // "Good" in one place and "Fair" in another.
+    const hex = sleepQualityForMinutes(hours * 60).color;
+    const [red, green, blue] = [1, 3, 5].map(index => parseInt(hex.slice(index, index + 2), 16));
+    return `rgba(${red}, ${green}, ${blue}, ${opacity})`;
   };
 
   // Chart configuration with custom color function
@@ -150,6 +153,8 @@ const StatsScreen = () => {
           <TouchableOpacity
             style={[themedStyles.filterButton, timeRange === 'week' && themedStyles.activeFilter]}
             onPress={() => setTimeRange('week')}
+            accessibilityRole="button"
+            accessibilityState={{ selected: timeRange === 'week' }}
           >
             <Text style={[themedStyles.filterText, timeRange === 'week' && themedStyles.activeFilterText]}>
               Week
@@ -159,6 +164,8 @@ const StatsScreen = () => {
           <TouchableOpacity
             style={[themedStyles.filterButton, timeRange === 'month' && themedStyles.activeFilter]}
             onPress={() => setTimeRange('month')}
+            accessibilityRole="button"
+            accessibilityState={{ selected: timeRange === 'month' }}
           >
             <Text style={[themedStyles.filterText, timeRange === 'month' && themedStyles.activeFilterText]}>
               Month
@@ -199,18 +206,12 @@ const StatsScreen = () => {
 
             {/* Color legend */}
             <View style={themedStyles.legendContainer}>
-              <View style={themedStyles.legendItem}>
-                <View style={[themedStyles.legendColor, { backgroundColor: '#4CAF50' }]} />
-                <Text style={themedStyles.legendText}>Good (8+ hours)</Text>
-              </View>
-              <View style={themedStyles.legendItem}>
-                <View style={[themedStyles.legendColor, { backgroundColor: '#FFC107' }]} />
-                <Text style={themedStyles.legendText}>Fair (6-8 hours)</Text>
-              </View>
-              <View style={themedStyles.legendItem}>
-                <View style={[themedStyles.legendColor, { backgroundColor: '#F44336' }]} />
-                <Text style={themedStyles.legendText}>Poor (under 6h)</Text>
-              </View>
+              {SLEEP_QUALITY_LEVELS.map(level => (
+                <View key={level.label} style={themedStyles.legendItem}>
+                  <View style={[themedStyles.legendColor, { backgroundColor: level.color }]} />
+                  <Text style={themedStyles.legendText}>{level.label} ({level.range})</Text>
+                </View>
+              ))}
             </View>
           </View>
         ) : (
@@ -372,7 +373,10 @@ const createThemedStyles = (colors: any) =>
     },
     legendContainer: {
       flexDirection: 'row',
-      justifyContent: 'space-around',
+      flexWrap: 'wrap',
+      justifyContent: 'center',
+      columnGap: 14,
+      rowGap: 6,
       marginTop: 12,
       paddingTop: 12,
       borderTopWidth: 1,
