@@ -141,7 +141,12 @@ const TodayScreen = () => {
           <Text style={themedStyles.greeting}>{greeting}</Text>
           <Text style={themedStyles.date}>{formattedDate}</Text>
         </View>
-        <TouchableOpacity onPress={goToSettings} style={themedStyles.settingsButton}>
+        <TouchableOpacity
+          onPress={goToSettings}
+          style={themedStyles.settingsButton}
+          accessibilityRole="button"
+          accessibilityLabel="Settings"
+        >
           <Ionicons name="settings-outline" size={24} color={colors.primary} />
         </TouchableOpacity>
       </View>
@@ -150,6 +155,9 @@ const TodayScreen = () => {
         style={themedStyles.statusCard}
         onPress={handleStatusOverride}
         activeOpacity={0.8}
+        accessibilityRole="button"
+        accessibilityLabel={`Current status: ${currentStatus === 'awake' ? 'awake' : 'asleep'}`}
+        accessibilityHint="Changes your status manually"
       >
         <View style={themedStyles.statusHeader}>
           <Text style={themedStyles.statusLabel}>Current Status</Text>
@@ -226,6 +234,8 @@ const TodayScreen = () => {
                   themedStyles.boundaryButton,
                   !isValidCandidateWindow(pendingSleepCandidate.startTime - 15 * 60_000, pendingSleepCandidate.endTime) && themedStyles.boundaryButtonDisabled,
                 ]}
+                accessibilityRole="button"
+                accessibilityLabel="Move sleep start 15 minutes earlier"
                 disabled={!isValidCandidateWindow(pendingSleepCandidate.startTime - 15 * 60_000, pendingSleepCandidate.endTime)}
                 onPress={() => updateSleepCandidateBounds(
                   pendingSleepCandidate.startTime - 15 * 60_000,
@@ -239,6 +249,8 @@ const TodayScreen = () => {
                   themedStyles.boundaryButton,
                   !isValidCandidateWindow(pendingSleepCandidate.startTime + 15 * 60_000, pendingSleepCandidate.endTime) && themedStyles.boundaryButtonDisabled,
                 ]}
+                accessibilityRole="button"
+                accessibilityLabel="Move sleep start 15 minutes later"
                 disabled={!isValidCandidateWindow(pendingSleepCandidate.startTime + 15 * 60_000, pendingSleepCandidate.endTime)}
                 onPress={() => updateSleepCandidateBounds(
                   pendingSleepCandidate.startTime + 15 * 60_000,
@@ -255,6 +267,8 @@ const TodayScreen = () => {
                   themedStyles.boundaryButton,
                   !isValidCandidateWindow(pendingSleepCandidate.startTime, pendingSleepCandidate.endTime - 15 * 60_000) && themedStyles.boundaryButtonDisabled,
                 ]}
+                accessibilityRole="button"
+                accessibilityLabel="Move wake time 15 minutes earlier"
                 disabled={!isValidCandidateWindow(pendingSleepCandidate.startTime, pendingSleepCandidate.endTime - 15 * 60_000)}
                 onPress={() => updateSleepCandidateBounds(
                   pendingSleepCandidate.startTime,
@@ -268,6 +282,8 @@ const TodayScreen = () => {
                   themedStyles.boundaryButton,
                   !isValidCandidateWindow(pendingSleepCandidate.startTime, pendingSleepCandidate.endTime + 15 * 60_000) && themedStyles.boundaryButtonDisabled,
                 ]}
+                accessibilityRole="button"
+                accessibilityLabel="Move wake time 15 minutes later"
                 disabled={!isValidCandidateWindow(pendingSleepCandidate.startTime, pendingSleepCandidate.endTime + 15 * 60_000)}
                 onPress={() => updateSleepCandidateBounds(
                   pendingSleepCandidate.startTime,

@@ -115,6 +115,7 @@ export const NotificationSettingsScreen = () => {
             </View>
           </View>
           <Switch
+            accessibilityLabel="Confirmed sleep summary notifications"
             value={settings.wakeDetectionEnabled}
             onValueChange={(value) => updateSetting('wakeDetectionEnabled', value)}
             trackColor={{ false: colors.border, true: colors.primary + '40' }}
@@ -137,6 +138,7 @@ export const NotificationSettingsScreen = () => {
             </View>
           </View>
           <Switch
+            accessibilityLabel="Bedtime reminders"
             value={settings.sleepRemindersEnabled}
             onValueChange={(value) => updateSetting('sleepRemindersEnabled', value)}
             trackColor={{ false: colors.border, true: colors.primary + '40' }}

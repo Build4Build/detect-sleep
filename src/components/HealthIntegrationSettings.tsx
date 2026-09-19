@@ -74,6 +74,7 @@ const HealthIntegrationSettings: React.FC<HealthIntegrationSettingsProps> = ({ o
               </Text>
             </View>
             <Switch
+              accessibilityLabel={`Sync confirmed sleep with ${serviceName}`}
               value={enabled}
               onValueChange={changeSync}
               disabled={loading}
