@@ -5,9 +5,12 @@ jest.mock("@react-native-async-storage/async-storage", () =>
   require("@react-native-async-storage/async-storage/jest/async-storage-mock"),
 );
 
+import AsyncStorage from "@react-native-async-storage/async-storage";
+
 import {
   parseWatchSleepSnapshot,
   strongestWatchSleepWindow,
+  WatchDataService,
   watchSleepOverlapRatio,
 } from "../WatchDataService";
 
@@ -80,5 +83,20 @@ describe("WatchDataService", () => {
       endTime: 12 * hour,
       asleepMinutes: 420,
     });
+  });
+  it("keeps one snapshot per night when the Watch resends it under new ids", async () => {
+    // The Watch app assigns a fresh random id on every refresh.
+    await AsyncStorage.setItem(
+      "sleep-detector-watch-snapshots-v1",
+      JSON.stringify([
+        { ...snapshot, id: "first-refresh", generatedAt: 2_000, remMinutes: 0 },
+        { ...snapshot, id: "second-refresh", generatedAt: 3_000, remMinutes: 1 / 60 },
+        { ...snapshot, id: "other-night", sleepStart: 10_000, sleepEnd: 15_000, generatedAt: 16_000 },
+      ]),
+    );
+
+    const merged = await WatchDataService.consumePendingSnapshots();
+
+    expect(merged.map((item) => item.id)).toEqual(["second-refresh", "other-night"]);
   });
 });
