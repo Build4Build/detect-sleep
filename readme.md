@@ -1,6 +1,6 @@
 # Sleep Detector 😴
 
-Sleep Detector is a private sleep journal for iPhone with an Apple Watch companion, published by **SimpliXio Pte. Ltd.**
+Sleep Detector is a private sleep journal for iPhone with an Apple Watch companion, created and developed by **[Pierre-Henry Soria](https://pierrehenry.dev)**.
 
 [Download on the App Store](https://apps.apple.com/app/id6743064638) · [GitHub releases](https://github.com/Build4Build/detect-sleep/releases)
 
